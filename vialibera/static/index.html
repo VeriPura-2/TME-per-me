@@ -4,6 +4,7 @@
 <style>
 body{font:16px/1.5 system-ui,sans-serif;max-width:720px;margin:0 auto;padding:16px;color:#1a1a1a}
 #log{border:1px solid #ddd;border-radius:8px;padding:12px;min-height:240px;margin:12px 0;white-space:pre-wrap}
+#opts button{margin:4px 6px 4px 0;border:1px solid #0b57d0;background:#fff;color:#0b57d0;border-radius:16px;cursor:pointer}
 .me{color:#0b57d0}.bot{color:#1a1a1a;margin-bottom:8px}
 input{width:75%;padding:8px}button{padding:8px 14px}
 </style></head><body>
@@ -11,6 +12,7 @@ input{width:75%;padding:8px}button{padding:8px 14px}
 <p id="who"></p>
 <div id="app" hidden>
   <div id="log"></div>
+  <div id="opts"></div>
   <input id="msg" placeholder="Tell us about your product and market" autocomplete="off">
   <button id="send">Send</button>
 </div>
@@ -39,16 +41,28 @@ input{width:75%;padding:8px}button{padding:8px 14px}
   $("logout").onclick = () => client.logout({logoutParams: {returnTo: location.origin}});
   let caseId = null;
   const add = (cls, t) => { const d = document.createElement("div"); d.className = cls; d.textContent = t; $("log").appendChild(d); };
-  async function send() {
-    const m = $("msg").value.trim(); if (!m) return;
-    $("msg").value = ""; add("me", m);
+  async function send(text) {
+    const m = (typeof text === "string" ? text : $("msg").value).trim(); if (!m) return;
+    $("msg").value = ""; $("opts").innerHTML = ""; add("me", m);
     const token = await client.getTokenSilently();
     const r = await fetch("/chat", {method: "POST", headers: {"Authorization": "Bearer " + token, "Content-Type": "application/json"},
       body: JSON.stringify({message: m, case_id: caseId})});
     const j = await r.json();
-    if (r.ok) { caseId = j.case_id; add("bot", j.reply); } else add("bot", "Error: " + (j.error || r.status));
+    if (r.ok) { caseId = j.case_id; show(j.reply); } else add("bot", "Error: " + (j.error || r.status));
   }
-  $("send").onclick = send;
+  function show(reply) {
+    const lines = reply.trimEnd().split("\n");
+    const last = lines[lines.length - 1];
+    if (last.startsWith("OPTIONS:")) {
+      add("bot", lines.slice(0, -1).join("\n").trim());
+      last.slice(8).split("|").map(x => x.trim()).filter(Boolean).forEach(o => {
+        const b = document.createElement("button"); b.textContent = o;
+        b.onclick = () => /^something else/i.test(o) ? $("msg").focus() : send(o);
+        $("opts").appendChild(b);
+      });
+    } else add("bot", reply);
+  }
+  $("send").onclick = () => send();
   $("msg").onkeydown = e => { if (e.key === "Enter") send(); };
 })();
 </script></body></html>
