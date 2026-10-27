@@ -43,12 +43,14 @@ a{color:var(--accent)}
   <p id="w-names"></p>
   <p id="w-can"></p>
   <p id="w-expect"></p>
+  <p class="muted" id="w-style"></p>
+  <div id="w-styles"></div>
   <p><strong id="w-ask"></strong></p>
   <div id="w-opts"></div>
 </div>
 
 <div id="app" hidden>
-  <div id="persona" class="muted"></div>
+  <div class="muted"><span id="persona"></span> <a href="#" id="switch"></a></div>
   <div id="log"></div>
   <div id="opts"></div>
   <input type="text" id="msg" autocomplete="off">
@@ -69,7 +71,7 @@ const T = {
     c1: 'Ho letto e accetto le <a href="/terms?lang=it" target="_blank">Condizioni del servizio</a> e l\'<a href="/terms?lang=it#privacy" target="_blank">Informativa sulla privacy</a>.',
     c2: "Approvo specificamente, ai sensi degli artt. 1341 e 1342 c.c., le clausole indicate nelle Condizioni (limitazione di responsabilità, sospensione e cessazione, modifiche unilaterali, legge applicabile e foro competente).",
     ai: "Stai dialogando con un assistente basato su intelligenza artificiale. Le verifiche di conformità sono controllate da personale VeriPura prima della consegna.",
-    accept: "Accetto e continuo", err: "Errore: ", w_title: "Benvenuto in Via Libera", w_names: "Cosimo ti guida se esporti per la prima volta. Chiara ti accompagna se vuoi crescere in nuovi mercati. Sono i tuoi export manager con intelligenza artificiale.", p_cosimo: "Cosimo, export manager con IA", p_chiara: "Chiara, export manager con IA", w_back: "Bentornato. Riprendiamo da dove eravamo?",
+    accept: "Accetto e continuo", err: "Errore: ", w_title: "Benvenuto in Via Libera", w_names: "Ti accompagna un export manager con intelligenza artificiale, scelto per te. Puoi cambiarlo quando vuoi.", p_suffix: "export manager con IA", p_switch: "Cambia export manager", w_style: "Come preferisci lavorare? (facoltativo)", s_brief: "Breve e diretto", s_steps: "Passo dopo passo, con spiegazioni", s_numbers: "Prima i numeri", w_back: "Bentornato. Riprendiamo da dove eravamo?",
     w_can: "Puoi esplorare come esportare i tuoi prodotti alimentari, capire quali regole, documenti, etichette e dazi servono per un mercato, e ricevere un pacchetto di servizi con prezzi chiari.",
     w_expect: "Ti guida un assistente con intelligenza artificiale: una domanda alla volta, puoi saltarne quante vuoi, e non paghi nulla finché non approvi un pacchetto. Il personale VeriPura controlla le verifiche di conformità.",
     w_ask: "Che cosa vuoi esplorare per primo?",
@@ -86,7 +88,7 @@ const T = {
     c1: 'I have read and accept the <a href="/terms?lang=en" target="_blank">Terms of Service</a> and the <a href="/terms?lang=en#privacy" target="_blank">Privacy Notice</a>.',
     c2: "I specifically approve, under Articles 1341 and 1342 of the Italian Civil Code, the clauses listed in the Terms (limitation of liability, suspension and ending, changes to the terms, governing law and courts).",
     ai: "You are talking to an AI-based assistant. Compliance checks are reviewed by VeriPura staff before delivery.",
-    accept: "Accept and continue", err: "Error: ", w_title: "Welcome to Via Libera", w_names: "Cosimo guides you if you are exporting for the first time. Chiara supports you if you want to grow into new markets. They are your AI export managers.", p_cosimo: "Cosimo, AI export manager", p_chiara: "Chiara, AI export manager", w_back: "Welcome back. Shall we pick up where we left off?",
+    accept: "Accept and continue", err: "Error: ", w_title: "Welcome to Via Libera", w_names: "An AI export manager, chosen for you, will guide you. You can switch to someone else at any time.", p_suffix: "AI export manager", p_switch: "Meet someone else", w_style: "How would you like to work? (optional)", s_brief: "Brief and direct", s_steps: "Step by step, with explanations", s_numbers: "Numbers first", w_back: "Welcome back. Shall we pick up where we left off?",
     w_can: "You can explore how to export your food products, find out which rules, documents, labels and duties apply to a market, and get a package of services with clear prices.",
     w_expect: "An AI assistant guides you: one question at a time, you can skip as many as you like, and you pay nothing until you approve a package. VeriPura staff review compliance checks.",
     w_ask: "What would you like to explore first?",
@@ -165,6 +167,16 @@ applyLang();
   let caseId = null;
   let pathType = 1;
   const add = (cls, t) => { const d = document.createElement("div"); d.className = cls; d.textContent = t; $("log").appendChild(d); };
+  function setPersona(p) {
+    if (!p) return;
+    $("persona").textContent = p.name + ", " + T[lang].p_suffix + " ·";
+    $("switch").textContent = T[lang].p_switch;
+  }
+  $("switch").onclick = async e => {
+    e.preventDefault();
+    const [r, j] = await call("/profile", {switch: true, path_type: pathType});
+    if (r.ok) setPersona(j.persona);
+  };
   function show(reply) {
     const lines = reply.trimEnd().split("\n");
     const last = lines[lines.length - 1];
@@ -182,7 +194,7 @@ applyLang();
     $("msg").value = ""; $("opts").innerHTML = ""; add("me", m);
     const [r, j] = await call("/chat", {message: m, case_id: caseId, lang, path_type: pathType});
     if (r.ok) {
-      caseId = j.case_id; $("persona").textContent = T[lang]["p_" + j.persona]; show(j.reply);
+      caseId = j.case_id; setPersona(j.persona); show(j.reply);
       if (j.account) { const k = {created: "account_created", access_requested: "account_access", invalid_vat: "account_invalid"}[j.account.status]; if (k) add("bot", "ℹ " + T[lang][k]); }
     } else add("bot", T[lang].err + (j.error || r.status));
   }
@@ -192,6 +204,14 @@ applyLang();
     const t = T[lang];
     $("w-title").textContent = me.latest_case ? t.w_back : t.w_title;
     $("w-names").textContent = t.w_names; $("w-can").textContent = t.w_can; $("w-expect").textContent = t.w_expect; $("w-ask").textContent = t.w_ask;
+    $("w-style").textContent = t.w_style;
+    const sb = $("w-styles"); sb.innerHTML = "";
+    ["brief", "steps", "numbers"].forEach(k => {
+      const b = document.createElement("button"); b.textContent = t["s_" + k]; b.style.margin = "4px 6px 4px 0";
+      b.onclick = async () => { await call("/profile", {style: k}); [...sb.children].forEach(x => x.style.borderColor = ""); b.style.borderColor = "var(--accent)"; };
+      if (me.style === k) b.style.borderColor = "var(--accent)";
+      sb.appendChild(b);
+    });
     const box = $("w-opts"); box.innerHTML = "";
     const go = (label, path, text, resume) => {
       const b = document.createElement("button"); b.textContent = label; b.style.margin = "4px 6px 4px 0";

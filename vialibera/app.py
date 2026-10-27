@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import anthropic
 
-from . import accounts, agent, auth, db
+from . import accounts, agent, auth, db, personas
 from .menu import MENU
 from .secrets import get_secret
 
@@ -54,10 +54,18 @@ def handle_chat(body, llm=None, who=None):
         cid = db.create_case(c, int(body.get("path_type", 1)), org_id=(who or {}).get("org"),
                              owner_sub=who["user"] if who else None)
     history = db.load_history(c, cid)
-    reply = agent.turn(llm or client(), c, cid, MENU, history, msg, lang=lang)
+    pid = None
+    if who:
+        prof = accounts.get_profile(c, who["user"])
+        pid = prof["persona_id"]
+        if not pid:
+            path = c.execute("SELECT path_type FROM cases WHERE id=?", (cid,)).fetchone()["path_type"]
+            pid = personas.pick(who["user"], prof["style"], path)["id"]
+            accounts.save_profile(c, who["user"], persona_id=pid)
+    reply = agent.turn(llm or client(), c, cid, MENU, history, msg, lang=lang, persona_id=pid)
     db.save_history(c, cid, history)
     out = {"case_id": cid, "reply": reply,
-           "persona": agent.persona_for(db.case_read(c, cid)["path_type"])}
+           "persona": {"id": pid, "name": personas.BY_ID[pid]["name"]} if pid else None}
     notice = accounts.attach_company(c, cid, who)
     if notice:
         out["account"] = notice
@@ -71,6 +79,23 @@ def handle_consent(body, who):
         return 400, {"error": "both acceptances required"}
     accounts.record_consent(con(), who["user"], TERMS_VERSION, "en" if body.get("lang") == "en" else "it", True)
     return 200, {"ok": True, "terms_version": TERMS_VERSION}
+
+
+def handle_profile(body, who):
+    if not who:
+        return 400, {"error": "sign-in required"}
+    c = con()
+    style = body.get("style") if body.get("style") in personas.STYLES else None
+    cur = accounts.get_profile(c, who["user"])
+    if body.get("switch"):
+        pick = personas.pick(who["user"] + db.now(), style or cur["style"], body.get("path_type", 1),
+                             exclude=(cur["persona_id"],) if cur["persona_id"] else ())
+        accounts.save_profile(c, who["user"], persona_id=pick["id"], style=style)
+    elif style:
+        accounts.save_profile(c, who["user"], style=style)
+    p = accounts.get_profile(c, who["user"])
+    pid = p["persona_id"]
+    return 200, {"style": p["style"], "persona": {"id": pid, "name": personas.BY_ID[pid]["name"]} if pid else None}
 
 
 def render_terms(lang):
@@ -112,7 +137,7 @@ class Handler(BaseHTTPRequestHandler):
         self._send(404, {})
 
     def do_POST(self):
-        if self.path not in ("/chat", "/consent", "/me"):
+        if self.path not in ("/chat", "/consent", "/me", "/profile"):
             return self._send(404, {})
         try:
             who = None
@@ -124,6 +149,8 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
             if self.path == "/consent":
                 return self._send(*handle_consent(body, who))
+            if self.path == "/profile":
+                return self._send(*handle_profile(body, who))
             if self.path == "/me":
                 ok = bool(who) and accounts.has_consent(con(), who["user"], TERMS_VERSION)
                 latest = None
@@ -132,7 +159,8 @@ class Handler(BaseHTTPRequestHandler):
                                       (who["user"],)).fetchone()
                     latest = r["id"] if r else None
                 return self._send(200, {"consent": ok or not who, "terms_version": TERMS_VERSION,
-                                        "latest_case": latest})
+                                        "latest_case": latest,
+                                        **(accounts.get_profile(con(), who["user"]) if who else {})})
             self._send(*handle_chat(body, who=who))
         except Exception as e:  # keep the service up, report a typed error
             self._send(500, {"error": type(e).__name__})

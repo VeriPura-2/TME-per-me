@@ -33,6 +33,12 @@ CREATE TABLE IF NOT EXISTS memberships (
   created_at TEXT NOT NULL,
   PRIMARY KEY (company_id, user_sub)
 );
+CREATE TABLE IF NOT EXISTS profiles (
+  user_sub TEXT PRIMARY KEY,
+  persona_id TEXT,
+  style TEXT,                          -- brief, steps or numbers, chosen by the person
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS consents (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_sub TEXT NOT NULL,

@@ -96,3 +96,18 @@ def record_consent(con, user_sub, terms_version, lang, onerous):
     con.execute("INSERT INTO consents(user_sub, terms_version, lang, onerous_clauses, at) VALUES (?,?,?,?,?)",
                 (user_sub, terms_version, lang, 1 if onerous else 0, db.now()))
     con.commit()
+
+
+def get_profile(con, user_sub):
+    row = con.execute("SELECT persona_id, style FROM profiles WHERE user_sub=?", (user_sub,)).fetchone()
+    return {"persona_id": row["persona_id"], "style": row["style"]} if row else {"persona_id": None, "style": None}
+
+
+def save_profile(con, user_sub, persona_id=None, style=None):
+    cur = get_profile(con, user_sub)
+    persona_id = persona_id or cur["persona_id"]
+    style = style or cur["style"]
+    con.execute("INSERT INTO profiles(user_sub, persona_id, style, updated_at) VALUES (?,?,?,?) "
+                "ON CONFLICT (user_sub) DO UPDATE SET persona_id=excluded.persona_id, style=excluded.style, "
+                "updated_at=excluded.updated_at", (user_sub, persona_id, style, db.now()))
+    con.commit()
