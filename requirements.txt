@@ -3,3 +3,4 @@ google-cloud-secret-manager
 psycopg2-binary
 PyJWT[crypto]
 markdown
+google-cloud-storage

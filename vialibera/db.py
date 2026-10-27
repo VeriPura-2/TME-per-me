@@ -39,6 +39,31 @@ CREATE TABLE IF NOT EXISTS profiles (
   style TEXT,                          -- brief, steps or numbers, chosen by the person
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS documents (
+  id TEXT PRIMARY KEY,
+  owner_sub TEXT NOT NULL,             -- uploader
+  company_id TEXT,                     -- set once the company exists, then the library belongs to it
+  title TEXT NOT NULL,
+  filename TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  sha256 TEXT NOT NULL,
+  store_key TEXT NOT NULL,             -- object path in storage
+  doc_type TEXT,                       -- see docs.TYPES
+  product TEXT,                        -- free text product name, NULL = company level
+  market TEXT,                         -- country, NULL = not market specific
+  valid_until TEXT,
+  status TEXT NOT NULL DEFAULT 'proposed',   -- proposed (filing awaiting confirmation) or confirmed
+  source TEXT NOT NULL DEFAULT 'upload',     -- upload, generated, staff
+  version_of TEXT,                     -- earlier document this replaces
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS project_docs (
+  case_id TEXT NOT NULL,
+  document_id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (case_id, document_id)
+);
 CREATE TABLE IF NOT EXISTS consents (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_sub TEXT NOT NULL,

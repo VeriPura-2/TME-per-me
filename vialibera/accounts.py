@@ -72,6 +72,7 @@ def attach_company(con, case_id, who):
         con.execute("INSERT INTO memberships(company_id, user_sub, role, created_at) VALUES (?,?,?,?)",
                     (cid, who["user"], "owner", t))
         con.execute("UPDATE cases SET company_id=? WHERE id=?", (cid, case_id))
+        con.execute("UPDATE documents SET company_id=? WHERE owner_sub=? AND company_id IS NULL", (cid, who["user"]))
         db.log_event(con, case_id, "system", "company_created", {"vat": vat})
         return {"status": "created", "vat": vat}
     cid = row["id"]
@@ -79,6 +80,7 @@ def attach_company(con, case_id, who):
         status = "joined" if is_member(con, cid, who["user"]) else "access_requested"
         if status == "joined":
             con.execute("UPDATE cases SET company_id=? WHERE id=?", (cid, case_id))
+            con.execute("UPDATE documents SET company_id=? WHERE owner_sub=? AND company_id IS NULL", (cid, who["user"]))
             con.commit()
         return {"status": status, "vat": vat}
     con.execute("INSERT INTO memberships(company_id, user_sub, role, status, created_at) VALUES (?,?,?,?,?)",

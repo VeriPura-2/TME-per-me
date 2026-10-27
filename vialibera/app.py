@@ -9,7 +9,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import anthropic
 
-from . import accounts, agent, auth, db, personas
+from urllib.parse import parse_qs, urlparse
+
+from . import accounts, agent, auth, db, docs, personas, storage
 from .menu import MENU
 from .secrets import get_secret
 
@@ -81,6 +83,41 @@ def handle_consent(body, who):
     return 200, {"ok": True, "terms_version": TERMS_VERSION}
 
 
+def consent_ok(who):
+    return not who or accounts.has_consent(con(), who["user"], TERMS_VERSION)
+
+
+def handle_upload(headers, data, who):
+    if not consent_ok(who):
+        return 403, {"error": "consent_required"}
+    from urllib.parse import unquote
+    return docs.upload(con(), who, unquote(headers.get("X-Filename", "file")), data,
+                       product=unquote(headers.get("X-Product", "")) or None,
+                       market=unquote(headers.get("X-Market", "")) or None,
+                       case_id=headers.get("X-Case") or None)
+
+
+def handle_docs(query, who):
+    if not consent_ok(who):
+        return 403, {"error": "consent_required"}
+    q = {k: v[0] for k, v in parse_qs(query).items()}
+    return 200, {"documents": docs.listing(con(), who, q.get("case"), q.get("product"), q.get("type")),
+                 "types": [{"id": t[0], "it": t[1], "en": t[2]} for t in docs.TYPES]}
+
+
+def handle_doc_update(doc_id, body, who):
+    if not consent_ok(who):
+        return 403, {"error": "consent_required"}
+    if body.get("link_case"):
+        if not docs.link(con(), who, body["link_case"], doc_id):
+            return 404, {"error": "not found"}
+    row = docs.update(con(), who, doc_id, body)
+    if row is None:
+        return 404, {"error": "not found"}
+    return 200, {"id": doc_id, "doc_type": row["doc_type"], "product": row["product"], "market": row["market"],
+                 "status": row["status"], "valid_until": row["valid_until"]}
+
+
 def handle_profile(body, who):
     if not who:
         return 400, {"error": "sign-in required"}
@@ -134,19 +171,47 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             return self.wfile.write(data)
+        if path == "/docs" or path.startswith("/doc/"):
+            try:
+                who = self._who()
+            except auth.AuthError:
+                return self._send(401, {"error": "unauthorized"})
+            if path == "/docs":
+                return self._send(*handle_docs(urlparse(self.path).query, who))
+            if not consent_ok(who):
+                return self._send(403, {"error": "consent_required"})
+            row = docs.get_doc(con(), path[len("/doc/"):], who)
+            if row is None:
+                return self._send(404, {"error": "not found"})
+            data = storage.store().get(row["store_key"])
+            self.send_response(200)
+            self.send_header("Content-Type", row["mime"])
+            self.send_header("Content-Disposition", 'attachment; filename="%s"' % row["filename"].replace('"', ""))
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            return self.wfile.write(data)
         self._send(404, {})
 
+    def _who(self):
+        return auth.verify(self.headers.get("Authorization")) if auth.enabled() else None
+
     def do_POST(self):
-        if self.path not in ("/chat", "/consent", "/me", "/profile"):
+        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload") or self.path.startswith("/doc/")):
             return self._send(404, {})
         try:
-            who = None
-            if auth.enabled():
-                try:
-                    who = auth.verify(self.headers.get("Authorization"))
-                except auth.AuthError:
-                    return self._send(401, {"error": "unauthorized"})
-            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+            try:
+                who = self._who()
+            except auth.AuthError:
+                return self._send(401, {"error": "unauthorized"})
+            n = int(self.headers.get("Content-Length", 0))
+            if self.path == "/upload":
+                if n > docs.MAX_BYTES + 1024:
+                    return self._send(413, {"error": "file too large"})
+                return self._send(*handle_upload(self.headers, self.rfile.read(n), who))
+            body = json.loads(self.rfile.read(n) or b"{}")
+            if self.path.startswith("/doc/"):
+                return self._send(*handle_doc_update(self.path[len("/doc/"):], body, who))
             if self.path == "/consent":
                 return self._send(*handle_consent(body, who))
             if self.path == "/profile":

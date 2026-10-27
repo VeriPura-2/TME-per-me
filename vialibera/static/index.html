@@ -25,6 +25,7 @@ a{color:var(--accent)}
   <div class="bar">
     <button id="lang" aria-label="Language"></button>
     <button id="theme" aria-label="Theme"></button>
+    <button id="docsbtn" hidden></button>
     <button id="logout" hidden></button>
   </div>
 </header>
@@ -36,6 +37,14 @@ a{color:var(--accent)}
   <label><input type="checkbox" id="c2"> <span id="c2t"></span></label>
   <p class="muted" id="gate-ai"></p>
   <button id="accept" class="primary" disabled></button>
+</div>
+
+<div id="docs" class="card" hidden>
+  <h2 id="d-title"></h2>
+  <p class="muted" id="d-help"></p>
+  <input type="file" id="d-file" multiple accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.csv,.txt">
+  <label><input type="checkbox" id="d-proj"> <span id="d-projt"></span></label>
+  <div id="d-list"></div>
 </div>
 
 <div id="welcome" class="card" hidden>
@@ -71,7 +80,7 @@ const T = {
     c1: 'Ho letto e accetto le <a href="/terms?lang=it" target="_blank">Condizioni del servizio</a> e l\'<a href="/terms?lang=it#privacy" target="_blank">Informativa sulla privacy</a>.',
     c2: "Approvo specificamente, ai sensi degli artt. 1341 e 1342 c.c., le clausole indicate nelle Condizioni (limitazione di responsabilità, sospensione e cessazione, modifiche unilaterali, legge applicabile e foro competente).",
     ai: "Stai dialogando con un assistente basato su intelligenza artificiale. Le verifiche di conformità sono controllate da personale VeriPura prima della consegna.",
-    accept: "Accetto e continuo", err: "Errore: ", w_title: "Benvenuto in Via Libera", w_names: "Ti accompagna un export manager con intelligenza artificiale, scelto per te. Puoi cambiarlo quando vuoi.", p_suffix: "export manager con IA", p_switch: "Cambia export manager", w_style: "Come preferisci lavorare? (facoltativo)", s_brief: "Breve e diretto", s_steps: "Passo dopo passo, con spiegazioni", s_numbers: "Prima i numeri", w_back: "Bentornato. Riprendiamo da dove eravamo?",
+    accept: "Accetto e continuo", err: "Errore: ", d_btn: "Documenti", d_title: "I tuoi documenti", d_help: "Carica i documenti che usi spesso (PDF, immagini, Word, Excel; max 10 MB). Ti proponiamo dove archiviarli e tu confermi. Restano privati per la tua azienda.", d_proj: "Solo questo progetto", d_confirm: "Conferma", d_add: "Aggiungi al progetto", d_open: "Scarica", d_product: "Prodotto", d_market: "Mercato", d_valid: "Scade il", d_proposed: "Archiviazione proposta", d_empty: "Nessun documento.", d_dup: "Già presente.", w_title: "Benvenuto in Via Libera", w_names: "Ti accompagna un export manager con intelligenza artificiale, scelto per te. Puoi cambiarlo quando vuoi.", p_suffix: "export manager con IA", p_switch: "Cambia export manager", w_style: "Come preferisci lavorare? (facoltativo)", s_brief: "Breve e diretto", s_steps: "Passo dopo passo, con spiegazioni", s_numbers: "Prima i numeri", w_back: "Bentornato. Riprendiamo da dove eravamo?",
     w_can: "Puoi esplorare come esportare i tuoi prodotti alimentari, capire quali regole, documenti, etichette e dazi servono per un mercato, e ricevere un pacchetto di servizi con prezzi chiari.",
     w_expect: "Ti guida un assistente con intelligenza artificiale: una domanda alla volta, puoi saltarne quante vuoi, e non paghi nulla finché non approvi un pacchetto. Il personale VeriPura controlla le verifiche di conformità.",
     w_ask: "Che cosa vuoi esplorare per primo?",
@@ -88,7 +97,7 @@ const T = {
     c1: 'I have read and accept the <a href="/terms?lang=en" target="_blank">Terms of Service</a> and the <a href="/terms?lang=en#privacy" target="_blank">Privacy Notice</a>.',
     c2: "I specifically approve, under Articles 1341 and 1342 of the Italian Civil Code, the clauses listed in the Terms (limitation of liability, suspension and ending, changes to the terms, governing law and courts).",
     ai: "You are talking to an AI-based assistant. Compliance checks are reviewed by VeriPura staff before delivery.",
-    accept: "Accept and continue", err: "Error: ", w_title: "Welcome to Via Libera", w_names: "An AI export manager, chosen for you, will guide you. You can switch to someone else at any time.", p_suffix: "AI export manager", p_switch: "Meet someone else", w_style: "How would you like to work? (optional)", s_brief: "Brief and direct", s_steps: "Step by step, with explanations", s_numbers: "Numbers first", w_back: "Welcome back. Shall we pick up where we left off?",
+    accept: "Accept and continue", err: "Error: ", d_btn: "Documents", d_title: "Your documents", d_help: "Upload the documents you use often (PDF, images, Word, Excel; max 10 MB). We suggest where to file them and you confirm. They stay private to your company.", d_proj: "This project only", d_confirm: "Confirm", d_add: "Add to project", d_open: "Download", d_product: "Product", d_market: "Market", d_valid: "Expires", d_proposed: "Filing suggested", d_empty: "No documents.", d_dup: "Already uploaded.", w_title: "Welcome to Via Libera", w_names: "An AI export manager, chosen for you, will guide you. You can switch to someone else at any time.", p_suffix: "AI export manager", p_switch: "Meet someone else", w_style: "How would you like to work? (optional)", s_brief: "Brief and direct", s_steps: "Step by step, with explanations", s_numbers: "Numbers first", w_back: "Welcome back. Shall we pick up where we left off?",
     w_can: "You can explore how to export your food products, find out which rules, documents, labels and duties apply to a market, and get a package of services with clear prices.",
     w_expect: "An AI assistant guides you: one question at a time, you can skip as many as you like, and you pay nothing until you approve a package. VeriPura staff review compliance checks.",
     w_ask: "What would you like to explore first?",
@@ -116,7 +125,7 @@ function applyLang() {
   const t = T[lang];
   document.documentElement.lang = lang;
   $("lang").textContent = lang === "it" ? "EN" : "IT";
-  $("logout").textContent = t.signout; $("send").textContent = t.send; $("msg").placeholder = t.ph;
+  $("logout").textContent = t.signout; $("docsbtn").textContent = t.d_btn; $("send").textContent = t.send; $("msg").placeholder = t.ph;
   $("landing-t").textContent = t.landing; $("login").textContent = t.signin;
   $("gate-intro").textContent = t.gateIntro; $("c1t").innerHTML = t.c1; $("c2t").textContent = t.c2;
   $("gate-ai").textContent = t.ai; $("accept").textContent = t.accept;
@@ -148,7 +157,7 @@ applyLang();
   }
   const u = await client.getUser();
   ctx.email = u.email; applyLang();
-  $("logout").hidden = false;
+  $("logout").hidden = false; $("docsbtn").hidden = false;
   $("logout").onclick = () => client.logout({logoutParams: {returnTo: location.origin}});
   const call = async (path, body) => {
     const token = await client.getTokenSilently();
@@ -167,6 +176,45 @@ applyLang();
   let caseId = null;
   let pathType = 1;
   const add = (cls, t) => { const d = document.createElement("div"); d.className = cls; d.textContent = t; $("log").appendChild(d); };
+  // ---- documents
+  let types = [];
+  const tname = id => { const t = types.find(x => x.id === id); return t ? t[lang] : id; };
+  async function api(path, opt) {
+    const token = await client.getTokenSilently();
+    return fetch(path, {...opt, headers: {...(opt && opt.headers), "Authorization": "Bearer " + token}});
+  }
+  async function loadDocs() {
+    const q = $("d-proj").checked && caseId ? "?case=" + caseId : "";
+    const r = await api("/docs" + q); const j = await r.json(); types = j.types || [];
+    const t = T[lang], box = $("d-list"); box.innerHTML = "";
+    if (!(j.documents || []).length) { box.textContent = t.d_empty; return; }
+    j.documents.forEach(d => {
+      const row = document.createElement("div"); row.className = "card";
+      const title = document.createElement("div"); title.textContent = d.filename; title.style.fontWeight = "600"; row.appendChild(title);
+      if (d.status === "proposed") { const n = document.createElement("div"); n.className = "muted"; n.textContent = t.d_proposed; row.appendChild(n); }
+      const sel = document.createElement("select");
+      types.forEach(x => { const o = document.createElement("option"); o.value = x.id; o.textContent = x[lang]; if (x.id === d.doc_type) o.selected = true; sel.appendChild(o); });
+      const mk = (ph, v) => { const i = document.createElement("input"); i.type = "text"; i.placeholder = ph; i.value = v || ""; i.style.width = "28%"; i.style.margin = "0 6px 6px 0"; return i; };
+      const prod = mk(t.d_product, d.product), mkt = mk(t.d_market, d.market);
+      const val = document.createElement("input"); val.type = "date"; val.value = d.valid_until || ""; val.title = t.d_valid;
+      row.append(sel, " ", prod, mkt, val, document.createElement("br"));
+      const btn = (label, fn) => { const b = document.createElement("button"); b.textContent = label; b.style.marginRight = "6px"; b.onclick = fn; row.appendChild(b); };
+      const save = async confirm => { await api("/doc/" + d.id, {method: "POST", body: JSON.stringify({doc_type: sel.value, product: prod.value, market: mkt.value, valid_until: val.value, confirm})}); loadDocs(); };
+      if (d.status === "proposed") btn(t.d_confirm, () => save(true)); else btn("OK", () => save(false));
+      if (caseId) btn(t.d_add, async () => { await api("/doc/" + d.id, {method: "POST", body: JSON.stringify({link_case: caseId})}); loadDocs(); });
+      btn(t.d_open, async () => { const rr = await api("/doc/" + d.id); const bl = await rr.blob(); const a = document.createElement("a"); a.href = URL.createObjectURL(bl); a.download = d.filename; a.click(); });
+      box.appendChild(row);
+    });
+  }
+  $("docsbtn").onclick = () => { const p = $("docs"); p.hidden = !p.hidden; if (!p.hidden) { $("d-title").textContent = T[lang].d_title; $("d-help").textContent = T[lang].d_help; $("d-projt").textContent = T[lang].d_proj; loadDocs(); } };
+  $("d-proj").onchange = loadDocs;
+  $("d-file").onchange = async e => {
+    for (const f of e.target.files) {
+      const r = await api("/upload", {method: "POST", body: f, headers: {"X-Filename": encodeURIComponent(f.name), "X-Case": caseId || ""}});
+      if (!r.ok) { const j = await r.json(); add("bot", T[lang].err + f.name + ": " + (j.error || r.status)); }
+    }
+    e.target.value = ""; loadDocs();
+  };
   function setPersona(p) {
     if (!p) return;
     $("persona").textContent = p.name + ", " + T[lang].p_suffix + " ·";
