@@ -9,12 +9,37 @@ CREATE TABLE IF NOT EXISTS cases (
   id TEXT PRIMARY KEY,
   path_type INTEGER NOT NULL,          -- 1..4, see product flow spec section 2
   status TEXT NOT NULL DEFAULT 'draft',
-  org_id TEXT,                         -- owning company (Auth0 organization), NULL in dev
+  org_id TEXT,                         -- legacy Auth0 organization id
+  owner_sub TEXT,                      -- user who started the case
+  company_id TEXT,                     -- company record once the VAT number is known
   company TEXT NOT NULL DEFAULT '{}',  -- JSON
   product TEXT NOT NULL DEFAULT '{}',  -- JSON
   market TEXT NOT NULL DEFAULT '{}',   -- JSON
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS companies (
+  id TEXT PRIMARY KEY,
+  vat TEXT NOT NULL UNIQUE,            -- normalised, with country prefix
+  legal_name TEXT,
+  status TEXT NOT NULL DEFAULT 'unverified',
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS memberships (
+  company_id TEXT NOT NULL,
+  user_sub TEXT NOT NULL,
+  role TEXT NOT NULL,                  -- owner, member, reviewer
+  status TEXT NOT NULL DEFAULT 'active',  -- active, pending (access requested)
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (company_id, user_sub)
+);
+CREATE TABLE IF NOT EXISTS consents (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_sub TEXT NOT NULL,
+  terms_version TEXT NOT NULL,
+  lang TEXT NOT NULL,
+  onerous_clauses INTEGER NOT NULL,    -- 1 if the specific approval box was ticked
+  at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS items (
   id TEXT PRIMARY KEY,
@@ -111,7 +136,8 @@ def connect_pg(host, dbname, user, password):
     import psycopg2
     con = PG(psycopg2.connect(host=host, dbname=dbname, user=user, password=password))
     con.executescript(SCHEMA.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "BIGSERIAL PRIMARY KEY"))
-    con.execute("ALTER TABLE cases ADD COLUMN IF NOT EXISTS org_id TEXT")
+    for col in ("org_id", "owner_sub", "company_id"):
+        con.execute(f"ALTER TABLE cases ADD COLUMN IF NOT EXISTS {col} TEXT")
     con.commit()
     return con
 
@@ -122,11 +148,11 @@ def log_event(con, case_id, actor, kind, data=None):
     con.commit()
 
 
-def create_case(con, path_type, actor="agent", org_id=None):
+def create_case(con, path_type, actor="agent", org_id=None, owner_sub=None):
     cid = str(uuid.uuid4())
     t = now()
-    con.execute("INSERT INTO cases(id, path_type, org_id, created_at, updated_at) VALUES (?,?,?,?,?)",
-                (cid, path_type, org_id, t, t))
+    con.execute("INSERT INTO cases(id, path_type, org_id, owner_sub, created_at, updated_at) VALUES (?,?,?,?,?,?)",
+                (cid, path_type, org_id, owner_sub, t, t))
     log_event(con, cid, actor, "case_created", {"path_type": path_type})
     return cid
 

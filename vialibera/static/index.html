@@ -1,55 +1,147 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Via Libera</title>
 <style>
-body{font:16px/1.5 system-ui,sans-serif;max-width:720px;margin:0 auto;padding:16px;color:#1a1a1a}
-#log{border:1px solid #ddd;border-radius:8px;padding:12px;min-height:240px;margin:12px 0;white-space:pre-wrap}
-#opts button{margin:4px 6px 4px 0;border:1px solid #0b57d0;background:#fff;color:#0b57d0;border-radius:16px;cursor:pointer}
-.me{color:#0b57d0}.bot{color:#1a1a1a;margin-bottom:8px}
-input{width:75%;padding:8px}button{padding:8px 14px}
+:root{--bg:#fff;--fg:#1a1a1a;--muted:#5f6368;--line:#dadce0;--accent:#0b57d0;--card:#f6f8fc}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121212;--fg:#e8e8e8;--muted:#9aa0a6;--line:#3c4043;--accent:#8ab4f8;--card:#1e1f22}}
+:root[data-theme="dark"]{--bg:#121212;--fg:#e8e8e8;--muted:#9aa0a6;--line:#3c4043;--accent:#8ab4f8;--card:#1e1f22}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;max-width:720px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+h1{margin:0;font-size:1.5rem}
+.bar button{margin-left:6px}
+button{padding:8px 14px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;cursor:pointer}
+button.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+#log{border:1px solid var(--line);border-radius:8px;padding:12px;min-height:240px;margin:12px 0;white-space:pre-wrap;background:var(--card)}
+.me{color:var(--accent);margin-bottom:8px}.bot{margin-bottom:12px}
+#opts button{margin:4px 6px 4px 0;border-color:var(--accent);color:var(--accent);background:transparent;border-radius:16px}
+input[type=text]{width:calc(100% - 100px);padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.card{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--card);margin:12px 0}
+label{display:block;margin:10px 0}
+a{color:var(--accent)}
+.muted{color:var(--muted);font-size:.9rem}
 </style></head><body>
-<h1>Via Libera</h1>
-<p id="who"></p>
+<header>
+  <h1>Via Libera</h1>
+  <div class="bar">
+    <button id="lang" aria-label="Language"></button>
+    <button id="theme" aria-label="Theme"></button>
+    <button id="logout" hidden></button>
+  </div>
+</header>
+<p id="who" class="muted"></p>
+
+<div id="gate" class="card" hidden>
+  <p id="gate-intro"></p>
+  <label><input type="checkbox" id="c1"> <span id="c1t"></span></label>
+  <label><input type="checkbox" id="c2"> <span id="c2t"></span></label>
+  <p class="muted" id="gate-ai"></p>
+  <button id="accept" class="primary" disabled></button>
+</div>
+
 <div id="app" hidden>
   <div id="log"></div>
   <div id="opts"></div>
-  <input id="msg" placeholder="Tell us about your product and market" autocomplete="off">
-  <button id="send">Send</button>
+  <input type="text" id="msg" autocomplete="off">
+  <button id="send" class="primary"></button>
 </div>
-<button id="login" hidden>Sign in</button> <button id="logout" hidden>Sign out</button>
+<div id="landing" hidden class="card">
+  <p id="landing-t"></p>
+  <button id="login" class="primary"></button>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@auth0/auth0-spa-js@2.1.3/dist/auth0-spa-js.production.js"></script>
 <script>
+const T = {
+  it: {
+    signin: "Accedi / Registrati", signout: "Esci", send: "Invia", ph: "Racconta il tuo prodotto e il mercato",
+    signed: "Accesso come ", landing: "Il tuo export manager con intelligenza artificiale per i prodotti alimentari italiani.",
+    gateIntro: "Prima di iniziare, leggi e accetta le condizioni.",
+    c1: 'Ho letto e accetto le <a href="/terms?lang=it" target="_blank">Condizioni del servizio</a> e l\'<a href="/terms?lang=it#privacy" target="_blank">Informativa sulla privacy</a>.',
+    c2: "Approvo specificamente, ai sensi degli artt. 1341 e 1342 c.c., le clausole indicate nelle Condizioni (limitazione di responsabilità, recesso e sospensione, foro competente, legge applicabile).",
+    ai: "Stai dialogando con un assistente basato su intelligenza artificiale. Le verifiche di conformità sono controllate da personale VeriPura prima della consegna.",
+    accept: "Accetto e continuo", err: "Errore: ", account_created: "Account azienda creato dalla partita IVA.",
+    account_access: "Esiste già un'azienda con questa partita IVA. Abbiamo inviato una richiesta di accesso al titolare.",
+    account_invalid: "La partita IVA non risulta valida. Controlla il numero.", theme: ["Chiaro", "Scuro"]
+  },
+  en: {
+    signin: "Sign in / Sign up", signout: "Sign out", send: "Send", ph: "Tell us about your product and market",
+    signed: "Signed in as ", landing: "Your AI export manager for Italian food products.",
+    gateIntro: "Before we start, please read and accept the terms.",
+    c1: 'I have read and accept the <a href="/terms?lang=en" target="_blank">Terms of Service</a> and the <a href="/terms?lang=en#privacy" target="_blank">Privacy Notice</a>.',
+    c2: "I specifically approve, under Articles 1341 and 1342 of the Italian Civil Code, the clauses listed in the Terms (limitation of liability, withdrawal and suspension, jurisdiction, governing law).",
+    ai: "You are talking to an AI-based assistant. Compliance checks are reviewed by VeriPura staff before delivery.",
+    accept: "Accept and continue", err: "Error: ", account_created: "Company account created from your VAT number.",
+    account_access: "A company with this VAT number already exists. We sent an access request to its owner.",
+    account_invalid: "This VAT number does not look valid. Please check it.", theme: ["Light", "Dark"]
+  }
+};
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+};
+let lang = store.get("vl_lang", "it");
+let theme = store.get("vl_theme", "");
+let ctx = {};
+function applyTheme() {
+  if (theme) document.documentElement.setAttribute("data-theme", theme); else document.documentElement.removeAttribute("data-theme");
+  const dark = theme ? theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  $("theme").textContent = dark ? T[lang].theme[0] : T[lang].theme[1];
+}
+function applyLang() {
+  const t = T[lang];
+  document.documentElement.lang = lang;
+  $("lang").textContent = lang === "it" ? "EN" : "IT";
+  $("logout").textContent = t.signout; $("send").textContent = t.send; $("msg").placeholder = t.ph;
+  $("landing-t").textContent = t.landing; $("login").textContent = t.signin;
+  $("gate-intro").textContent = t.gateIntro; $("c1t").innerHTML = t.c1; $("c2t").textContent = t.c2;
+  $("gate-ai").textContent = t.ai; $("accept").textContent = t.accept;
+  if (ctx.email) $("who").textContent = t.signed + ctx.email;
+  applyTheme();
+}
+$("lang").onclick = () => { lang = lang === "it" ? "en" : "it"; store.set("vl_lang", lang); applyLang(); };
+$("theme").onclick = () => {
+  const dark = theme ? theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  theme = dark ? "light" : "dark"; store.set("vl_theme", theme); applyTheme();
+};
+["c1", "c2"].forEach(id => $(id).onchange = () => $("accept").disabled = !($("c1").checked && $("c2").checked));
+applyLang();
+
 (async () => {
   const cfg = await (await fetch("/config.json")).json();
   const client = await auth0.createAuth0Client({
     domain: cfg.domain, clientId: cfg.client_id,
-    authorizationParams: {audience: cfg.audience, redirect_uri: location.origin}});
+    authorizationParams: {audience: cfg.audience, redirect_uri: location.origin, ui_locales: lang}});
   const q = new URLSearchParams(location.search);
   if (q.has("code") && q.has("state")) {
     await client.handleRedirectCallback();
     history.replaceState({}, "", "/");
   }
-  const $ = id => document.getElementById(id);
   if (!(await client.isAuthenticated())) {
-    $("login").hidden = false;
-    $("login").onclick = () => client.loginWithRedirect({authorizationParams: {organization: q.get("org") || cfg.default_org}});
+    $("landing").hidden = false;
+    $("login").onclick = () => client.loginWithRedirect({authorizationParams: {ui_locales: lang}});
     return;
   }
   const u = await client.getUser();
-  $("who").textContent = "Signed in as " + u.email;
-  $("app").hidden = false; $("logout").hidden = false;
+  ctx.email = u.email; applyLang();
+  $("logout").hidden = false;
   $("logout").onclick = () => client.logout({logoutParams: {returnTo: location.origin}});
+  const call = async (path, body) => {
+    const token = await client.getTokenSilently();
+    const r = await fetch(path, {method: "POST", headers: {"Authorization": "Bearer " + token, "Content-Type": "application/json"}, body: JSON.stringify(body)});
+    return [r, await r.json()];
+  };
+  const me = (await call("/me", {}))[1];
+  if (!me.consent) {
+    $("gate").hidden = false;
+    await new Promise(res => $("accept").onclick = async () => {
+      const [r] = await call("/consent", {accept_terms: true, accept_onerous: true, lang});
+      if (r.ok) { $("gate").hidden = true; res(); }
+    });
+  }
+  $("app").hidden = false;
   let caseId = null;
   const add = (cls, t) => { const d = document.createElement("div"); d.className = cls; d.textContent = t; $("log").appendChild(d); };
-  async function send(text) {
-    const m = (typeof text === "string" ? text : $("msg").value).trim(); if (!m) return;
-    $("msg").value = ""; $("opts").innerHTML = ""; add("me", m);
-    const token = await client.getTokenSilently();
-    const r = await fetch("/chat", {method: "POST", headers: {"Authorization": "Bearer " + token, "Content-Type": "application/json"},
-      body: JSON.stringify({message: m, case_id: caseId})});
-    const j = await r.json();
-    if (r.ok) { caseId = j.case_id; show(j.reply); } else add("bot", "Error: " + (j.error || r.status));
-  }
   function show(reply) {
     const lines = reply.trimEnd().split("\n");
     const last = lines[lines.length - 1];
@@ -57,12 +149,22 @@ input{width:75%;padding:8px}button{padding:8px 14px}
       add("bot", lines.slice(0, -1).join("\n").trim());
       last.slice(8).split("|").map(x => x.trim()).filter(Boolean).forEach(o => {
         const b = document.createElement("button"); b.textContent = o;
-        b.onclick = () => /^something else/i.test(o) ? $("msg").focus() : send(o);
+        b.onclick = () => /^(something else|altro|qualcos'altro)/i.test(o) ? $("msg").focus() : send(o);
         $("opts").appendChild(b);
       });
     } else add("bot", reply);
   }
+  async function send(text) {
+    const m = (typeof text === "string" ? text : $("msg").value).trim(); if (!m) return;
+    $("msg").value = ""; $("opts").innerHTML = ""; add("me", m);
+    const [r, j] = await call("/chat", {message: m, case_id: caseId, lang});
+    if (r.ok) {
+      caseId = j.case_id; show(j.reply);
+      if (j.account) { const k = {created: "account_created", access_requested: "account_access", invalid_vat: "account_invalid"}[j.account.status]; if (k) add("bot", "ℹ " + T[lang][k]); }
+    } else add("bot", T[lang].err + (j.error || r.status));
+  }
   $("send").onclick = () => send();
   $("msg").onkeydown = e => { if (e.key === "Enter") send(); };
+  send(lang === "it" ? "Ciao, vorrei iniziare." : "Hello, I would like to start.");
 })();
 </script></body></html>

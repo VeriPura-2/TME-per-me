@@ -36,13 +36,16 @@ class AuthTest(unittest.TestCase):
 
     def test_rejects(self):
         for bad in (None, "Bearer x", tok(key=OTHER), tok(exp=int(time.time()) - 5),
-                    tok(aud="nope"), tok(iss="https://evil/"), tok(org_id=None)):
+                    tok(aud="nope"), tok(iss="https://evil/")):
             with self.assertRaises(auth.AuthError):
                 auth.verify(bad, kf)
 
     def test_company_isolation(self):
         a = {"user": "u1", "org": "org_a", "roles": []}
         b = {"user": "u2", "org": "org_b", "roles": []}
+        from vialibera import accounts
+        for w in (a, b):
+            accounts.record_consent(app.con(), w["user"], app.TERMS_VERSION, "it", True)
         _, out = app.handle_chat({"message": "hi"}, llm=Fake(), who=a)
         self.assertEqual(app.handle_chat({"message": "x", "case_id": out["case_id"]}, llm=Fake(), who=a)[0], 200)
         self.assertEqual(app.handle_chat({"message": "x", "case_id": out["case_id"]}, llm=Fake(), who=b)[0], 404)

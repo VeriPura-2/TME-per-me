@@ -1,6 +1,6 @@
 """Verify Auth0 access tokens (EU tenant). Active only when AUTH0_DOMAIN is set.
 
-Claims used: sub (user), org_id (company, set by Auth0 Organizations),
+Claims used: sub (user), org_id (optional, legacy Auth0 Organizations),
 and a roles claim under AUTH0_ROLES_CLAIM (default https://vialibera/roles).
 """
 import os
@@ -38,8 +38,6 @@ def verify(authorization, key_for=None):
                             options={"require": ["exp", "iss", "aud", "sub"]})
     except Exception as e:
         raise AuthError(type(e).__name__)
-    org = claims.get("org_id")
-    if not org:
-        raise AuthError("no organization")
+    org = claims.get("org_id")  # optional: companies are tracked in our own database
     roles = claims.get(os.environ.get("AUTH0_ROLES_CLAIM", "https://vialibera/roles"), [])
     return {"user": claims["sub"], "org": org, "roles": roles}

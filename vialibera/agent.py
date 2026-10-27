@@ -61,12 +61,15 @@ def run_tool(con, case_id, menu, name, args):
     return {"error": f"unknown tool {name}"}
 
 
-def turn(client, con, case_id, menu, history, user_text, max_steps=8):
+def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it"):
     """One client message in, one agent reply out. history is a list of API messages (mutated)."""
     history.append({"role": "user", "content": user_text})
     db.log_event(con, case_id, "client", "message", {"text": user_text})
     for _ in range(max_steps):
-        note = fields.prompt_note(db.case_read(con, case_id))
+        note = fields.prompt_note(db.case_read(con, case_id)) + (
+            " Interface language: " + ("Italian. Write every message and every OPTIONS line in Italian"
+                                       if lang == "it" else "English. Write every message and every OPTIONS line in English")
+            + ", unless the client writes in another language, then follow the client.")
         resp = client.messages.create(model=MODEL, max_tokens=1024, system=SYSTEM + "\n\n" + note,
                                       tools=TOOLS, messages=history)
         history.append({"role": "assistant", "content": [b.model_dump() for b in resp.content]})
