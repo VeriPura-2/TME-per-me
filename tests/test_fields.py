@@ -13,7 +13,7 @@ def case(**kw):
 class FieldsTest(unittest.TestCase):
     def test_first_missing_is_company_name(self):
         a, t, m, u = fields.status(case())
-        self.assertEqual((a, m[0][1]), (0, "legal_name"))
+        self.assertEqual((a, m[0][1]), (0, "category"))
 
     def test_category_extras_appear_only_when_known(self):
         base = fields.status(case())[1]
@@ -37,3 +37,19 @@ class FieldsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DeferTest(unittest.TestCase):
+    def test_later_is_not_blocking_and_company_is_last(self):
+        c = case(product__category="pasta", product__name_brand="later")
+        note = fields.prompt_note(c)
+        self.assertIn("key=country", note)
+        self.assertIn("name_brand", note)
+        keys = [k for _, k, _, _ in fields.applicable(case())]
+        self.assertGreater(keys.index("legal_name"), keys.index("country"))
+
+    def test_only_deferred_left(self):
+        c = case()
+        for sec, key, *_ in fields.applicable(c):
+            c[sec][key] = "later"
+        self.assertIn("Do not push", fields.prompt_note(c))
