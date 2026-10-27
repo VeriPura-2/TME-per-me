@@ -38,6 +38,14 @@ a{color:var(--accent)}
   <button id="accept" class="primary" disabled></button>
 </div>
 
+<div id="welcome" class="card" hidden>
+  <h2 id="w-title"></h2>
+  <p id="w-can"></p>
+  <p id="w-expect"></p>
+  <p><strong id="w-ask"></strong></p>
+  <div id="w-opts"></div>
+</div>
+
 <div id="app" hidden>
   <div id="log"></div>
   <div id="opts"></div>
@@ -59,7 +67,13 @@ const T = {
     c1: 'Ho letto e accetto le <a href="/terms?lang=it" target="_blank">Condizioni del servizio</a> e l\'<a href="/terms?lang=it#privacy" target="_blank">Informativa sulla privacy</a>.',
     c2: "Approvo specificamente, ai sensi degli artt. 1341 e 1342 c.c., le clausole indicate nelle Condizioni (limitazione di responsabilità, sospensione e cessazione, modifiche unilaterali, legge applicabile e foro competente).",
     ai: "Stai dialogando con un assistente basato su intelligenza artificiale. Le verifiche di conformità sono controllate da personale VeriPura prima della consegna.",
-    accept: "Accetto e continuo", err: "Errore: ", account_created: "Account azienda creato dalla partita IVA.",
+    accept: "Accetto e continuo", err: "Errore: ", w_title: "Benvenuto in Via Libera", w_back: "Bentornato. Riprendiamo da dove eravamo?",
+    w_can: "Puoi esplorare come esportare i tuoi prodotti alimentari, capire quali regole, documenti, etichette e dazi servono per un mercato, e ricevere un pacchetto di servizi con prezzi chiari.",
+    w_expect: "Ti guida un assistente con intelligenza artificiale: una domanda alla volta, puoi saltarne quante vuoi, e non paghi nulla finché non approvi un pacchetto. Il personale VeriPura controlla le verifiche di conformità.",
+    w_ask: "Che cosa vuoi esplorare per primo?",
+    w_first: "Esportare per la prima volta", w_market: "Un nuovo mercato per un prodotto che ho già", w_product: "Un nuovo prodotto per un mercato che già servo",
+    w_req: "Cosa serve per un prodotto e un paese", w_q: "Ho una domanda", w_continue: "Riprendi la mia pratica", w_new: "Inizia una nuova pratica",
+    account_created: "Account azienda creato dalla partita IVA.",
     account_access: "Esiste già un'azienda con questa partita IVA. Abbiamo inviato una richiesta di accesso al titolare.",
     account_invalid: "La partita IVA non risulta valida. Controlla il numero.", theme: ["Chiaro", "Scuro"]
   },
@@ -70,7 +84,13 @@ const T = {
     c1: 'I have read and accept the <a href="/terms?lang=en" target="_blank">Terms of Service</a> and the <a href="/terms?lang=en#privacy" target="_blank">Privacy Notice</a>.',
     c2: "I specifically approve, under Articles 1341 and 1342 of the Italian Civil Code, the clauses listed in the Terms (limitation of liability, suspension and ending, changes to the terms, governing law and courts).",
     ai: "You are talking to an AI-based assistant. Compliance checks are reviewed by VeriPura staff before delivery.",
-    accept: "Accept and continue", err: "Error: ", account_created: "Company account created from your VAT number.",
+    accept: "Accept and continue", err: "Error: ", w_title: "Welcome to Via Libera", w_back: "Welcome back. Shall we pick up where we left off?",
+    w_can: "You can explore how to export your food products, find out which rules, documents, labels and duties apply to a market, and get a package of services with clear prices.",
+    w_expect: "An AI assistant guides you: one question at a time, you can skip as many as you like, and you pay nothing until you approve a package. VeriPura staff review compliance checks.",
+    w_ask: "What would you like to explore first?",
+    w_first: "Exporting for the first time", w_market: "A new market for a product I already have", w_product: "A new product for a market I already serve",
+    w_req: "What is needed for one product and country", w_q: "I have a question", w_continue: "Continue my case", w_new: "Start a new case",
+    account_created: "Company account created from your VAT number.",
     account_access: "A company with this VAT number already exists. We sent an access request to its owner.",
     account_invalid: "This VAT number does not look valid. Please check it.", theme: ["Light", "Dark"]
   }
@@ -141,6 +161,7 @@ applyLang();
   }
   $("app").hidden = false;
   let caseId = null;
+  let pathType = 1;
   const add = (cls, t) => { const d = document.createElement("div"); d.className = cls; d.textContent = t; $("log").appendChild(d); };
   function show(reply) {
     const lines = reply.trimEnd().split("\n");
@@ -157,7 +178,7 @@ applyLang();
   async function send(text) {
     const m = (typeof text === "string" ? text : $("msg").value).trim(); if (!m) return;
     $("msg").value = ""; $("opts").innerHTML = ""; add("me", m);
-    const [r, j] = await call("/chat", {message: m, case_id: caseId, lang});
+    const [r, j] = await call("/chat", {message: m, case_id: caseId, lang, path_type: pathType});
     if (r.ok) {
       caseId = j.case_id; show(j.reply);
       if (j.account) { const k = {created: "account_created", access_requested: "account_access", invalid_vat: "account_invalid"}[j.account.status]; if (k) add("bot", "ℹ " + T[lang][k]); }
@@ -165,6 +186,24 @@ applyLang();
   }
   $("send").onclick = () => send();
   $("msg").onkeydown = e => { if (e.key === "Enter") send(); };
-  send(lang === "it" ? "Ciao, vorrei iniziare." : "Hello, I would like to start.");
+  function welcome() {
+    const t = T[lang];
+    $("w-title").textContent = me.latest_case ? t.w_back : t.w_title;
+    $("w-can").textContent = t.w_can; $("w-expect").textContent = t.w_expect; $("w-ask").textContent = t.w_ask;
+    const box = $("w-opts"); box.innerHTML = "";
+    const go = (label, path, text, resume) => {
+      const b = document.createElement("button"); b.textContent = label; b.style.margin = "4px 6px 4px 0";
+      b.onclick = () => { pathType = path; if (resume) caseId = me.latest_case; $("welcome").hidden = true; $("app").hidden = false; send(text); };
+      box.appendChild(b);
+    };
+    if (me.latest_case) go(t.w_continue, 2, lang === "it" ? "Riprendiamo la mia pratica." : "Let us continue my case.", true);
+    go(t.w_first, 1, lang === "it" ? "Vorrei esportare per la prima volta." : "I would like to export for the first time.");
+    go(t.w_market, 3, lang === "it" ? "Vorrei valutare un nuovo mercato per un prodotto che ho già." : "I want to evaluate a new market for a product I already have.");
+    go(t.w_product, 4, lang === "it" ? "Vorrei esportare un nuovo prodotto in un mercato che già servo." : "I want to export a new product to a market I already serve.");
+    go(t.w_req, 1, lang === "it" ? "Vorrei sapere cosa serve per un prodotto e un paese." : "I would like to know what is needed for one product and country.");
+    go(t.w_q, 1, lang === "it" ? "Ho una domanda." : "I have a question.");
+    $("app").hidden = true; $("welcome").hidden = false;
+  }
+  welcome();
 })();
 </script></body></html>

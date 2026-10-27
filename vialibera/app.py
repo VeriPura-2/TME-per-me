@@ -125,7 +125,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_consent(body, who))
             if self.path == "/me":
                 ok = bool(who) and accounts.has_consent(con(), who["user"], TERMS_VERSION)
-                return self._send(200, {"consent": ok or not who, "terms_version": TERMS_VERSION})
+                latest = None
+                if who:
+                    r = con().execute("SELECT id FROM cases WHERE owner_sub=? ORDER BY created_at DESC LIMIT 1",
+                                      (who["user"],)).fetchone()
+                    latest = r["id"] if r else None
+                return self._send(200, {"consent": ok or not who, "terms_version": TERMS_VERSION,
+                                        "latest_case": latest})
             self._send(*handle_chat(body, who=who))
         except Exception as e:  # keep the service up, report a typed error
             self._send(500, {"error": type(e).__name__})
