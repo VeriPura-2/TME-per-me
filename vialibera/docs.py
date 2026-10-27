@@ -148,3 +148,18 @@ def listing(con, who, case_id=None, product=None, doc_type=None):
     rows = con.execute(sql + " ORDER BY d.created_at DESC", tuple(args)).fetchall()
     return [{k: r[k] for k in ("id", "title", "filename", "mime", "size", "doc_type", "product", "market",
                                "valid_until", "status", "created_at")} for r in rows]
+
+
+def summary_for_case(con, case_id, limit=20):
+    """Short text list for the agent: names and filing only, never file contents."""
+    case = con.execute("SELECT owner_sub, company_id FROM cases WHERE id=?", (case_id,)).fetchone()
+    if case is None:
+        return ""
+    rows = con.execute(
+        "SELECT d.filename, d.doc_type, d.product, d.market, d.status, "
+        "(SELECT 1 FROM project_docs p WHERE p.document_id=d.id AND p.case_id=?) AS linked "
+        "FROM documents d WHERE d.owner_sub=? OR (d.company_id IS NOT NULL AND d.company_id=?) "
+        "ORDER BY d.created_at DESC LIMIT ?", (case_id, case["owner_sub"] or "", case["company_id"] or "", limit)).fetchall()
+    return "; ".join(f"{r['filename']} ({r['doc_type'] or 'other'}"
+                     f"{', ' + r['product'] if r['product'] else ''}{', ' + r['market'] if r['market'] else ''}, "
+                     f"{'in this project' if r['linked'] else 'library'}, {r['status']})" for r in rows)

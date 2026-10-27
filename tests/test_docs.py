@@ -68,3 +68,16 @@ class DocsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SummaryTest(unittest.TestCase):
+    def test_summary_lists_names_not_contents(self):
+        accounts.record_consent(app.con(), "s1", app.TERMS_VERSION, "it", True)
+        w = who("s1")
+        cid = db.create_case(app.con(), 1, owner_sub="s1")
+        _, out = docs.upload(app.con(), w, "etichetta_barolo.pdf", PDF + b"summ", product="Barolo")
+        docs.link(app.con(), w, cid, out["id"])
+        t = docs.summary_for_case(app.con(), cid)
+        self.assertIn("etichetta_barolo.pdf", t)
+        self.assertIn("in this project", t)
+        self.assertNotIn("%PDF", t)

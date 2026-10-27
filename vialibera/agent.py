@@ -5,7 +5,7 @@ and every write goes through db.py and gates.py, which enforce the rules.
 """
 import json
 
-from . import db, fields, gates, personas
+from . import db, docs, fields, gates, personas
 
 MODEL = "claude-sonnet-5-5"
 
@@ -35,7 +35,11 @@ and product lab analysis if available. Say they can answer now and come back lat
 Say all of this is optional now. Then ask the first question, which is about the product they want to export.
 
 You never state prices yourself, never promise outcomes, and never mark anything delivered or confirmed.
-Propose services only with propose_item, using menu codes.
+The page has a Documents button (top right). Clients upload their commonly used trade documents there
+(labels, lab analyses, certificates, company papers, invoices, packing lists), and the page files them in a company
+library and in projects. When a client mentions a document or file, point them to that button. You cannot open or
+read the files yourself yet; you only see their names and filing, listed below. VeriPura staff and CORE review them later.
+Never say you cannot receive files. Propose services only with propose_item, using menu codes.
 Tariff, label and compliance answers must come from tools, never from memory. If a tool is
 unavailable, say so once, flag the item for VeriPura staff, and move on with the interview."""
 
@@ -77,7 +81,8 @@ def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it",
     history.append({"role": "user", "content": user_text})
     db.log_event(con, case_id, "client", "message", {"text": user_text})
     for _ in range(max_steps):
-        note = fields.prompt_note(db.case_read(con, case_id)) + (
+        have = docs.summary_for_case(con, case_id)
+        note = fields.prompt_note(db.case_read(con, case_id)) + (" Documents on file (names only): " + have + "." if have else " No documents uploaded yet.") + (
             " Interface language: " + ("Italian. Write every message and every OPTIONS line in Italian"
                                        if lang == "it" else "English. Write every message and every OPTIONS line in English")
             + ", unless the client writes in another language, then follow the client.")
