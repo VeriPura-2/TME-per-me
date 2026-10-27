@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS cases (
   id TEXT PRIMARY KEY,
   path_type INTEGER NOT NULL,          -- 1..4, see product flow spec section 2
   status TEXT NOT NULL DEFAULT 'draft',
+  org_id TEXT,                         -- owning company (Auth0 organization), NULL in dev
   company TEXT NOT NULL DEFAULT '{}',  -- JSON
   product TEXT NOT NULL DEFAULT '{}',  -- JSON
   market TEXT NOT NULL DEFAULT '{}',   -- JSON
@@ -110,6 +111,8 @@ def connect_pg(host, dbname, user, password):
     import psycopg2
     con = PG(psycopg2.connect(host=host, dbname=dbname, user=user, password=password))
     con.executescript(SCHEMA.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "BIGSERIAL PRIMARY KEY"))
+    con.execute("ALTER TABLE cases ADD COLUMN IF NOT EXISTS org_id TEXT")
+    con.commit()
     return con
 
 
@@ -119,11 +122,11 @@ def log_event(con, case_id, actor, kind, data=None):
     con.commit()
 
 
-def create_case(con, path_type, actor="agent"):
+def create_case(con, path_type, actor="agent", org_id=None):
     cid = str(uuid.uuid4())
     t = now()
-    con.execute("INSERT INTO cases(id, path_type, created_at, updated_at) VALUES (?,?,?,?)",
-                (cid, path_type, t, t))
+    con.execute("INSERT INTO cases(id, path_type, org_id, created_at, updated_at) VALUES (?,?,?,?,?)",
+                (cid, path_type, org_id, t, t))
     log_event(con, cid, actor, "case_created", {"path_type": path_type})
     return cid
 

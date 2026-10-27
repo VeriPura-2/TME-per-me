@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import anthropic
 
-from . import agent, db
+from . import agent, auth, db
 from .menu import MENU
 from .secrets import get_secret
 
@@ -36,12 +36,19 @@ def con():
     return CON
 
 
-def handle_chat(body, llm=None):
+def handle_chat(body, llm=None, who=None):
     msg = (body.get("message") or "").strip()
     if not msg:
         return 400, {"error": "message required"}
     c = con()
-    cid = body.get("case_id") or db.create_case(c, int(body.get("path_type", 1)))
+    org = who["org"] if who else None
+    cid = body.get("case_id")
+    if cid:
+        row = c.execute("SELECT org_id FROM cases WHERE id=?", (cid,)).fetchone()
+        if row is None or (who and row["org_id"] != org):
+            return 404, {"error": "case not found"}  # same answer for other companies' cases
+    else:
+        cid = db.create_case(c, int(body.get("path_type", 1)), org_id=org)
     history = db.load_history(c, cid)
     reply = agent.turn(llm or client(), c, cid, MENU, history, msg)
     db.save_history(c, cid, history)
@@ -56,8 +63,14 @@ class Handler(BaseHTTPRequestHandler):
         if self.path != "/chat":
             return self._send(404, {})
         try:
+            who = None
+            if auth.enabled():
+                try:
+                    who = auth.verify(self.headers.get("Authorization"))
+                except auth.AuthError:
+                    return self._send(401, {"error": "unauthorized"})
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
-            self._send(*handle_chat(body))
+            self._send(*handle_chat(body, who=who))
         except Exception as e:  # keep the service up, report a typed error
             self._send(500, {"error": type(e).__name__})
 

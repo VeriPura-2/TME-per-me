@@ -1,3 +1,4 @@
 anthropic
 google-cloud-secret-manager
 psycopg2-binary
+PyJWT[crypto]
