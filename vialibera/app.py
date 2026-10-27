@@ -57,7 +57,22 @@ def handle_chat(body, llm=None, who=None):
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        self._send(200, {"ok": True}) if self.path == "/healthz" else self._send(404, {})
+        path = self.path.split("?")[0]
+        if path == "/healthz":
+            return self._send(200, {"ok": True})
+        if path == "/config.json":  # public values only
+            return self._send(200, {"domain": os.environ.get("AUTH0_DOMAIN", ""),
+                                    "client_id": os.environ.get("AUTH0_CLIENT_ID", ""),
+                                    "audience": os.environ.get("AUTH0_AUDIENCE", ""),
+                                    "default_org": os.environ.get("AUTH0_DEFAULT_ORG", "")})
+        if path == "/":
+            data = open(os.path.join(os.path.dirname(__file__), "static", "index.html"), "rb").read()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            return self.wfile.write(data)
+        self._send(404, {})
 
     def do_POST(self):
         if self.path != "/chat":

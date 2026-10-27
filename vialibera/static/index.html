@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Via Libera</title>
+<style>
+body{font:16px/1.5 system-ui,sans-serif;max-width:720px;margin:0 auto;padding:16px;color:#1a1a1a}
+#log{border:1px solid #ddd;border-radius:8px;padding:12px;min-height:240px;margin:12px 0;white-space:pre-wrap}
+.me{color:#0b57d0}.bot{color:#1a1a1a;margin-bottom:8px}
+input{width:75%;padding:8px}button{padding:8px 14px}
+</style></head><body>
+<h1>Via Libera</h1>
+<p id="who"></p>
+<div id="app" hidden>
+  <div id="log"></div>
+  <input id="msg" placeholder="Tell us about your product and market" autocomplete="off">
+  <button id="send">Send</button>
+</div>
+<button id="login" hidden>Sign in</button> <button id="logout" hidden>Sign out</button>
+<script src="https://cdn.jsdelivr.net/npm/@auth0/auth0-spa-js@2.1.3/dist/auth0-spa-js.production.js"></script>
+<script>
+(async () => {
+  const cfg = await (await fetch("/config.json")).json();
+  const client = await auth0.createAuth0Client({
+    domain: cfg.domain, clientId: cfg.client_id,
+    authorizationParams: {audience: cfg.audience, redirect_uri: location.origin}});
+  const q = new URLSearchParams(location.search);
+  if (q.has("code") && q.has("state")) {
+    await client.handleRedirectCallback();
+    history.replaceState({}, "", "/");
+  }
+  const $ = id => document.getElementById(id);
+  if (!(await client.isAuthenticated())) {
+    $("login").hidden = false;
+    $("login").onclick = () => client.loginWithRedirect({authorizationParams: {organization: q.get("org") || cfg.default_org}});
+    return;
+  }
+  const u = await client.getUser();
+  $("who").textContent = "Signed in as " + u.email;
+  $("app").hidden = false; $("logout").hidden = false;
+  $("logout").onclick = () => client.logout({logoutParams: {returnTo: location.origin}});
+  let caseId = null;
+  const add = (cls, t) => { const d = document.createElement("div"); d.className = cls; d.textContent = t; $("log").appendChild(d); };
+  async function send() {
+    const m = $("msg").value.trim(); if (!m) return;
+    $("msg").value = ""; add("me", m);
+    const token = await client.getTokenSilently();
+    const r = await fetch("/chat", {method: "POST", headers: {"Authorization": "Bearer " + token, "Content-Type": "application/json"},
+      body: JSON.stringify({message: m, case_id: caseId})});
+    const j = await r.json();
+    if (r.ok) { caseId = j.case_id; add("bot", j.reply); } else add("bot", "Error: " + (j.error || r.status));
+  }
+  $("send").onclick = send;
+  $("msg").onkeydown = e => { if (e.key === "Enter") send(); };
+})();
+</script></body></html>
