@@ -49,6 +49,11 @@ CREATE TABLE IF NOT EXISTS usage_events (
   units REAL NOT NULL,
   cost_cents REAL NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS histories (
+  case_id TEXT PRIMARY KEY,
+  data TEXT NOT NULL,                  -- JSON list of API messages
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS raw_responses (
   ref TEXT PRIMARY KEY,
   at TEXT NOT NULL,
@@ -143,3 +148,15 @@ def case_write(con, case_id, section, fields, actor="agent"):
                 (json.dumps(cur, ensure_ascii=False), now(), case_id))
     log_event(con, case_id, actor, "case_updated", {"section": section, "fields": fields})
     return cur
+
+
+def load_history(con, case_id):
+    row = con.execute("SELECT data FROM histories WHERE case_id=?", (case_id,)).fetchone()
+    return json.loads(row["data"]) if row else []
+
+
+def save_history(con, case_id, history):
+    con.execute("INSERT INTO histories(case_id, data, updated_at) VALUES (?,?,?) "
+                "ON CONFLICT (case_id) DO UPDATE SET data=excluded.data, updated_at=excluded.updated_at",
+                (case_id, json.dumps(history, default=str, ensure_ascii=False), now()))
+    con.commit()

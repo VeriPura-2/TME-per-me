@@ -22,6 +22,13 @@ class AppTest(unittest.TestCase):
         code2, out2 = app.handle_chat({"message": "again", "case_id": out["case_id"]}, llm=Fake())
         self.assertEqual(out2["case_id"], out["case_id"])
 
+    def test_history_persists_between_turns(self):
+        _, out = app.handle_chat({"message": "first"}, llm=Fake())
+        app.handle_chat({"message": "second", "case_id": out["case_id"]}, llm=Fake())
+        from vialibera import db
+        h = db.load_history(app.con(), out["case_id"])
+        self.assertEqual([m["role"] for m in h], ["user", "assistant", "user", "assistant"])
+
     def test_empty_message_rejected(self):
         self.assertEqual(app.handle_chat({"message": " "}, llm=Fake())[0], 400)
 

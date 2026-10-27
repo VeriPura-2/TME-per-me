@@ -14,7 +14,6 @@ from .menu import MENU
 from .secrets import get_secret
 
 CON = None
-HISTORY = {}
 _client = None
 
 
@@ -43,7 +42,9 @@ def handle_chat(body, llm=None):
         return 400, {"error": "message required"}
     c = con()
     cid = body.get("case_id") or db.create_case(c, int(body.get("path_type", 1)))
-    reply = agent.turn(llm or client(), c, cid, MENU, HISTORY.setdefault(cid, []), msg)
+    history = db.load_history(c, cid)
+    reply = agent.turn(llm or client(), c, cid, MENU, history, msg)
+    db.save_history(c, cid, history)
     return 200, {"case_id": cid, "reply": reply}
 
 
