@@ -62,7 +62,8 @@ class Adapters(unittest.TestCase):
         self.con = db.connect()
 
     def test_envelope_fields_and_logging(self):
-        a = UKTradeTariff(http=lambda url: json.dumps({"ok": True}))
+        fixture = open("tests/fixtures/uk_1902199090.json").read()
+        a = UKTradeTariff(http=lambda url: fixture)
         out = a.call(self.con, "fetch", commodity_code="1902199090")
         for k in ("source", "retrieved_at", "provider_version", "confidence", "raw_ref"):
             self.assertIn(k, out)
