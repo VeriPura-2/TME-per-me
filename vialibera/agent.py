@@ -67,6 +67,16 @@ def run_tool(con, case_id, menu, name, args):
     return {"error": f"unknown tool {name}"}
 
 
+PERSONAS = {
+    "cosimo": "You are Cosimo, the AI export manager for first-time exporters: calm, methodical, you bring order step by step.",
+    "chiara": "You are Chiara, the AI export manager for exporters expanding to new markets: clear, practical, reassuring.",
+}
+
+
+def persona_for(path_type):
+    return "chiara" if int(path_type or 1) in (3, 4) else "cosimo"
+
+
 def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it"):
     """One client message in, one agent reply out. history is a list of API messages (mutated)."""
     history.append({"role": "user", "content": user_text})
@@ -76,7 +86,7 @@ def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it")
             " Interface language: " + ("Italian. Write every message and every OPTIONS line in Italian"
                                        if lang == "it" else "English. Write every message and every OPTIONS line in English")
             + ", unless the client writes in another language, then follow the client.")
-        resp = client.messages.create(model=MODEL, max_tokens=1024, system=SYSTEM + "\n\n" + note,
+        resp = client.messages.create(model=MODEL, max_tokens=1024, system=PERSONAS[persona_for(db.case_read(con, case_id)["path_type"])] + " Always say you are an AI if asked.\n\n" + SYSTEM + "\n\n" + note,
                                       tools=TOOLS, messages=history)
         history.append({"role": "assistant", "content": [b.model_dump() for b in resp.content]})
         uses = [b for b in resp.content if b.type == "tool_use"]

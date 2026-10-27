@@ -56,7 +56,8 @@ def handle_chat(body, llm=None, who=None):
     history = db.load_history(c, cid)
     reply = agent.turn(llm or client(), c, cid, MENU, history, msg, lang=lang)
     db.save_history(c, cid, history)
-    out = {"case_id": cid, "reply": reply}
+    out = {"case_id": cid, "reply": reply,
+           "persona": agent.persona_for(db.case_read(c, cid)["path_type"])}
     notice = accounts.attach_company(c, cid, who)
     if notice:
         out["account"] = notice
