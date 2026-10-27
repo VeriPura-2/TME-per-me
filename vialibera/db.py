@@ -1,0 +1,109 @@
+"""Case file store, event log and evidence record (SQLite for staging)."""
+import json
+import sqlite3
+import uuid
+from datetime import datetime, timezone
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS cases (
+  id TEXT PRIMARY KEY,
+  path_type INTEGER NOT NULL,          -- 1..4, see product flow spec section 2
+  status TEXT NOT NULL DEFAULT 'draft',
+  company TEXT NOT NULL DEFAULT '{}',  -- JSON
+  product TEXT NOT NULL DEFAULT '{}',  -- JSON
+  market TEXT NOT NULL DEFAULT '{}',   -- JSON
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS items (
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL REFERENCES cases(id),
+  code TEXT NOT NULL,                  -- menu item code
+  state TEXT NOT NULL DEFAULT 'proposed',
+  price_cents INTEGER,                 -- from the VeriPura menu only, NULL = to be set
+  is_compliance INTEGER NOT NULL DEFAULT 0,
+  payload TEXT NOT NULL DEFAULT '{}',
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS confirmations (
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  item_id TEXT NOT NULL,
+  actor TEXT NOT NULL,                 -- who
+  item_version INTEGER NOT NULL,       -- version seen
+  at TEXT NOT NULL                     -- when
+);
+CREATE TABLE IF NOT EXISTS events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  case_id TEXT,
+  at TEXT NOT NULL,
+  actor TEXT NOT NULL,                 -- client, agent, staff, system, adapter:<id>
+  kind TEXT NOT NULL,
+  data TEXT NOT NULL DEFAULT '{}'
+);
+CREATE TABLE IF NOT EXISTS usage_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  case_id TEXT,
+  at TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  units REAL NOT NULL,
+  cost_cents REAL NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS raw_responses (
+  ref TEXT PRIMARY KEY,
+  at TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  body TEXT NOT NULL
+);
+"""
+
+CASE_STATES = ["draft", "interviewing", "options ready", "items selected", "quoted",
+               "approved", "paid", "in progress", "delivered", "follow-up active", "closed"]
+
+
+def now():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def connect(path=":memory:"):
+    con = sqlite3.connect(path)
+    con.row_factory = sqlite3.Row
+    con.executescript(SCHEMA)
+    return con
+
+
+def log_event(con, case_id, actor, kind, data=None):
+    con.execute("INSERT INTO events(case_id, at, actor, kind, data) VALUES (?,?,?,?,?)",
+                (case_id, now(), actor, kind, json.dumps(data or {}, ensure_ascii=False)))
+    con.commit()
+
+
+def create_case(con, path_type, actor="agent"):
+    cid = str(uuid.uuid4())
+    t = now()
+    con.execute("INSERT INTO cases(id, path_type, created_at, updated_at) VALUES (?,?,?,?)",
+                (cid, path_type, t, t))
+    log_event(con, cid, actor, "case_created", {"path_type": path_type})
+    return cid
+
+
+def case_read(con, case_id):
+    row = con.execute("SELECT * FROM cases WHERE id=?", (case_id,)).fetchone()
+    if row is None:
+        raise KeyError(case_id)
+    out = dict(row)
+    for k in ("company", "product", "market"):
+        out[k] = json.loads(out[k])
+    return out
+
+
+def case_write(con, case_id, section, fields, actor="agent"):
+    """Merge fields into company, product or market. Logs the change."""
+    if section not in ("company", "product", "market"):
+        raise ValueError("section must be company, product or market")
+    cur = case_read(con, case_id)[section]
+    cur.update(fields)
+    con.execute(f"UPDATE cases SET {section}=?, updated_at=? WHERE id=?",
+                (json.dumps(cur, ensure_ascii=False), now(), case_id))
+    log_event(con, case_id, actor, "case_updated", {"section": section, "fields": fields})
+    return cur
