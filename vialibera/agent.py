@@ -5,7 +5,7 @@ and every write goes through db.py and gates.py, which enforce the rules.
 """
 import json
 
-from . import db, gates
+from . import db, fields, gates
 
 MODEL = "claude-sonnet-5-5"
 
@@ -66,7 +66,8 @@ def turn(client, con, case_id, menu, history, user_text, max_steps=8):
     history.append({"role": "user", "content": user_text})
     db.log_event(con, case_id, "client", "message", {"text": user_text})
     for _ in range(max_steps):
-        resp = client.messages.create(model=MODEL, max_tokens=1024, system=SYSTEM,
+        note = fields.prompt_note(db.case_read(con, case_id))
+        resp = client.messages.create(model=MODEL, max_tokens=1024, system=SYSTEM + "\n\n" + note,
                                       tools=TOOLS, messages=history)
         history.append({"role": "assistant", "content": [b.model_dump() for b in resp.content]})
         uses = [b for b in resp.content if b.type == "tool_use"]
