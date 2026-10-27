@@ -38,7 +38,7 @@ class Gates(unittest.TestCase):
             gates.confirm_item(self.con, iid, "agent", 1)
         gates.confirm_item(self.con, iid, "client:thomas", 1)
         self.assertEqual(gates._item(self.con, iid)["state"], "client confirmed")
-        self.assertEqual(self.con.execute("SELECT COUNT(*) FROM confirmations").fetchone()[0], 1)
+        self.assertEqual(self.con.execute("SELECT COUNT(*) AS n FROM confirmations").fetchone()["n"], 1)
 
     def test_compliance_needs_review(self):
         iid = gates.add_item(self.con, self.case, "core_check", MENU)
@@ -66,8 +66,8 @@ class Adapters(unittest.TestCase):
         out = a.call(self.con, "fetch", commodity_code="1902199090")
         for k in ("source", "retrieved_at", "provider_version", "confidence", "raw_ref"):
             self.assertIn(k, out)
-        self.assertEqual(self.con.execute("SELECT COUNT(*) FROM usage_events").fetchone()[0], 1)
-        self.assertEqual(self.con.execute("SELECT COUNT(*) FROM raw_responses").fetchone()[0], 1)
+        self.assertEqual(self.con.execute("SELECT COUNT(*) AS n FROM usage_events").fetchone()["n"], 1)
+        self.assertEqual(self.con.execute("SELECT COUNT(*) AS n FROM raw_responses").fetchone()["n"], 1)
 
     def test_invalid_input_and_not_supported(self):
         a = UKTradeTariff(http=lambda url: "{}")

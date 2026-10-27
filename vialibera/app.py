@@ -1,7 +1,7 @@
 """Minimal chat service for staging. POST /chat {"case_id": optional, "message": "..."}.
 
 Deploy to Cloud Run with authentication required (no public access).
-State is SQLite on local disk for staging only: it is lost on restart. Move to Cloud SQL before real clients.
+Storage: Cloud SQL Postgres when CLOUDSQL_INSTANCE is set, otherwise local SQLite (dev only).
 """
 import json
 import os
@@ -28,10 +28,12 @@ def client():
 def con():
     global CON
     if CON is None:
-        import sqlite3
-        CON = sqlite3.connect(os.environ.get("DB_PATH", "/tmp/vialibera.db"), check_same_thread=False)
-        CON.row_factory = sqlite3.Row
-        CON.executescript(db.SCHEMA)
+        inst = os.environ.get("CLOUDSQL_INSTANCE")
+        if inst:
+            CON = db.connect_pg(f"/cloudsql/{inst}", os.environ.get("DB_NAME", "vialibera"),
+                                os.environ.get("DB_USER", "app"), get_secret("DB_PASSWORD"))
+        else:
+            CON = db.connect(os.environ.get("DB_PATH", "/tmp/vialibera.db"))
     return CON
 
 

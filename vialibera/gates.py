@@ -18,8 +18,9 @@ ITEM_ORDER = ["proposed", "selected", "quoted", "approved", "paid", "in progress
               "review", "delivered", "client confirmed"]
 
 
-def _item(con, item_id):
-    row = con.execute("SELECT * FROM items WHERE id=?", (item_id,)).fetchone()
+def _item(con, item_id, lock=False):
+    suffix = " FOR UPDATE" if lock and getattr(con, "postgres", False) else ""
+    row = con.execute("SELECT * FROM items WHERE id=?" + suffix, (item_id,)).fetchone()
     if row is None:
         raise KeyError(item_id)
     return row
@@ -40,7 +41,16 @@ def add_item(con, case_id, code, menu, actor="agent"):
 
 
 def set_state(con, item_id, new_state, actor):
-    row = _item(con, item_id)
+    try:
+        return _set_state(con, item_id, new_state, actor)
+    except Exception:
+        if hasattr(con, "rollback"):
+            con.rollback()
+        raise
+
+
+def _set_state(con, item_id, new_state, actor):
+    row = _item(con, item_id, lock=True)
     old = row["state"]
     if new_state not in ITEM_ORDER and new_state not in ("rejected", "refunded"):
         raise GateError(f"unknown state {new_state!r}")
@@ -60,10 +70,19 @@ def set_state(con, item_id, new_state, actor):
 
 
 def confirm_item(con, item_id, client_actor, item_version):
+    try:
+        return _confirm_item(con, item_id, client_actor, item_version)
+    except Exception:
+        if hasattr(con, "rollback"):
+            con.rollback()
+        raise
+
+
+def _confirm_item(con, item_id, client_actor, item_version):
     """Only a client actor can confirm. Agent and staff are rejected."""
     if not client_actor.startswith("client:"):
         raise GateError("only the client can confirm an item")
-    row = _item(con, item_id)
+    row = _item(con, item_id, lock=True)
     if row["state"] != "delivered":
         raise GateError("only delivered items can be confirmed")
     con.execute("INSERT INTO confirmations(id, case_id, item_id, actor, item_version, at) VALUES (?,?,?,?,?,?)",

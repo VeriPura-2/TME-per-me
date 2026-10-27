@@ -65,10 +65,46 @@ def now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+class PG:
+    """Thin wrapper giving a psycopg2 connection the sqlite3 calls the code uses."""
+
+    postgres = True
+
+    def __init__(self, raw):
+        import psycopg2.extras
+        self.raw = raw
+        self._cur = lambda: raw.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    def execute(self, sql, params=()):
+        cur = self._cur()
+        cur.execute(sql.replace("?", "%s"), params)
+        return cur
+
+    def executescript(self, script):
+        for stmt in script.split(";"):
+            if stmt.strip():
+                self.execute(stmt)
+        self.raw.commit()
+
+    def commit(self):
+        self.raw.commit()
+
+    def rollback(self):
+        self.raw.rollback()
+
+
 def connect(path=":memory:"):
-    con = sqlite3.connect(path)
+    con = sqlite3.connect(path, check_same_thread=False)
     con.row_factory = sqlite3.Row
     con.executescript(SCHEMA)
+    return con
+
+
+def connect_pg(host, dbname, user, password):
+    """host is the Cloud SQL socket dir, e.g. /cloudsql/PROJECT:REGION:INSTANCE"""
+    import psycopg2
+    con = PG(psycopg2.connect(host=host, dbname=dbname, user=user, password=password))
+    con.executescript(SCHEMA.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "BIGSERIAL PRIMARY KEY"))
     return con
 
 
