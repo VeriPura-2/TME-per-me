@@ -239,6 +239,22 @@ def handle_simpay(body, who):
     if not sel:
         return 400, {"error": "no items selected"}
     pk = packet.build(sel, plan)["data"]
+    ids = sorted(i["id"] for i in pk["items"])
+    from datetime import datetime, timezone, timedelta
+    since = (datetime.now(timezone.utc) - timedelta(seconds=30)).isoformat(timespec="seconds")
+    for ev in c.execute("SELECT data FROM events WHERE case_id=? AND kind='sim_payment' AND actor=? AND at>=? ORDER BY at DESC",
+                        (row["id"], who["user"], since)).fetchall():
+        d = json.loads(ev["data"] if not isinstance(ev, tuple) else ev[0])
+        if sorted(d.get("items", [])) == ids:  # same packet just paid: replay, do not charge or spend credit again
+            from .sim import tag
+            out = {"payment": tag("payment", {"ref": d["ref"], "charged": False, "total_cents": d["total_cents"],
+                                              "credit_used_cents": d["credit_used_cents"],
+                                              "payable_cents": d["total_cents"] - d["credit_used_cents"], "duplicate": True,
+                                              "message": {"it": "Pagamento già registrato poco fa. Nessun addebito (simulazione).",
+                                                          "en": "Payment already recorded a moment ago. No charge (simulation)."}})}
+            if features.is_sim("deliverables"):
+                out["deliverables"] = deliverables.sample(ids)
+            return 200, out
     used = invites.apply(c, who["user"], pk["total_cents"], case_ref=row["id"])
     out = {"payment": payment.pay(c, row["id"], who, pk, credit_used=used)}
     if features.is_sim("deliverables"):

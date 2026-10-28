@@ -63,6 +63,16 @@ class JourneyTest(unittest.TestCase):
         row = app.con().execute("SELECT 1 FROM events WHERE case_id=? AND kind='sim_payment'", (cid,)).fetchone()
         self.assertIsNotNone(row)
 
+    def test_double_submit_is_replayed_once(self):
+        cid = make_case("j8")
+        sel = {"case_id": cid, "selected": ["tariff_lookup", "label_check"]}
+        a = app.handle_simpay(dict(sel), who("j8"))[1]
+        b = app.handle_simpay(dict(sel), who("j8"))[1]
+        self.assertTrue(b["payment"]["data"].get("duplicate"))
+        self.assertEqual(a["payment"]["data"]["ref"], b["payment"]["data"]["ref"])
+        n = app.con().execute("SELECT COUNT(*) FROM events WHERE case_id=? AND kind='sim_payment'", (cid,)).fetchone()[0]
+        self.assertEqual(n, 1)
+
     def test_payment_needs_items(self):
         cid = make_case("j7")
         self.assertEqual(app.handle_simpay({"case_id": cid, "selected": []}, who("j7"))[0], 400)
