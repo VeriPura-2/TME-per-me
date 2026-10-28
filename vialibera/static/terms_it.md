@@ -35,6 +35,7 @@ Devi fornire informazioni corrette, complete e aggiornate e avere il diritto di 
 - Servizi e prezzi ti sono mostrati dal nostro listino prima che tu decida. I prezzi sono fissi per voce, in euro, e [sono al netto / comprendono] IVA.
 - Iniziamo il lavoro su una voce solo dopo che hai approvato il pacchetto e pagato per intero.
 - Confermi ogni voce consegnata. Ogni conferma è registrata con chi, quando e la versione vista.
+- I crediti promozionali (ad esempio da un invito) riducono il prezzo dei servizi e del canone mensile. Non hanno valore in denaro, non sono trasferibili, scadono alla data indicata e sono assegnati solo dopo il primo mese a pagamento dell'azienda invitata. [IMPORTI E REGOLE DEI CREDITI DA DEFINIRE DA VERIPURA E DA VERIFICARE CON UN LEGALE]
 
 ## 8. Consegne
 

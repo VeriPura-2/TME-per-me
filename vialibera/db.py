@@ -107,6 +107,28 @@ CREATE TABLE IF NOT EXISTS usage_events (
   units REAL NOT NULL,
   cost_cents REAL NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS invites (
+  code TEXT PRIMARY KEY,
+  inviter_sub TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS invite_uses (
+  invitee_sub TEXT PRIMARY KEY,
+  code TEXT NOT NULL,
+  accepted_at TEXT NOT NULL,
+  granted_at TEXT
+);
+CREATE TABLE IF NOT EXISTS credit_ledger (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_sub TEXT NOT NULL,
+  delta_cents INTEGER NOT NULL,        -- grant positive, use negative
+  kind TEXT NOT NULL,                  -- grant or use
+  code TEXT,
+  at TEXT NOT NULL,
+  expires_at TEXT,                     -- grants only
+  simulated INTEGER NOT NULL DEFAULT 0,
+  note TEXT
+);
 CREATE TABLE IF NOT EXISTS voice_usage (
   user_sub TEXT NOT NULL,
   day TEXT NOT NULL,

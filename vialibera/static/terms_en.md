@@ -35,6 +35,7 @@ You must give accurate, complete and up to date information, and you have the ri
 - Services and prices are shown from our menu before you decide. Prices are fixed per item, in euro, and [exclude / include] VAT.
 - We start work on an item only after you have approved the package and paid in full.
 - You confirm each delivered item. Each confirmation is logged with who, when, and the version seen.
+- Promotional credits (for example from an invitation) reduce the price of services and of the monthly fee. They have no cash value, are not transferable, expire on the date shown, and are granted only after the invited company's first paid month. [CREDIT AMOUNTS AND RULES TO BE SET BY VERIPURA AND REVIEWED BY COUNSEL]
 
 ## 8. Deliverables
 

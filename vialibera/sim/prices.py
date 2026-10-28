@@ -12,3 +12,6 @@ EXAMPLE = {
 
 def prices():
     return tag("price_menu", EXAMPLE)
+
+# SIMULATED invite credit. Not a VeriPura offer. Replace with menu.INVITE.
+INVITE_EXAMPLE = {"credit_cents": 2000, "expiry_days": 90}

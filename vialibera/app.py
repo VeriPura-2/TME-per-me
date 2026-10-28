@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import accounts, agent, auth, db, docs, features, personas, plans, storage, voice
+from . import accounts, agent, auth, db, docs, features, invites, personas, plans, storage, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -175,9 +175,30 @@ def handle_speak(body, who, post=None):
 def handle_plan(body, who):
     if not who:
         return 400, {"error": "sign-in required"}
+    out = {}
     if body.get("plan") in plans.PLANS:
         accounts.save_profile(con(), who["user"], plan=body["plan"])
-    return 200, {"plan": accounts.get_profile(con(), who["user"])["plan"] or plans.DEFAULT}
+        if features.is_sim("invite_trigger"):
+            from .sim import invite_trigger
+            out["invite_credit"] = invite_trigger.on_plan_chosen(con(), who["user"], body["plan"])
+        else:
+            pass  # live: the payment system calls invites.on_first_paid_month
+    out["plan"] = accounts.get_profile(con(), who["user"])["plan"] or plans.DEFAULT
+    return 200, out
+
+
+def handle_invite(body, who):
+    if not who or not consent_ok(who):
+        return 403, {"error": "consent_required"}
+    out = invites.stats(con(), who["user"])
+    out["simulated"] = invites.has_simulated(con(), who["user"])
+    return 200, out
+
+
+def handle_invite_accept(body, who):
+    if not who or not consent_ok(who):
+        return 403, {"error": "consent_required"}
+    return 200, {"status": invites.accept(con(), who["user"], str(body.get("code", ""))[:40])}
 
 
 def handle_journey(body, who):
@@ -189,7 +210,9 @@ def handle_journey(body, who):
     plan = accounts.get_profile(c, who["user"])["plan"] or plans.DEFAULT
     case = db.case_read(c, row["id"])
     have = {d["doc_type"] for d in docs.listing(c, who) if d["doc_type"]}
-    out = {"plan": plan, "case": {"product": case["product"].get("name_brand"), "country": case["market"].get("country"),
+    out = {"credits": {"balance_cents": invites.balance(c, who["user"]),
+                       "simulated": invites.has_simulated(c, who["user"])},
+           "plan": plan, "case": {"product": case["product"].get("name_brand"), "country": case["market"].get("country"),
                                   "category": case["product"].get("category")}}
     if features.is_sim("required_docs"):
         from .sim import required_docs
@@ -216,7 +239,8 @@ def handle_simpay(body, who):
     if not sel:
         return 400, {"error": "no items selected"}
     pk = packet.build(sel, plan)["data"]
-    out = {"payment": payment.pay(c, row["id"], who, pk)}
+    used = invites.apply(c, who["user"], pk["total_cents"], case_ref=row["id"])
+    out = {"payment": payment.pay(c, row["id"], who, pk, credit_used=used)}
     if features.is_sim("deliverables"):
         out["deliverables"] = deliverables.sample([i["id"] for i in pk["items"]])
     return 200, out
@@ -294,7 +318,7 @@ class Handler(BaseHTTPRequestHandler):
         return auth.verify(self.headers.get("Authorization")) if auth.enabled() else None
 
     def do_POST(self):
-        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro")
+        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept")
                 or self.path.startswith("/doc/")):
             return self._send(404, {})
         try:
@@ -323,6 +347,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.end_headers()
                     return self.wfile.write(out)
                 return self._send(code, out)
+            if self.path == "/invite":
+                return self._send(*handle_invite(body, who))
+            if self.path == "/invite/accept":
+                return self._send(*handle_invite_accept(body, who))
             if self.path == "/plan":
                 return self._send(*handle_plan(body, who))
             if self.path == "/journey":
