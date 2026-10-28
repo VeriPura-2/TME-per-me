@@ -20,6 +20,10 @@ input[type=text]{width:calc(100% - 100px);padding:8px;border:1px solid var(--lin
 label{display:block;margin:10px 0}
 a{color:var(--accent)}
 .muted{color:var(--muted);font-size:.9rem}
+.sim{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:10px;border:1px dashed #b26a00;color:#b26a00;margin-left:6px;vertical-align:middle}
+.simnote{font-size:.85rem;color:#b26a00;margin:4px 0 8px}
+.plans{display:flex;gap:8px;flex-wrap:wrap}.plans .card{flex:1 1 150px;margin:0;cursor:pointer}.plans .card.on{border-color:var(--accent);outline:2px solid var(--accent)}
+.tick{color:#188038}.todo{color:var(--muted)}
 </style></head><body>
 <header>
   <h1>Via Libera</h1>
@@ -27,6 +31,7 @@ a{color:var(--accent)}
     <button id="lang" aria-label="Language"></button>
     <button id="theme" aria-label="Theme"></button>
     <button id="docsbtn" hidden></button>
+    <button id="jbtn" hidden></button>
     <button id="logout" hidden></button>
   </div>
 </header>
@@ -46,6 +51,14 @@ a{color:var(--accent)}
   <input type="file" id="d-file" multiple accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.csv,.txt">
   <label><input type="checkbox" id="d-proj"> <span id="d-projt"></span></label>
   <div id="d-list"></div>
+</div>
+
+<div id="journey" class="card" hidden>
+  <h2 id="j-title"></h2>
+  <h3 id="j-plans-t"></h3><div id="j-plans-sim"></div><div id="j-plans" class="plans"></div>
+  <h3 id="j-req-t"></h3><div id="j-req"></div>
+  <h3 id="j-pk-t"></h3><div id="j-pk"></div>
+  <div id="j-done"></div>
 </div>
 
 <div id="welcome" class="card" hidden>
@@ -83,7 +96,7 @@ const T = {
     c1: 'Ho letto e accetto le <a href="/terms?lang=it" target="_blank">Condizioni del servizio</a> e l\'<a href="/terms?lang=it#privacy" target="_blank">Informativa sulla privacy</a>.',
     c2: "Approvo specificamente, ai sensi degli artt. 1341 e 1342 c.c., le clausole indicate nelle Condizioni (limitazione di responsabilità, sospensione e cessazione, modifiche unilaterali, legge applicabile e foro competente).",
     ai: "Stai dialogando con un assistente basato su intelligenza artificiale. Le verifiche di conformità sono controllate da personale VeriPura prima della consegna.",
-    accept: "Accetto e continuo", err: "Errore: ", d_btn: "Documenti", d_title: "I tuoi documenti", d_help: "Carica i documenti che usi spesso (PDF, immagini, Word, Excel; max 10 MB). Ti proponiamo dove archiviarli e tu confermi. Restano privati per la tua azienda.", d_proj: "Solo questo progetto", d_confirm: "Conferma", d_add: "Aggiungi al progetto", d_open: "Scarica", d_product: "Prodotto", d_market: "Mercato", d_valid: "Scade il", d_proposed: "Archiviazione proposta", d_empty: "Nessun documento.", d_dup: "Già presente.", w_title: "Benvenuto in Via Libera", w_names: "Ti accompagna un export manager con intelligenza artificiale, scelto per te. Puoi cambiarlo quando vuoi.", p_suffix: "export manager con IA", p_switch: "Cambia export manager", w_style: "Come preferisci lavorare? (facoltativo)", s_brief: "Breve e diretto", s_steps: "Passo dopo passo, con spiegazioni", s_numbers: "Prima i numeri", w_back: "Bentornato. Riprendiamo da dove eravamo?",
+    accept: "Accetto e continuo", err: "Errore: ", d_btn: "Documenti", d_title: "I tuoi documenti", d_help: "Carica i documenti che usi spesso (PDF, immagini, Word, Excel; max 10 MB). Ti proponiamo dove archiviarli e tu confermi. Restano privati per la tua azienda.", d_proj: "Solo questo progetto", d_confirm: "Conferma", d_add: "Aggiungi al progetto", d_open: "Scarica", d_product: "Prodotto", d_market: "Mercato", d_valid: "Scade il", d_proposed: "Archiviazione proposta", d_empty: "Nessun documento.", d_dup: "Già presente.", w_title: "Benvenuto in Via Libera", w_names: "Ti accompagna un export manager con intelligenza artificiale, scelto per te. Puoi cambiarlo quando vuoi.", j_btn: "Percorso", j_title: "Il tuo percorso", j_plans: "Scegli un piano", j_req: "Documenti richiesti", j_pk: "Pacchetto di servizi", j_pick: "Scegli", j_month: "al mese", j_total: "Totale servizi", j_pay: "Simula il pagamento", j_add: "aggiunto perché serve a", j_nocase: "Prima racconta il tuo prodotto e il mercato nella chat.", j_onfile: "in archivio", j_missing: "da caricare", j_free: "gratis", j_delivered: "Esempi di consegna", j_sim: "Simulato", p_suffix: "export manager con IA", p_switch: "Cambia export manager", w_style: "Come preferisci lavorare? (facoltativo)", s_brief: "Breve e diretto", s_steps: "Passo dopo passo, con spiegazioni", s_numbers: "Prima i numeri", w_back: "Bentornato. Riprendiamo da dove eravamo?",
     w_can: "Puoi esplorare come esportare i tuoi prodotti alimentari, capire quali regole, documenti, etichette e dazi servono per un mercato, e ricevere un pacchetto di servizi con prezzi chiari.",
     w_expect: "Ti guida un assistente con intelligenza artificiale: una domanda alla volta, puoi saltarne quante vuoi, e non paghi nulla finché non approvi un pacchetto. Il personale VeriPura controlla le verifiche di conformità.",
     w_ask: "Che cosa vuoi esplorare per primo?",
@@ -100,7 +113,7 @@ const T = {
     c1: 'I have read and accept the <a href="/terms?lang=en" target="_blank">Terms of Service</a> and the <a href="/terms?lang=en#privacy" target="_blank">Privacy Notice</a>.',
     c2: "I specifically approve, under Articles 1341 and 1342 of the Italian Civil Code, the clauses listed in the Terms (limitation of liability, suspension and ending, changes to the terms, governing law and courts).",
     ai: "You are talking to an AI-based assistant. Compliance checks are reviewed by VeriPura staff before delivery.",
-    accept: "Accept and continue", err: "Error: ", d_btn: "Documents", d_title: "Your documents", d_help: "Upload the documents you use often (PDF, images, Word, Excel; max 10 MB). We suggest where to file them and you confirm. They stay private to your company.", d_proj: "This project only", d_confirm: "Confirm", d_add: "Add to project", d_open: "Download", d_product: "Product", d_market: "Market", d_valid: "Expires", d_proposed: "Filing suggested", d_empty: "No documents.", d_dup: "Already uploaded.", w_title: "Welcome to Via Libera", w_names: "An AI export manager, chosen for you, will guide you. You can switch to someone else at any time.", p_suffix: "AI export manager", p_switch: "Meet someone else", w_style: "How would you like to work? (optional)", s_brief: "Brief and direct", s_steps: "Step by step, with explanations", s_numbers: "Numbers first", w_back: "Welcome back. Shall we pick up where we left off?",
+    accept: "Accept and continue", err: "Error: ", d_btn: "Documents", d_title: "Your documents", d_help: "Upload the documents you use often (PDF, images, Word, Excel; max 10 MB). We suggest where to file them and you confirm. They stay private to your company.", d_proj: "This project only", d_confirm: "Confirm", d_add: "Add to project", d_open: "Download", d_product: "Product", d_market: "Market", d_valid: "Expires", d_proposed: "Filing suggested", d_empty: "No documents.", d_dup: "Already uploaded.", w_title: "Welcome to Via Libera", w_names: "An AI export manager, chosen for you, will guide you. You can switch to someone else at any time.", j_btn: "Journey", j_title: "Your journey", j_plans: "Choose a plan", j_req: "Required documents", j_pk: "Service package", j_pick: "Choose", j_month: "per month", j_total: "Services total", j_pay: "Simulate payment", j_add: "added because it is needed by", j_nocase: "First tell the chat about your product and market.", j_onfile: "on file", j_missing: "to upload", j_free: "free", j_delivered: "Sample deliverables", j_sim: "Simulated", p_suffix: "AI export manager", p_switch: "Meet someone else", w_style: "How would you like to work? (optional)", s_brief: "Brief and direct", s_steps: "Step by step, with explanations", s_numbers: "Numbers first", w_back: "Welcome back. Shall we pick up where we left off?",
     w_can: "You can explore how to export your food products, find out which rules, documents, labels and duties apply to a market, and get a package of services with clear prices.",
     w_expect: "An AI assistant guides you: one question at a time, you can skip as many as you like, and you pay nothing until you approve a package. VeriPura staff review compliance checks.",
     w_ask: "What would you like to explore first?",
@@ -128,7 +141,7 @@ function applyLang() {
   const t = T[lang];
   document.documentElement.lang = lang;
   $("lang").textContent = lang === "it" ? "EN" : "IT";
-  $("logout").textContent = t.signout; $("docsbtn").textContent = t.d_btn; $("send").textContent = t.send; $("msg").placeholder = t.ph;
+  $("logout").textContent = t.signout; $("docsbtn").textContent = t.d_btn; $("jbtn").textContent = t.j_btn; $("send").textContent = t.send; $("msg").placeholder = t.ph;
   $("landing-t").textContent = t.landing; $("login").textContent = t.signin;
   $("gate-intro").textContent = t.gateIntro; $("c1t").innerHTML = t.c1; $("c2t").textContent = t.c2;
   $("gate-ai").textContent = t.ai; $("accept").textContent = t.accept;
@@ -160,7 +173,7 @@ applyLang();
   }
   const u = await client.getUser();
   ctx.email = u.email; applyLang();
-  $("logout").hidden = false; $("docsbtn").hidden = false;
+  $("logout").hidden = false; $("docsbtn").hidden = false; $("jbtn").hidden = false;
   $("logout").onclick = () => client.logout({logoutParams: {returnTo: location.origin}});
   const call = async (path, body) => {
     const token = await client.getTokenSilently();
@@ -218,6 +231,73 @@ applyLang();
     }
     e.target.value = ""; loadDocs();
   };
+  // ---- journey (simulated parts are labelled from the server flag)
+  const eur = c => c === 0 ? T[lang].j_free : new Intl.NumberFormat(lang, {style: "currency", currency: "EUR", maximumFractionDigits: 0}).format(c / 100);
+  const mk = (tag, text, cls) => { const e = document.createElement(tag); if (text) e.textContent = text; if (cls) e.className = cls; return e; };
+  function simMark(parent, payload) {
+    if (!payload || !payload.simulated) return;
+    const b = mk("span", T[lang].j_sim, "sim"); parent.appendChild(b);
+    parent.appendChild(mk("div", payload.note[lang], "simnote"));
+  }
+  let jsel = null;
+  async function loadJourney() {
+    const t = T[lang];
+    $("j-title").textContent = t.j_title; $("j-plans-t").textContent = t.j_plans; $("j-req-t").textContent = t.j_req; $("j-pk-t").textContent = t.j_pk;
+    $("j-done").innerHTML = "";
+    const pl = await (await fetch("/plans.json")).json();
+    if (!caseId) { $("j-req").textContent = t.j_nocase; $("j-pk").textContent = ""; }
+    const [r, j] = await call("/journey", {case_id: caseId, selected: jsel});
+    const box = $("j-plans"); box.innerHTML = "";
+    const cur = r.ok ? j.plan : pl.default;
+    Object.entries(pl.plans).forEach(([id, p]) => {
+      const c = mk("div", null, "card" + (id === cur ? " on" : ""));
+      c.appendChild(mk("strong", p.name[lang])); c.appendChild(mk("div", p.tier[lang], "muted"));
+      const price = pl.prices && pl.prices.data[id];
+      if (price) c.appendChild(mk("div", price.monthly ? eur(price.monthly) + " " + t.j_month : t.j_free));
+      const n = p.max_projects || "∞"; c.appendChild(mk("div", n + " " + (lang === "it" ? (n === 1 ? "progetto" : "progetti") : (n === 1 ? "project" : "projects")), "muted"));
+      c.onclick = async () => { await call("/plan", {plan: id}); loadJourney(); };
+      box.appendChild(c);
+    });
+    $("j-plans-sim").innerHTML = ""; if (pl.prices) simMark($("j-plans-sim"), pl.prices);
+    if (!r.ok) return;
+    const rq = $("j-req"); rq.innerHTML = "";
+    const d = j.required_docs;
+    if (d) {
+      simMark(rq, d); rq.appendChild(mk("div", d.data.caveat[lang], "muted"));
+      [1, 2, 3, 4].forEach(l => {
+        const rows = d.data.items.filter(i => i.layer === l); if (!rows.length) return;
+        rq.appendChild(mk("strong", d.data.layers[l][lang]));
+        rows.forEach(i => { const row = mk("div"); row.appendChild(mk("span", i.on_file ? "✓ " : "○ ", i.on_file ? "tick" : "todo"));
+          row.appendChild(document.createTextNode(i[lang] + " "));
+          row.appendChild(mk("span", i.on_file ? t.j_onfile : t.j_missing, "muted")); rq.appendChild(row); });
+      });
+    }
+    const pk = $("j-pk"); pk.innerHTML = "";
+    if (j.packet) {
+      simMark(pk, j.packet); pk.appendChild(mk("div", j.packet.data.label[lang], "muted"));
+      jsel = j.selected;
+      j.packet.data.items.forEach(i => {
+        const row = mk("label"), cb = document.createElement("input"); cb.type = "checkbox";
+        const explicit = j.selected.includes(i.id); cb.checked = true; cb.disabled = !explicit;
+        cb.onchange = () => { jsel = jsel.filter(x => x !== i.id); loadJourney(); };
+        row.append(cb, " " + i.name[lang] + " · " + eur(i.price_cents) + " ");
+        if (i.added_because.length) row.appendChild(mk("span", t.j_add + " " + i.added_because.join(", "), "muted"));
+        pk.appendChild(row);
+      });
+      pk.appendChild(mk("p", t.j_total + ": " + eur(j.packet.data.total_cents)));
+      const pay = mk("button", t.j_pay, "primary");
+      pay.onclick = async () => {
+        const [r2, j2] = await call("/simpay", {case_id: caseId, selected: jsel});
+        const dn = $("j-done"); dn.innerHTML = "";
+        if (!r2.ok) { dn.textContent = t.err + (j2.error || r2.status); return; }
+        simMark(dn, j2.payment); dn.appendChild(mk("p", j2.payment.data.message[lang]));
+        if (j2.deliverables) { dn.appendChild(mk("h3", t.j_delivered)); simMark(dn, j2.deliverables);
+          j2.deliverables.data.forEach(x => dn.appendChild(mk("div", x.sample[lang]))); }
+      };
+      pk.appendChild(pay);
+    }
+  }
+  $("jbtn").onclick = () => { const p = $("journey"); p.hidden = !p.hidden; if (!p.hidden) { jsel = null; loadJourney(); } };
   function setPersona(p) {
     if (!p) return;
     $("persona").textContent = p.name + ", " + T[lang].p_suffix + " ·";

@@ -101,15 +101,17 @@ def record_consent(con, user_sub, terms_version, lang, onerous):
 
 
 def get_profile(con, user_sub):
-    row = con.execute("SELECT persona_id, style FROM profiles WHERE user_sub=?", (user_sub,)).fetchone()
-    return {"persona_id": row["persona_id"], "style": row["style"]} if row else {"persona_id": None, "style": None}
+    row = con.execute("SELECT persona_id, style, plan FROM profiles WHERE user_sub=?", (user_sub,)).fetchone()
+    return ({"persona_id": row["persona_id"], "style": row["style"], "plan": row["plan"]} if row
+            else {"persona_id": None, "style": None, "plan": None})
 
 
-def save_profile(con, user_sub, persona_id=None, style=None):
+def save_profile(con, user_sub, persona_id=None, style=None, plan=None):
     cur = get_profile(con, user_sub)
     persona_id = persona_id or cur["persona_id"]
     style = style or cur["style"]
-    con.execute("INSERT INTO profiles(user_sub, persona_id, style, updated_at) VALUES (?,?,?,?) "
+    plan = plan or cur["plan"]
+    con.execute("INSERT INTO profiles(user_sub, persona_id, style, plan, updated_at) VALUES (?,?,?,?,?) "
                 "ON CONFLICT (user_sub) DO UPDATE SET persona_id=excluded.persona_id, style=excluded.style, "
-                "updated_at=excluded.updated_at", (user_sub, persona_id, style, db.now()))
+                "plan=excluded.plan, updated_at=excluded.updated_at", (user_sub, persona_id, style, plan, db.now()))
     con.commit()

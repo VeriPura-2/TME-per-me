@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   user_sub TEXT PRIMARY KEY,
   persona_id TEXT,
   style TEXT,                          -- brief, steps or numbers, chosen by the person
+  plan TEXT,                           -- esplora, parti or cresci
   updated_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS documents (
@@ -169,6 +170,7 @@ def connect_pg(host, dbname, user, password):
     con.executescript(SCHEMA.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "BIGSERIAL PRIMARY KEY"))
     for col in ("org_id", "owner_sub", "company_id"):
         con.execute(f"ALTER TABLE cases ADD COLUMN IF NOT EXISTS {col} TEXT")
+    con.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan TEXT")
     con.commit()
     return con
 

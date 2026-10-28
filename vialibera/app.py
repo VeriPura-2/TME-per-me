@@ -135,6 +135,66 @@ def handle_profile(body, who):
     return 200, {"style": p["style"], "persona": {"id": pid, "name": personas.BY_ID[pid]["name"]} if pid else None}
 
 
+def _case_for(body, who):
+    """Return (row, error) for the case in the body, enforcing access."""
+    if not who:
+        return None, (400, {"error": "sign-in required"})
+    row = con().execute("SELECT * FROM cases WHERE id=?", (body.get("case_id"),)).fetchone()
+    if row is None or not accounts.can_access(con(), row, who):
+        return None, (404, {"error": "case not found"})
+    return row, None
+
+
+def handle_plan(body, who):
+    if not who:
+        return 400, {"error": "sign-in required"}
+    if body.get("plan") in plans.PLANS:
+        accounts.save_profile(con(), who["user"], plan=body["plan"])
+    return 200, {"plan": accounts.get_profile(con(), who["user"])["plan"] or plans.DEFAULT}
+
+
+def handle_journey(body, who):
+    """Everything the Journey panel shows. Simulated parts are tagged by sim.tag."""
+    row, err = _case_for(body, who)
+    if err:
+        return err
+    c = con()
+    plan = accounts.get_profile(c, who["user"])["plan"] or plans.DEFAULT
+    case = db.case_read(c, row["id"])
+    have = {d["doc_type"] for d in docs.listing(c, who) if d["doc_type"]}
+    out = {"plan": plan, "case": {"product": case["product"].get("name_brand"), "country": case["market"].get("country"),
+                                  "category": case["product"].get("category")}}
+    if features.is_sim("required_docs"):
+        from .sim import required_docs
+        out["required_docs"] = required_docs.required(case["product"].get("category"), have)
+    if features.is_sim("options_packet"):
+        from .sim import packet
+        sel = body.get("selected") or packet.wanted_items(case["market"].get("needs"))
+        sel = [i for i in sel if i in packet.NAMES]
+        out["packet"] = packet.build(sel, plan)
+        out["selected"] = sel
+    return 200, out
+
+
+def handle_simpay(body, who):
+    row, err = _case_for(body, who)
+    if err:
+        return err
+    if not (features.is_sim("payment") and features.is_sim("options_packet")):
+        return 501, {"error": "payment is not simulated"}
+    from .sim import packet, payment, deliverables
+    c = con()
+    plan = accounts.get_profile(c, who["user"])["plan"] or plans.DEFAULT
+    sel = [i for i in (body.get("selected") or []) if i in packet.NAMES]
+    if not sel:
+        return 400, {"error": "no items selected"}
+    pk = packet.build(sel, plan)["data"]
+    out = {"payment": payment.pay(c, row["id"], who, pk)}
+    if features.is_sim("deliverables"):
+        out["deliverables"] = deliverables.sample([i["id"] for i in pk["items"]])
+    return 200, out
+
+
 def render_terms(lang):
     import markdown
     name = "en" if lang == "en" else "it"
@@ -205,7 +265,8 @@ class Handler(BaseHTTPRequestHandler):
         return auth.verify(self.headers.get("Authorization")) if auth.enabled() else None
 
     def do_POST(self):
-        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload") or self.path.startswith("/doc/")):
+        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay")
+                or self.path.startswith("/doc/")):
             return self._send(404, {})
         try:
             try:
@@ -224,6 +285,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_consent(body, who))
             if self.path == "/profile":
                 return self._send(*handle_profile(body, who))
+            if self.path == "/plan":
+                return self._send(*handle_plan(body, who))
+            if self.path == "/journey":
+                return self._send(*handle_journey(body, who))
+            if self.path == "/simpay":
+                return self._send(*handle_simpay(body, who))
             if self.path == "/me":
                 ok = bool(who) and accounts.has_consent(con(), who["user"], TERMS_VERSION)
                 latest = None
