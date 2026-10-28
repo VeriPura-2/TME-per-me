@@ -16,6 +16,7 @@ class VoiceTest(unittest.TestCase):
     def setUp(self):
         voice._KEY = None
         accounts.record_consent(app.con(), "v1", app.TERMS_VERSION, "it", True)
+        app.con().execute("DELETE FROM voice_usage"); app.con().commit()
         self.calls = []
 
     def fake(self, req):
@@ -48,6 +49,15 @@ class VoiceTest(unittest.TestCase):
             self.assertEqual(app.handle_speak({"text": "y" * 20}, who("v1"), post=self.fake)[0], 429)
         finally:
             del os.environ["VOICE_DAILY_CHARS"]
+
+    def test_total_budget_stops_everyone(self):
+        os.environ["VOICE_TOTAL_CHARS"] = "30"
+        try:
+            self.assertEqual(app.handle_speak({"text": "x" * 20}, who("v1"), post=self.fake)[0], 200)
+            code, out = app.handle_speak({"text": "y" * 20}, who("v1"), post=self.fake)
+            self.assertEqual((code, out["error"]), (429, "voice_budget_used"))
+        finally:
+            del os.environ["VOICE_TOTAL_CHARS"]
 
     def test_provider_failure_is_a_clean_error(self):
         def boom(r):

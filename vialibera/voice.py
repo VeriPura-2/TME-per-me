@@ -6,7 +6,8 @@ Config (environment, or Secret Manager for the key):
   ELEVENLABS_MODEL        default eleven_flash_v2_5 (supports Italian)
   ELEVENLABS_VOICES       JSON map of persona id to voice id, e.g. {"cosimo": "..."}
   ELEVENLABS_VOICE_DEFAULT  fallback voice id
-  VOICE_DAILY_CHARS       per user per day, default 6000
+  VOICE_DAILY_CHARS       per user per day, default 1500
+  VOICE_TOTAL_CHARS       hard budget across all users, default 15000 (protects the credits)
 Stock library voices only. No cloned voices of real people.
 """
 import json
@@ -18,7 +19,7 @@ import urllib.request
 from . import db
 from .secrets import get_secret
 
-MAX_REPLY_CHARS = 1200
+MAX_REPLY_CHARS = 700
 INTRO = {"it": "Sono {name}, un export manager con intelligenza artificiale.",
          "en": "I am {name}, an AI export manager."}
 _KEY = None
@@ -83,9 +84,12 @@ def speak(con, user, text, persona_id, lang="it", intro_name=None, post=None):
         t = INTRO["en" if lang == "en" else "it"].format(name=intro_name) + " " + t
     if not t:
         return 400, {"error": "nothing to say"}
-    limit = int(os.environ.get("VOICE_DAILY_CHARS", "6000"))
+    limit = int(os.environ.get("VOICE_DAILY_CHARS", "1500"))
     if _used_today(con, user) + len(t) > limit:
         return 429, {"error": "voice_daily_limit"}
+    total = con.execute("SELECT COALESCE(SUM(chars), 0) AS n FROM voice_usage").fetchone()["n"]
+    if total + len(t) > int(os.environ.get("VOICE_TOTAL_CHARS", "15000")):
+        return 429, {"error": "voice_budget_used"}
     base = os.environ.get("ELEVENLABS_BASE", "https://api.eu.residency.elevenlabs.io").rstrip("/")
     body = json.dumps({"text": t, "model_id": os.environ.get("ELEVENLABS_MODEL", "eleven_flash_v2_5")}).encode()
     req = urllib.request.Request(f"{base}/v1/text-to-speech/{voice}?output_format=mp3_44100_64", data=body,
