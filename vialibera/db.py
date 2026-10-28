@@ -107,6 +107,12 @@ CREATE TABLE IF NOT EXISTS usage_events (
   units REAL NOT NULL,
   cost_cents REAL NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS voice_usage (
+  user_sub TEXT NOT NULL,
+  day TEXT NOT NULL,
+  chars INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_sub, day)
+);
 CREATE TABLE IF NOT EXISTS histories (
   case_id TEXT PRIMARY KEY,
   data TEXT NOT NULL,                  -- JSON list of API messages

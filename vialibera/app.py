@@ -11,11 +11,11 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import accounts, agent, auth, db, docs, features, personas, plans, storage
+from . import accounts, agent, auth, db, docs, features, personas, plans, storage, voice
 from .menu import MENU
 from .secrets import get_secret
 
-TERMS_VERSION = "2026-10-v0.1"
+TERMS_VERSION = "2026-10-v0.2"
 CON = None
 _client = None
 
@@ -145,6 +145,17 @@ def _case_for(body, who):
     return row, None
 
 
+def handle_speak(body, who, post=None):
+    if not consent_ok(who) or not who:
+        return 403, {"error": "consent_required"}
+    p = accounts.get_profile(con(), who["user"])
+    pid = p["persona_id"]
+    name = personas.BY_ID[pid]["name"] if pid in personas.BY_ID else None
+    return voice.speak(con(), who["user"], str(body.get("text", "")), pid,
+                       lang="en" if body.get("lang") == "en" else "it",
+                       intro_name=name if body.get("intro") else None, post=post)
+
+
 def handle_plan(body, who):
     if not who:
         return 400, {"error": "sign-in required"}
@@ -216,7 +227,8 @@ class Handler(BaseHTTPRequestHandler):
                                     "client_id": os.environ.get("AUTH0_CLIENT_ID", ""),
                                     "audience": os.environ.get("AUTH0_AUDIENCE", ""),
                                     "default_org": os.environ.get("AUTH0_DEFAULT_ORG", ""),
-                                    "terms_version": TERMS_VERSION})
+                                    "terms_version": TERMS_VERSION,
+                                    "voice": voice.configured()})
         if path == "/plans.json":
             body = plans.public()
             if features.is_sim("price_menu"):
@@ -265,7 +277,7 @@ class Handler(BaseHTTPRequestHandler):
         return auth.verify(self.headers.get("Authorization")) if auth.enabled() else None
 
     def do_POST(self):
-        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay")
+        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak")
                 or self.path.startswith("/doc/")):
             return self._send(404, {})
         try:
@@ -285,6 +297,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_consent(body, who))
             if self.path == "/profile":
                 return self._send(*handle_profile(body, who))
+            if self.path == "/speak":
+                code, out = handle_speak(body, who)
+                if code == 200:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "audio/mpeg")
+                    self.send_header("Content-Length", str(len(out)))
+                    self.end_headers()
+                    return self.wfile.write(out)
+                return self._send(code, out)
             if self.path == "/plan":
                 return self._send(*handle_plan(body, who))
             if self.path == "/journey":

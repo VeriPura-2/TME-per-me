@@ -2,7 +2,7 @@
 
 # Via Libera: Condizioni del servizio
 
-Versione 2026-10-v0.1. L'italiano è la lingua principale di queste condizioni. In caso di difformità tra il testo italiano e quello inglese prevale il testo italiano.
+Versione 2026-10-v0.2. L'italiano è la lingua principale di queste condizioni. In caso di difformità tra il testo italiano e quello inglese prevale il testo italiano.
 
 ## 1. Chi siamo
 
@@ -20,7 +20,7 @@ Via Libera è riservata a imprese e professionisti, non ai consumatori. Accettan
 
 ## 4. Stai parlando con un'intelligenza artificiale
 
-L'assistente è un sistema di intelligenza artificiale e può sbagliare. Non conferma nulla per tuo conto. Le verifiche di conformità (ad esempio dazi, etichette e documenti) sono controllate da personale VeriPura prima della consegna e tu confermi ogni voce prima che sia definitiva.
+L'assistente è un sistema di intelligenza artificiale e può sbagliare. Non conferma nulla per tuo conto. Le verifiche di conformità (ad esempio dazi, etichette e documenti) sono controllate da personale VeriPura prima della consegna e tu confermi ogni voce prima che sia definitiva. Le risposte parlate, se premi Ascolta, usano una voce sintetica. È una voce di intelligenza artificiale, non una persona, e non è una registrazione o copia di una persona reale. Al fornitore vocale viene inviato solo il testo della risposta, e solo quando premi Ascolta.
 
 ## 5. Account e aziende
 
@@ -90,7 +90,7 @@ Scrivi a [EMAIL] o [PEC].
 - Proteggere il servizio, prevenire frodi e migliorarlo in forma aggregata (legittimo interesse, art. 6(1)(f)).
 - Registrare la tua accettazione di queste condizioni (obbligo di legge e legittimo interesse).
 
-**Chi riceve i dati (responsabili e destinatari):** hosting cloud nell'UE (Google Cloud, regione europe-west1, Belgio); fornitore di accesso (Auth0 / Okta, tenant UE); fornitore di elaborazione IA (Anthropic) per le risposte dell'assistente [CONFERMARE REGIONE E CONDIZIONI DI TRATTAMENTO]; fornitore di pagamenti [DA SCEGLIERE]; fornitori indipendenti da te scelti per un servizio; personale VeriPura. Gli eventuali trasferimenti fuori dall'UE si basano su decisioni di adeguatezza o clausole contrattuali tipo.
+**Chi riceve i dati (responsabili e destinatari):** hosting cloud nell'UE (Google Cloud, regione europe-west1, Belgio); fornitore di accesso (Auth0 / Okta, tenant UE); fornitore di elaborazione IA (Anthropic) per le risposte dell'assistente [CONFERMARE REGIONE E CONDIZIONI DI TRATTAMENTO]; fornitore vocale (ElevenLabs, ambiente con residenza dei dati nell'UE) per le risposte parlate [CONFERMARE MODALITÀ ZERO RETENTION E CONDIZIONI DI TRATTAMENTO]; fornitore di pagamenti [DA SCEGLIERE]; fornitori indipendenti da te scelti per un servizio; personale VeriPura. Gli eventuali trasferimenti fuori dall'UE si basano su decisioni di adeguatezza o clausole contrattuali tipo.
 
 **Conservazione:** dati di account e pratiche per la durata dell'account e [24] mesi dopo l'ultima attività; scritture contabili per [10] anni come richiesto dalla legge; registri di consenso per il tempo necessario a provare l'accettazione. I backup scadono dopo [35] giorni.
 

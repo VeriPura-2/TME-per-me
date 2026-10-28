@@ -16,6 +16,7 @@ FEATURES = {
     "price_menu":       {"phase": 1, "mode": "sim", "sim_file": "sim/prices.py"},
     "payment":          {"phase": 1, "mode": "sim", "sim_file": "sim/payment.py"},
     "deliverables":     {"phase": 1, "mode": "sim", "sim_file": "sim/deliverables.py"},
+    "voice_output":     {"phase": 2, "mode": "live"},
     "staff_help":       {"phase": 1, "mode": "manual"},
     # phase 2
     "document_check":   {"phase": 2, "mode": "sim", "sim_file": "sim/document_check.py"},
