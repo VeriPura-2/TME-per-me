@@ -24,6 +24,7 @@ FEATURES = {
     "importer_search":  {"phase": 2, "mode": "sim", "sim_file": "sim/importers.py"},
     "export_documents": {"phase": 2, "mode": "sim", "sim_file": "sim/export_docs.py"},
     "invites":          {"phase": 2, "mode": "live"},
+    "eori_form":        {"phase": 1, "mode": "live"},
     "invite_trigger":   {"phase": 2, "mode": "sim", "sim_file": "sim/invite_trigger.py"},
     "label_check":      {"phase": 2, "mode": "sim", "sim_file": "sim/label_check.py"},
     "lab_cert":         {"phase": 2, "mode": "sim", "sim_file": "sim/lab_cert.py"},

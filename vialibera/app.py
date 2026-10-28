@@ -213,7 +213,8 @@ def handle_journey(body, who):
     out = {"credits": {"balance_cents": invites.balance(c, who["user"]),
                        "simulated": invites.has_simulated(c, who["user"])},
            "plan": plan, "case": {"product": case["product"].get("name_brand"), "country": case["market"].get("country"),
-                                  "category": case["product"].get("category")}}
+                                  "category": case["product"].get("category"),
+                                  "export_registration": case["company"].get("export_registration")}}
     if features.is_sim("required_docs"):
         from .sim import required_docs
         out["required_docs"] = required_docs.required(case["product"].get("category"), have)
@@ -224,6 +225,29 @@ def handle_journey(body, who):
         out["packet"] = packet.build(sel, plan)
         out["selected"] = sel
     return 200, out
+
+
+def handle_eori(body, who):
+    """What we hold for the EORI form, what is missing, and the links. DRAFT, see eori.py."""
+    row, err = _case_for(body, who)
+    if err:
+        return err
+    from . import eori
+    return 200, eori.describe(db.case_read(con(), row["id"]), "en" if body.get("lang") == "en" else "it")
+
+
+def handle_eori_pdf(body, who):
+    """Save the values the person confirmed and return the filled ADM form as PDF bytes."""
+    row, err = _case_for(body, who)
+    if err:
+        return err
+    from . import eori
+    vals = {k: str(v)[:200] for k, v in (body.get("values") or {}).items()
+            if k in {f[0] for f in eori.FIELDS} | {"legal_form"} and v is not None}
+    if vals:
+        db.case_write(con(), row["id"], "company", {"eori_" + k: v for k, v in vals.items()}, actor=who["user"])
+    case = db.case_read(con(), row["id"])
+    return 200, eori.fill(eori.prefill(case, eori.saved_values(case)))
 
 
 def handle_simpay(body, who):
@@ -334,7 +358,7 @@ class Handler(BaseHTTPRequestHandler):
         return auth.verify(self.headers.get("Authorization")) if auth.enabled() else None
 
     def do_POST(self):
-        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept")
+        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf")
                 or self.path.startswith("/doc/")):
             return self._send(404, {})
         try:
@@ -359,6 +383,17 @@ class Handler(BaseHTTPRequestHandler):
                 if code == 200:
                     self.send_response(200)
                     self.send_header("Content-Type", "audio/mpeg")
+                    self.send_header("Content-Length", str(len(out)))
+                    self.end_headers()
+                    return self.wfile.write(out)
+                return self._send(code, out)
+            if self.path == "/eori":
+                return self._send(*handle_eori(body, who))
+            if self.path == "/eori/pdf":
+                code, out = handle_eori_pdf(body, who)
+                if code == 200:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/pdf")
                     self.send_header("Content-Length", str(len(out)))
                     self.end_headers()
                     return self.wfile.write(out)

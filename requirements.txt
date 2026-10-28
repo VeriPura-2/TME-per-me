@@ -4,3 +4,5 @@ psycopg2-binary
 PyJWT[crypto]
 markdown
 google-cloud-storage
+pypdf
+reportlab
