@@ -9,7 +9,7 @@ import datetime as dt
 import os
 import secrets
 
-from . import db
+from . import db, permissions
 
 
 def _now():
@@ -53,8 +53,19 @@ def stats(con, inviter):
 
 
 def _company(con, sub):
-    from . import docs
-    return docs._company_of(con, {"user": sub})
+    return permissions.company_of(con, sub)
+
+
+def holder(con, user):
+    """Who holds this person's credit: their company once they have one (the company pays), else the person."""
+    cid = _company(con, user)
+    return "co:" + cid if cid else user
+
+
+def _holders(con, user):
+    """Where this person can draw credit: the company's, then any they earned before joining one."""
+    h = holder(con, user)
+    return [h] if h == user else [h, user]
 
 
 def on_first_paid_month(con, invitee, amount_cents, expiry_days, simulated=False):
@@ -76,7 +87,7 @@ def on_first_paid_month(con, invitee, amount_cents, expiry_days, simulated=False
     if n >= cap:
         return "inviter_cap"
     exp = _iso(_now() + dt.timedelta(days=expiry_days))
-    for who in (inviter, invitee):
+    for who in (holder(con, inviter), holder(con, invitee)):
         con.execute("INSERT INTO credit_ledger(user_sub, delta_cents, kind, code, at, expires_at, simulated, note) "
                     "VALUES (?,?,?,?,?,?,?,?)", (who, amount_cents, "grant", use["code"], db.now(), exp,
                                                  1 if simulated else 0, "invite"))
@@ -86,24 +97,36 @@ def on_first_paid_month(con, invitee, amount_cents, expiry_days, simulated=False
     return "granted"
 
 
-def balance(con, user):
+def _bal(con, holder_key):
     t = _iso(_now())
     g = con.execute("SELECT COALESCE(SUM(delta_cents),0) AS n FROM credit_ledger WHERE user_sub=? AND kind='grant' "
-                    "AND (expires_at IS NULL OR expires_at > ?)", (user, t)).fetchone()["n"]
+                    "AND (expires_at IS NULL OR expires_at > ?)", (holder_key, t)).fetchone()["n"]
     u = con.execute("SELECT COALESCE(SUM(delta_cents),0) AS n FROM credit_ledger WHERE user_sub=? AND kind='use'",
-                    (user,)).fetchone()["n"]
+                    (holder_key,)).fetchone()["n"]
     return max(0, g + u)
 
 
+def balance(con, user):
+    return sum(_bal(con, h) for h in _holders(con, user))
+
+
 def has_simulated(con, user):
-    return bool(con.execute("SELECT 1 FROM credit_ledger WHERE user_sub=? AND simulated=1", (user,)).fetchone())
+    return any(con.execute("SELECT 1 FROM credit_ledger WHERE user_sub=? AND simulated=1", (h,)).fetchone()
+               for h in _holders(con, user))
 
 
 def apply(con, user, due_cents, case_ref=None):
-    """Use credit against an amount. Returns the cents used. Never goes below zero."""
-    use = min(balance(con, user), max(0, int(due_cents)))
-    if use > 0:
-        con.execute("INSERT INTO credit_ledger(user_sub, delta_cents, kind, code, at, simulated, note) VALUES (?,?,?,?,?,?,?)",
-                    (user, -use, "use", None, db.now(), 1 if has_simulated(con, user) else 0, case_ref))
+    """Use credit against an amount, company credit first. Returns the cents used. Never goes below zero."""
+    left = max(0, int(due_cents))
+    used = 0
+    for h in _holders(con, user):
+        take = min(_bal(con, h), left)
+        if take > 0:
+            sim = 1 if con.execute("SELECT 1 FROM credit_ledger WHERE user_sub=? AND simulated=1", (h,)).fetchone() else 0
+            con.execute("INSERT INTO credit_ledger(user_sub, delta_cents, kind, code, at, simulated, note) VALUES (?,?,?,?,?,?,?)",
+                        (h, -take, "use", None, db.now(), sim, case_ref))
+            left -= take
+            used += take
+    if used:
         con.commit()
-    return use
+    return used

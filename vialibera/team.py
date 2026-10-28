@@ -27,7 +27,11 @@ def overview(con, who, label=None):
     members = [{"user": r["user_sub"], "label": r["label"] or "", "role": r["role"], "status": r["status"],
                 "me": r["user_sub"] == who["user"]} for r in rows
                if r["status"] == "active" or role == "owner"]  # only owners see pending requests
-    out = {"company": {"name": co["legal_name"], "vat": co["vat"], "plan": co["plan"]}, "role": role,
+    from . import accounts
+    from .app import TERMS_VERSION
+    cc = con.execute("SELECT at FROM company_consents WHERE company_id=? AND terms_version=?", (cid, TERMS_VERSION)).fetchone()
+    out = {"company": {"name": co["legal_name"], "vat": co["vat"], "plan": co["plan"],
+                       "terms_accepted_at": cc["at"] if cc else None}, "role": role,
            "members": members, "roles": list(permissions.ROLES), "can_manage": permissions.allowed(role, "team")}
     return 200, out
 

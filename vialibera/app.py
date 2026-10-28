@@ -83,7 +83,19 @@ def handle_consent(body, who):
         return 400, {"error": "sign-in required"}
     if not (body.get("accept_terms") and body.get("accept_onerous")):
         return 400, {"error": "both acceptances required"}
-    accounts.record_consent(con(), who["user"], TERMS_VERSION, "en" if body.get("lang") == "en" else "it", True)
+    lang = "en" if body.get("lang") == "en" else "it"
+    accounts.record_consent(con(), who["user"], TERMS_VERSION, lang, True)
+    return 200, {"ok": True, "terms_version": TERMS_VERSION}
+
+
+def handle_company_consent(body, who):
+    """An owner accepts the terms for the whole company. Members need no separate acceptance."""
+    if not who:
+        return 400, {"error": "sign-in required"}
+    if not (body.get("accept_terms") and body.get("accept_onerous") and body.get("authorised")):
+        return 400, {"error": "all three confirmations required"}
+    if not accounts.record_company_consent(con(), who["user"], TERMS_VERSION, "en" if body.get("lang") == "en" else "it"):
+        return 403, {"error": "forbidden"}
     return 200, {"ok": True, "terms_version": TERMS_VERSION}
 
 
@@ -254,6 +266,8 @@ def handle_team(path, body, who):
         return team.set_role(c, who, str(body.get("user") or ""), str(body.get("role") or ""))
     if path == "/team/remove":
         return team.remove(c, who, str(body.get("user") or ""))
+    if path == "/team/consent":
+        return handle_company_consent(body, who)
     if path == "/team/invite":
         return team.invite(c, who, str(body.get("role") or "member"))
     return 404, {}
@@ -450,7 +464,11 @@ class Handler(BaseHTTPRequestHandler):
                     r = con().execute("SELECT id FROM cases WHERE (owner_sub=? AND company_id IS NULL) OR company_id=? "
                                       "ORDER BY created_at DESC LIMIT 1", (who["user"], cid)).fetchone()
                     latest = r["id"] if r else None
-                return self._send(200, {"consent": ok or not who, "terms_version": TERMS_VERSION,
+                via = None
+                if who and ok and not con().execute("SELECT 1 FROM consents WHERE user_sub=? AND terms_version=?",
+                                                    (who["user"], TERMS_VERSION)).fetchone():
+                    via = "company"
+                return self._send(200, {"consent": ok or not who, "terms_version": TERMS_VERSION, "consent_via": via,
                                         "latest_case": latest,
                                         "role": permissions.my_role(con(), who) if who else None,
                                         **(accounts.get_profile(con(), who["user"]) if who else {})})

@@ -129,9 +129,17 @@ CREATE TABLE IF NOT EXISTS invite_uses (
   accepted_at TEXT NOT NULL,
   granted_at TEXT
 );
+CREATE TABLE IF NOT EXISTS company_consents (
+  company_id TEXT NOT NULL,
+  terms_version TEXT NOT NULL,
+  accepted_by TEXT NOT NULL,           -- the owner who accepted for the company
+  lang TEXT,
+  at TEXT NOT NULL,
+  PRIMARY KEY (company_id, terms_version)
+);
 CREATE TABLE IF NOT EXISTS credit_ledger (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_sub TEXT NOT NULL,
+  user_sub TEXT NOT NULL,              -- the holder: a person's sub, or 'co:<company id>' (the company holds credit once the person has one)
   delta_cents INTEGER NOT NULL,        -- grant positive, use negative
   kind TEXT NOT NULL,                  -- grant or use
   code TEXT,

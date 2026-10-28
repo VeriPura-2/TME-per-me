@@ -112,8 +112,30 @@ def attach_company(con, case_id, who):
 
 
 def has_consent(con, user_sub, terms_version):
-    return con.execute("SELECT 1 FROM consents WHERE user_sub=? AND terms_version=?",
-                       (user_sub, terms_version)).fetchone() is not None
+    """Personal acceptance, or the person's company accepted for everyone (owner's acceptance)."""
+    if con.execute("SELECT 1 FROM consents WHERE user_sub=? AND terms_version=?", (user_sub, terms_version)).fetchone():
+        return True
+    return company_consent(con, user_sub, terms_version) is not None
+
+
+def company_consent(con, user_sub, terms_version):
+    """The company acceptance that covers this person, or None."""
+    r = con.execute("SELECT c.accepted_by, c.at, c.company_id FROM company_consents c "
+                    "JOIN memberships m ON m.company_id=c.company_id AND m.user_sub=? AND m.status='active' "
+                    "WHERE c.terms_version=? ORDER BY c.at LIMIT 1", (user_sub, terms_version)).fetchone()
+    return dict(r) if r else None
+
+
+def record_company_consent(con, user_sub, terms_version, lang):
+    """An owner accepts the terms for the company. Members then need no separate acceptance."""
+    from . import permissions
+    cid = permissions.company_of(con, user_sub)
+    if not cid or permissions.role_in(con, cid, user_sub) != "owner":
+        return False
+    con.execute("INSERT INTO company_consents(company_id, terms_version, accepted_by, lang, at) VALUES (?,?,?,?,?) "
+                "ON CONFLICT (company_id, terms_version) DO NOTHING", (cid, terms_version, user_sub, lang, db.now()))
+    con.commit()
+    return True
 
 
 def record_consent(con, user_sub, terms_version, lang, onerous):

@@ -114,3 +114,54 @@ class TeamTest(unittest.TestCase):
     def test_person_without_company_keeps_full_rights_on_own_work(self):
         self.assertEqual(permissions.my_role(self.c, who("solo")), "owner")
         self.assertEqual(app.handle_plan({"plan": "parti"}, who("solo"))[0], 200)
+
+
+class CompanyCreditAndConsentTest(unittest.TestCase):
+    def setUp(self):
+        from test_team import company as mk
+        self.cid, self.case = mk("T", {"own": ("owner", "active"), "man": ("manager", "active"), "mem": ("member", "active")})
+        self.c = app.con()
+
+    def test_invite_credit_belongs_to_the_company(self):
+        from vialibera import invites
+        code = invites.get_or_create(self.c, "mem")  # a member invites, the company is credited
+        invites.accept(self.c, "newb", code)
+        accounts.record_consent(self.c, "newb", app.TERMS_VERSION, "en", True)
+        self.assertEqual(app.handle_plan({"plan": "parti"}, who("newb"))[1]["invite_credit"], "granted")
+        self.assertEqual(invites.balance(self.c, "own"), 2000)
+        self.assertEqual(invites.balance(self.c, "mem"), 2000)
+        self.assertEqual(invites.balance(self.c, "newb"), 2000)  # the newcomer had no company: held personally
+        # a manager pays: the company credit is used, everyone in the company sees the lower balance
+        out = app.handle_simpay({"case_id": self.case, "selected": ["label_check"]}, who("man"))[1]["payment"]["data"]
+        self.assertGreater(out["credit_used_cents"], 0)
+        self.assertEqual(invites.balance(self.c, "own"), 2000 - out["credit_used_cents"])
+        self.assertEqual(invites.balance(self.c, "newb"), 2000)  # not touched
+
+    def test_personal_credit_follows_the_person_into_a_company(self):
+        from vialibera import invites
+        self.c.execute("INSERT INTO credit_ledger(user_sub, delta_cents, kind, code, at, expires_at, simulated, note) VALUES (?,?,?,?,?,?,?,?)",
+                       ("mem", 500, "grant", "x", db.now(), "2999-01-01T00:00:00Z", 0, "invite"))
+        self.c.commit()
+        self.assertEqual(invites.balance(self.c, "mem"), 500)
+        self.assertEqual(invites.apply(self.c, "mem", 800), 500)
+
+    def test_owner_accepts_terms_for_the_company(self):
+        c = self.c
+        c.execute("DELETE FROM consents")
+        c.commit()
+        self.assertFalse(app.consent_ok(who("mem")))
+        body = {"accept_terms": True, "accept_onerous": True, "authorised": True}
+        self.assertEqual(app.handle_company_consent(body, who("mem"))[0], 403)  # not an owner
+        self.assertEqual(app.handle_company_consent({"accept_terms": True}, who("own"))[0], 400)  # needs all three
+        self.assertEqual(app.handle_company_consent(body, who("own"))[0], 200)
+        self.assertTrue(app.consent_ok(who("mem")))
+        self.assertTrue(app.consent_ok(who("man")))
+        self.assertFalse(app.consent_ok(who("stranger")))
+        self.assertFalse(accounts.has_consent(c, "mem", "2099-new-version"))  # new version: owner must accept again
+        self.assertIsNotNone(team.overview(c, who("mem"))[1]["company"]["terms_accepted_at"])
+
+    def test_removed_member_is_no_longer_covered(self):
+        self.c.execute("DELETE FROM consents"); self.c.commit()
+        app.handle_company_consent({"accept_terms": True, "accept_onerous": True, "authorised": True}, who("own"))
+        team.remove(self.c, who("own"), "mem")
+        self.assertFalse(app.consent_ok(who("mem")))
