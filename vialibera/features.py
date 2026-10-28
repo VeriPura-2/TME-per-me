@@ -13,6 +13,7 @@ FEATURES = {
     "required_docs":    {"phase": 1, "mode": "sim", "sim_file": "sim/required_docs.py"},
     "tariff_lookup":    {"phase": 1, "mode": "sim", "sim_file": "sim/tariff.py"},
     "options_packet":   {"phase": 1, "mode": "sim", "sim_file": "sim/packet.py"},
+    "price_menu":       {"phase": 1, "mode": "sim", "sim_file": "sim/prices.py"},
     "payment":          {"phase": 1, "mode": "sim", "sim_file": "sim/payment.py"},
     "deliverables":     {"phase": 1, "mode": "sim", "sim_file": "sim/deliverables.py"},
     "staff_help":       {"phase": 1, "mode": "manual"},

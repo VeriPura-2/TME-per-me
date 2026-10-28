@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import accounts, agent, auth, db, docs, features, personas, storage
+from . import accounts, agent, auth, db, docs, features, personas, plans, storage
 from .menu import MENU
 from .secrets import get_secret
 
@@ -157,6 +157,12 @@ class Handler(BaseHTTPRequestHandler):
                                     "audience": os.environ.get("AUTH0_AUDIENCE", ""),
                                     "default_org": os.environ.get("AUTH0_DEFAULT_ORG", ""),
                                     "terms_version": TERMS_VERSION})
+        if path == "/plans.json":
+            body = plans.public()
+            if features.is_sim("price_menu"):
+                from .sim import prices
+                body["prices"] = prices.prices()
+            return self._send(200, body)
         if path == "/features.json":
             return self._send(200, features.public())
         if path in ("/terms", "/terms.html"):
