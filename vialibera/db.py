@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS companies (
   vat TEXT NOT NULL UNIQUE,            -- normalised, with country prefix
   legal_name TEXT,
   status TEXT NOT NULL DEFAULT 'unverified',
+  plan TEXT,                           -- the company pays: esplora, parti or cresci
   created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS memberships (
@@ -30,8 +31,18 @@ CREATE TABLE IF NOT EXISTS memberships (
   user_sub TEXT NOT NULL,
   role TEXT NOT NULL,                  -- owner, member, reviewer
   status TEXT NOT NULL DEFAULT 'active',  -- active, pending (access requested)
+  label TEXT,                          -- display text sent by the person's browser (email), never trusted for access
   created_at TEXT NOT NULL,
   PRIMARY KEY (company_id, user_sub)
+);
+CREATE TABLE IF NOT EXISTS team_invites (
+  token TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL,
+  role TEXT NOT NULL,
+  created_by TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_by TEXT,
+  created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS profiles (
   user_sub TEXT PRIMARY KEY,
@@ -199,6 +210,8 @@ def connect_pg(host, dbname, user, password):
     for col in ("org_id", "owner_sub", "company_id"):
         con.execute(f"ALTER TABLE cases ADD COLUMN IF NOT EXISTS {col} TEXT")
     con.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan TEXT")
+    con.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan TEXT")
+    con.execute("ALTER TABLE memberships ADD COLUMN IF NOT EXISTS label TEXT")
     con.commit()
     return con
 

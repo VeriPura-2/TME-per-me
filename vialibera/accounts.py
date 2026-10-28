@@ -41,14 +41,35 @@ def is_member(con, company_id, user_sub, active_only=True):
 
 
 def can_access(con, case_row, who):
-    """who is None only when sign-in is switched off (dev)."""
+    """who is None only when sign-in is switched off (dev). A company case follows membership only."""
     if who is None:
         return True
+    if case_row["company_id"]:
+        return is_member(con, case_row["company_id"], who["user"])
     if case_row["owner_sub"] == who["user"]:
         return True
-    if case_row["company_id"] and is_member(con, case_row["company_id"], who["user"]):
-        return True
     return bool(case_row["org_id"]) and case_row["org_id"] == who.get("org")
+
+
+def get_plan(con, user_sub):
+    """The company pays: use the company plan when the person belongs to one, else their own choice."""
+    from . import permissions
+    cid = permissions.company_of(con, user_sub)
+    if cid:
+        r = con.execute("SELECT plan FROM companies WHERE id=?", (cid,)).fetchone()
+        if r and r["plan"]:
+            return r["plan"]
+    return get_profile(con, user_sub)["plan"]
+
+
+def set_plan(con, user_sub, plan):
+    from . import permissions
+    cid = permissions.company_of(con, user_sub)
+    if cid:
+        con.execute("UPDATE companies SET plan=? WHERE id=?", (plan, cid))
+        con.commit()
+    else:
+        save_profile(con, user_sub, plan=plan)
 
 
 def attach_company(con, case_id, who):
@@ -68,7 +89,8 @@ def attach_company(con, case_id, who):
     t = db.now()
     if row is None:
         cid = str(uuid.uuid4())
-        con.execute("INSERT INTO companies(id, vat, legal_name, created_at) VALUES (?,?,?,?)", (cid, vat, name, t))
+        con.execute("INSERT INTO companies(id, vat, legal_name, plan, created_at) VALUES (?,?,?,?,?)",
+                    (cid, vat, name, get_profile(con, who["user"])["plan"], t))
         con.execute("INSERT INTO memberships(company_id, user_sub, role, created_at) VALUES (?,?,?,?)",
                     (cid, who["user"], "owner", t))
         con.execute("UPDATE cases SET company_id=? WHERE id=?", (cid, case_id))

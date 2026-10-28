@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import accounts, agent, auth, db, docs, features, invites, personas, plans, storage, voice
+from . import permissions, team, accounts, agent, auth, db, docs, features, invites, personas, plans, storage, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -52,7 +52,11 @@ def handle_chat(body, llm=None, who=None):
         row = c.execute("SELECT owner_sub, company_id, org_id FROM cases WHERE id=?", (cid,)).fetchone()
         if row is None or not accounts.can_access(c, row, who):
             return 404, {"error": "case not found"}  # same answer for other people's cases
+        if not permissions.allowed(permissions.case_role(c, row, who), "write"):
+            return 403, {"error": "forbidden"}
     else:
+        if not permissions.can(c, who, "write"):
+            return 403, {"error": "forbidden"}
         cid = db.create_case(c, int(body.get("path_type", 1)), org_id=(who or {}).get("org"),
                              owner_sub=who["user"] if who else None)
     history = db.load_history(c, cid)
@@ -90,6 +94,8 @@ def consent_ok(who):
 def handle_upload(headers, data, who):
     if not consent_ok(who):
         return 403, {"error": "consent_required"}
+    if not permissions.can(con(), who, "write"):
+        return 403, {"error": "forbidden"}
     from urllib.parse import unquote
     return docs.upload(con(), who, unquote(headers.get("X-Filename", "file")), data,
                        product=unquote(headers.get("X-Product", "")) or None,
@@ -108,6 +114,8 @@ def handle_docs(query, who):
 def handle_doc_update(doc_id, body, who):
     if not consent_ok(who):
         return 403, {"error": "consent_required"}
+    if not permissions.can(con(), who, "write"):
+        return 403, {"error": "forbidden"}
     if body.get("link_case"):
         if not docs.link(con(), who, body["link_case"], doc_id):
             return 404, {"error": "not found"}
@@ -135,13 +143,15 @@ def handle_profile(body, who):
     return 200, {"style": p["style"], "persona": {"id": pid, "name": personas.BY_ID[pid]["name"]} if pid else None}
 
 
-def _case_for(body, who):
-    """Return (row, error) for the case in the body, enforcing access."""
+def _case_for(body, who, action="read"):
+    """Return (row, error) for the case in the body, enforcing access and the role's rights for the action."""
     if not who:
         return None, (400, {"error": "sign-in required"})
     row = con().execute("SELECT * FROM cases WHERE id=?", (body.get("case_id"),)).fetchone()
     if row is None or not accounts.can_access(con(), row, who):
         return None, (404, {"error": "case not found"})
+    if not permissions.allowed(permissions.case_role(con(), row, who), action):
+        return None, (403, {"error": "forbidden"})
     return row, None
 
 
@@ -177,13 +187,15 @@ def handle_plan(body, who):
         return 400, {"error": "sign-in required"}
     out = {}
     if body.get("plan") in plans.PLANS:
-        accounts.save_profile(con(), who["user"], plan=body["plan"])
+        if not permissions.can(con(), who, "plan"):
+            return 403, {"error": "forbidden"}
+        accounts.set_plan(con(), who["user"], body["plan"])
         if features.is_sim("invite_trigger"):
             from .sim import invite_trigger
             out["invite_credit"] = invite_trigger.on_plan_chosen(con(), who["user"], body["plan"])
         else:
             pass  # live: the payment system calls invites.on_first_paid_month
-    out["plan"] = accounts.get_profile(con(), who["user"])["plan"] or plans.DEFAULT
+    out["plan"] = accounts.get_plan(con(), who["user"]) or plans.DEFAULT
     return 200, out
 
 
@@ -207,12 +219,12 @@ def handle_journey(body, who):
     if err:
         return err
     c = con()
-    plan = accounts.get_profile(c, who["user"])["plan"] or plans.DEFAULT
+    plan = accounts.get_plan(c, who["user"]) or plans.DEFAULT
     case = db.case_read(c, row["id"])
     have = {d["doc_type"] for d in docs.listing(c, who) if d["doc_type"]}
     out = {"credits": {"balance_cents": invites.balance(c, who["user"]),
                        "simulated": invites.has_simulated(c, who["user"])},
-           "plan": plan, "case": {"product": case["product"].get("name_brand"), "country": case["market"].get("country"),
+           "plan": plan, "role": permissions.case_role(c, row, who), "case": {"product": case["product"].get("name_brand"), "country": case["market"].get("country"),
                                   "category": case["product"].get("category"),
                                   "export_registration": case["company"].get("export_registration")}}
     if features.is_sim("required_docs"):
@@ -227,6 +239,26 @@ def handle_journey(body, who):
     return 200, out
 
 
+def handle_team(path, body, who):
+    """Team screen and owner actions. Everyone active may look; only owners change people."""
+    if not who:
+        return 400, {"error": "sign-in required"}
+    c = con()
+    if path == "/team":
+        return team.overview(c, who, body.get("label"))
+    if path == "/team/accept":
+        return team.accept(c, who, str(body.get("token") or ""))
+    if path == "/team/decide":
+        return team.decide(c, who, str(body.get("user") or ""), bool(body.get("approve")))
+    if path == "/team/role":
+        return team.set_role(c, who, str(body.get("user") or ""), str(body.get("role") or ""))
+    if path == "/team/remove":
+        return team.remove(c, who, str(body.get("user") or ""))
+    if path == "/team/invite":
+        return team.invite(c, who, str(body.get("role") or "member"))
+    return 404, {}
+
+
 def handle_eori(body, who):
     """What we hold for the EORI form, what is missing, and the links. DRAFT, see eori.py."""
     row, err = _case_for(body, who)
@@ -238,7 +270,7 @@ def handle_eori(body, who):
 
 def handle_eori_pdf(body, who):
     """Save the values the person confirmed and return the filled ADM form as PDF bytes."""
-    row, err = _case_for(body, who)
+    row, err = _case_for(body, who, "write")
     if err:
         return err
     from . import eori
@@ -251,14 +283,14 @@ def handle_eori_pdf(body, who):
 
 
 def handle_simpay(body, who):
-    row, err = _case_for(body, who)
+    row, err = _case_for(body, who, "order")
     if err:
         return err
     if not (features.is_sim("payment") and features.is_sim("options_packet")):
         return 501, {"error": "payment is not simulated"}
     from .sim import packet, payment, deliverables
     c = con()
-    plan = accounts.get_profile(c, who["user"])["plan"] or plans.DEFAULT
+    plan = accounts.get_plan(c, who["user"]) or plans.DEFAULT
     sel = [i for i in (body.get("selected") or []) if i in packet.NAMES]
     if not sel:
         return 400, {"error": "no items selected"}
@@ -359,7 +391,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf")
-                or self.path.startswith("/doc/")):
+                or self.path.startswith("/doc/") or self.path.startswith("/team")):
             return self._send(404, {})
         try:
             try:
@@ -387,6 +419,8 @@ class Handler(BaseHTTPRequestHandler):
                     self.end_headers()
                     return self.wfile.write(out)
                 return self._send(code, out)
+            if self.path.startswith("/team"):
+                return self._send(*handle_team(self.path, body, who))
             if self.path == "/eori":
                 return self._send(*handle_eori(body, who))
             if self.path == "/eori/pdf":
@@ -412,11 +446,13 @@ class Handler(BaseHTTPRequestHandler):
                 ok = bool(who) and accounts.has_consent(con(), who["user"], TERMS_VERSION)
                 latest = None
                 if who:
-                    r = con().execute("SELECT id FROM cases WHERE owner_sub=? ORDER BY created_at DESC LIMIT 1",
-                                      (who["user"],)).fetchone()
+                    cid = permissions.company_of(con(), who["user"])
+                    r = con().execute("SELECT id FROM cases WHERE (owner_sub=? AND company_id IS NULL) OR company_id=? "
+                                      "ORDER BY created_at DESC LIMIT 1", (who["user"], cid)).fetchone()
                     latest = r["id"] if r else None
                 return self._send(200, {"consent": ok or not who, "terms_version": TERMS_VERSION,
                                         "latest_case": latest,
+                                        "role": permissions.my_role(con(), who) if who else None,
                                         **(accounts.get_profile(con(), who["user"]) if who else {})})
             self._send(*handle_chat(body, who=who))
         except Exception as e:  # keep the service up, report a typed error
