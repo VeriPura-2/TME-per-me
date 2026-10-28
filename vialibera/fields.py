@@ -36,7 +36,7 @@ REQUIRED = [
     ("market", "approver", "Who approves decisions", "options: the person chatting | someone else", None),
     ("company", "legal_name", "Legal company name", "free text", None),
     ("company", "vat_number", "VAT number (partita IVA)", "free text", None),
-    ("company", "address_region", "Registered address and region", "free text", None),
+    ("company", "address_region", "Registered address", "free text: street and number, postcode, city and province, for example Via Roma 1, 12051 Alba (CN)", None),
     ("company", "size", "Company size", "options: micro under 10 staff | small 10-49 | medium 50-249", None),
     ("company", "contact", "Main contact name, email, phone", "free text", None),
     ("company", "export_experience", "Export experience", "options: none | occasional | regular", None),

@@ -48,3 +48,14 @@ class EoriTest(unittest.TestCase):
     def test_other_users_cannot_read_the_case(self):
         cid = case("e3")
         self.assertEqual(app.handle_eori({"case_id": cid}, who("intruder"))[0], 404)
+
+
+class SplitTest(unittest.TestCase):
+    def test_splits_common_forms(self):
+        self.assertEqual(eori.split_address("Via Roma 1, 12051 Alba (CN)"),
+                         {"address": "Via Roma 1", "cap": "12051", "city": "Alba", "province": "CN"})
+        self.assertEqual(eori.split_address("Via Roma 1, 12051 Alba CN"),
+                         {"address": "Via Roma 1", "cap": "12051", "city": "Alba", "province": "CN"})
+        self.assertEqual(eori.split_address("Strada Vecchia 5, Alba"), {"address": "Strada Vecchia 5", "city": "Alba"})
+        self.assertEqual(eori.split_address("Via Roma 1"), {"address": "Via Roma 1"})
+        self.assertEqual(eori.split_address(""), {})

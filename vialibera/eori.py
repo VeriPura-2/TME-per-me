@@ -51,6 +51,33 @@ def _digits(v):
     return re.sub(r"\D", "", v or "")
 
 
+def split_address(text):
+    """Best-effort split of an Italian address like 'Via Roma 1, 12051 Alba (CN)' into street, cap, city, province.
+    Anything we cannot place stays in street so nothing is lost; the person checks the result."""
+    t = re.sub(r"\s+", " ", (text or "").strip())
+    out = {}
+    m = re.search(r"\b(\d{5})\b", t)
+    prov = re.search(r"[(\[,\s-]\s*([A-Za-z]{2})\s*[)\]]?\s*$", t)
+    if prov and prov.group(1).isupper():
+        out["province"] = prov.group(1)
+        t = t[:prov.start()].rstrip(" ,-([")
+    if m:
+        out["cap"] = m.group(1)
+        before, after = t[:m.start()].strip(" ,-"), t[m.end():].strip(" ,-")
+        if after:
+            out["city"] = after
+        out["address"] = before
+        if not before and after:
+            out.pop("address")
+    else:
+        parts = [x.strip() for x in t.split(",") if x.strip()]
+        if len(parts) >= 2:
+            out["city"], out["address"] = parts[-1], ", ".join(parts[:-1])
+        else:
+            out["address"] = t
+    return {k: v for k, v in out.items() if v}
+
+
 def prefill(case, saved=None):
     """Values we can offer from the case, then anything the person already confirmed."""
     co = case.get("company", {}) if case else {}
@@ -61,8 +88,13 @@ def prefill(case, saved=None):
     d = _digits(co.get("vat_number"))
     if len(d) == 11:
         out["piva"] = d
-    if co.get("address_region"):
-        out["address"] = co["address_region"]
+    out.update(split_address(co.get("address_region")))
+    if out.get("city"):
+        out["c_city"] = out["city"]
+    if out.get("address"):
+        out["c_address"] = out["address"]
+    if out.get("cap"):
+        out["c_cap"] = out["cap"]
     contact = co.get("contact") or ""
     m = re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", contact)
     if m:
@@ -94,7 +126,7 @@ def describe(case, lang):
                             {"id": "person", "label": "Persona fisica" if lang == "it" else "Natural person (sole trader)"},
                             {"id": "association", "label": "Associazione di persone" if lang == "it" else "Association of persons"}],
             "missing": [f["key"] for f in fields if f["required"] and not f["value"]] + ([] if vals.get("legal_form") else ["legal_form"]),
-            "links": LINKS, "note": NOTE[lang]}
+            "links": LINKS, "note": NOTE[lang], "excise": excise((case or {}).get("product", {}).get("category"), lang)}
 
 
 def _latin(s):
@@ -134,3 +166,43 @@ def fill(values):
     out = io.BytesIO()
     wr.write(out)
     return out.getvalue()
+
+
+# ---- excise guidance (DRAFT). Sources: Camera di commercio di Torino guide (June 2025) and Promos Italia
+# paper on wine and excise. ADM's own forms page could not be read, so no ADM form is linked for producers.
+EXCISE_SOURCES = [
+    {"label": "Camera di commercio di Torino: guida fiscale e doganale per vino e alcolici", "url": "https://www.to.camcom.it/book/export/html/17204"},
+    {"label": "Promos Italia: export del vino e accise", "url": "https://promositalia.camcom.it/kdocs/2019935/lexport_del_vino_italiano_e_il_ruolo_delle_accise.pdf"},
+    {"label": "ADM: FAQ accise", "url": "https://www.adm.gov.it/portale/en/-/faq-le-risposte-alle-domande-piu-frequenti-in-materia-di-accise"},
+]
+EXCISE = {
+    "wine": {
+        "it": ["In Italia l'aliquota di accisa sul vino è zero, ma il vino resta un prodotto soggetto ad accisa.",
+               "Piccoli produttori (produzione media annua sotto i 1.000 hl): non servono deposito fiscale, codice d'accisa e cauzione (art. 37 D.Lgs. 504/1995). Le fonti indicano periodi di calcolo diversi (tre o cinque anni): conferma con ADM.",
+               "Sopra i 1.000 hl, o per spedire in sospensione d'accisa verso altri Paesi UE, di solito servono deposito fiscale (depositario autorizzato) o lo status di speditore registrato.",
+               "Vini liquorosi, mistelle e vermouth sono prodotti intermedi: serve il deposito fiscale anche per i piccoli produttori.",
+               "Per l'export fuori UE l'uscita è confermata dalla dogana di esportazione, non da un modulo accise.",
+               "Come si ottiene: denuncia all'Ufficio delle Dogane competente, poi sopralluogo e istanza in bollo con tassa annuale. Non abbiamo trovato un modulo scaricabile ADM per i produttori."],
+        "en": ["In Italy the excise rate on wine is zero, but wine is still an excise product.",
+               "Small producers (average annual output under 1,000 hl) need no tax warehouse (deposito fiscale), excise code or guarantee (art. 37 D.Lgs. 504/1995). Sources give different averaging periods (three or five years): confirm with ADM.",
+               "Above 1,000 hl, or to ship under excise suspension to other EU countries, you normally need a tax warehouse (authorised warehousekeeper) or registered consignor status.",
+               "Fortified wines, mistelle and vermouth are intermediate products: a tax warehouse is needed even for small producers.",
+               "For exports outside the EU, exit is confirmed by the export customs office, not by an excise form.",
+               "How to get it: a denuncia to the competent customs office (Ufficio delle Dogane), then an inspection and an application on stamped paper with an annual fee. We found no downloadable ADM form for producers."],
+    },
+    "spirits": {
+        "it": ["Per produrre o depositare spiriti in sospensione d'accisa servono di norma deposito fiscale e codice d'accisa.",
+               "Per la vendita al consumatore in Italia servono i contrassegni di Stato.",
+               "Come si ottiene: denuncia all'Ufficio delle Dogane competente, poi sopralluogo e istanza in bollo con tassa annuale. Non abbiamo trovato un modulo scaricabile ADM per i produttori."],
+        "en": ["To produce or store spirits under excise suspension you normally need a tax warehouse and an excise code.",
+               "Spirits sold to consumers in Italy need state seals (contrassegni di Stato).",
+               "How to get it: a denuncia to the competent customs office (Ufficio delle Dogane), then an inspection and an application on stamped paper with an annual fee. We found no downloadable ADM form for producers."],
+    },
+}
+
+
+def excise(category, lang):
+    c = EXCISE.get((category or "").strip().lower())
+    if not c:
+        return None
+    return {"points": c[lang], "sources": EXCISE_SOURCES}
