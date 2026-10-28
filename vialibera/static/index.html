@@ -149,7 +149,7 @@ function applyLang() {
   if (ctx.email) $("who").textContent = t.signed + ctx.email;
   applyTheme();
 }
-$("lang").onclick = () => { lang = lang === "it" ? "en" : "it"; store.set("vl_lang", lang); applyLang(); };
+$("lang").onclick = () => { lang = lang === "it" ? "en" : "it"; store.set("vl_lang", lang); applyLang(); if (window.vlRefresh) window.vlRefresh(); };
 $("theme").onclick = () => {
   const dark = theme ? theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
   theme = dark ? "light" : "dark"; store.set("vl_theme", theme); applyTheme();
@@ -313,8 +313,10 @@ applyLang();
     }
   }
   $("jbtn").onclick = () => { const p = $("journey"); p.hidden = !p.hidden; if (!p.hidden) { jsel = null; loadJourney(); } };
+  let curPersona = null;
   function setPersona(p) {
     if (!p) return;
+    curPersona = p;
     $("persona").textContent = p.name + ", " + T[lang].p_suffix + " ·";
     $("switch").textContent = T[lang].p_switch;
   }
@@ -383,6 +385,12 @@ applyLang();
     go(t.w_q, 1, lang === "it" ? "Ho una domanda." : "I have a question.");
     $("app").hidden = true; $("welcome").hidden = false;
   }
+  window.vlRefresh = () => {  // redraw whatever is on screen in the new language
+    if (!$("welcome").hidden) welcome();
+    if (!$("journey").hidden) loadJourney();
+    if (!$("docs").hidden) { $("d-title").textContent = T[lang].d_title; $("d-help").textContent = T[lang].d_help; $("d-projt").textContent = T[lang].d_proj; loadDocs(); }
+    if (curPersona) setPersona(curPersona);
+  };
   welcome();
 })();
 </script></body></html>
