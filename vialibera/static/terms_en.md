@@ -2,7 +2,7 @@
 
 # Via Libera: Terms of Service
 
-Version 2026-10-v0.2. Italian is the primary language of these terms. If the English and Italian texts differ, the Italian text prevails.
+Version 2026-10-v0.3. Italian is the primary language of these terms. If the English and Italian texts differ, the Italian text prevails.
 
 ## 1. Who we are
 
@@ -20,7 +20,7 @@ Via Libera is for businesses and professionals only, not consumers. By accepting
 
 ## 4. You are talking to an AI
 
-The assistant is an AI system. It can make mistakes. It does not confirm anything on your behalf. Compliance checks (for example tariff, label and document checks) are reviewed by VeriPura staff before delivery, and you confirm each item before it is final. Spoken replies, if you press Listen, use a synthetic voice. It is an AI voice, not a person, and not a recording or copy of a real person. Only the text of the reply is sent to the voice provider, and only when you press Listen.
+The assistant is an AI system. It can make mistakes. It does not confirm anything on your behalf. Compliance checks (for example tariff, label and document checks) are reviewed by VeriPura staff before delivery, and you confirm each item before it is final. The spoken introduction uses a synthetic voice. It is an AI voice, not a person, and not a recording or copy of a real person. The voice provider receives only a fixed script, never your data or your conversation.
 
 ## 5. Accounts and companies
 
@@ -90,7 +90,7 @@ Write to [EMAIL] or [PEC].
 - To secure the service, prevent fraud, and improve the service in aggregated form (legitimate interest, Art. 6(1)(f)).
 - To record your acceptance of these terms (legal obligation and legitimate interest).
 
-**Who receives data (processors and recipients):** cloud hosting in the EU (Google Cloud, region europe-west1, Belgium); sign-in provider (Auth0 / Okta, EU tenant); AI processing provider (Anthropic) for the assistant's replies [CONFIRM REGION AND DATA PROCESSING TERMS]; voice provider (ElevenLabs, EU data residency environment) for spoken replies [CONFIRM ZERO RETENTION MODE AND DATA PROCESSING TERMS]; payment provider [TO BE CHOSEN]; independent providers you choose for a service; VeriPura staff. Transfers outside the EU, if any, rely on adequacy decisions or standard contractual clauses.
+**Who receives data (processors and recipients):** cloud hosting in the EU (Google Cloud, region europe-west1, Belgium); sign-in provider (Auth0 / Okta, EU tenant); AI processing provider (Anthropic) for the assistant's replies [CONFIRM REGION AND DATA PROCESSING TERMS]; voice provider (ElevenLabs) for the spoken introduction, which sends a fixed script and no personal data [IF SPOKEN REPLIES ARE ADDED LATER: UPDATE THIS ENTRY AND CONFIRM EU RESIDENCY AND DATA PROCESSING TERMS]; payment provider [TO BE CHOSEN]; independent providers you choose for a service; VeriPura staff. Transfers outside the EU, if any, rely on adequacy decisions or standard contractual clauses.
 
 **Retention:** account and case data for the life of the account and [24] months after your last activity; accounting records for [10] years as required by law; consent logs for as long as needed to prove acceptance. Backups expire in [35] days.
 

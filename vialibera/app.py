@@ -15,7 +15,7 @@ from . import accounts, agent, auth, db, docs, features, personas, plans, storag
 from .menu import MENU
 from .secrets import get_secret
 
-TERMS_VERSION = "2026-10-v0.2"
+TERMS_VERSION = "2026-10-v0.3"
 CON = None
 _client = None
 
