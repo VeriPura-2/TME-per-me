@@ -126,7 +126,7 @@ def describe(case, lang):
                             {"id": "person", "label": "Persona fisica" if lang == "it" else "Natural person (sole trader)"},
                             {"id": "association", "label": "Associazione di persone" if lang == "it" else "Association of persons"}],
             "missing": [f["key"] for f in fields if f["required"] and not f["value"]] + ([] if vals.get("legal_form") else ["legal_form"]),
-            "links": LINKS, "note": NOTE[lang], "excise": excise((case or {}).get("product", {}).get("category"), lang)}
+            "links": LINKS, "note": NOTE[lang], "vat_note": VAT_NOTE[lang], "excise": excise((case or {}).get("product", {}).get("category"), lang)}
 
 
 def _latin(s):
@@ -167,6 +167,11 @@ def fill(values):
     wr.write(out)
     return out.getvalue()
 
+
+VAT_NOTE = {
+    "it": "IVA sulle esportazioni (tutti i prodotti): se il trasporto fuori UE è a carico del cliente estero (per esempio EXW, FCA), la merce deve uscire dalla UE entro 90 giorni dalla consegna, altrimenti si deve applicare l'IVA e scatta una sanzione del 50 per cento dell'imposta. Si può regolarizzare entro i 30 giorni successivi (art. 8 DPR 633/1972, art. 7 D.Lgs. 471/1997). Fonte: guida della Camera di commercio di Torino, da verificare con il tuo commercialista.",
+    "en": "VAT on exports (all products): if the foreign buyer arranges transport outside the EU (for example EXW, FCA), the goods must leave the EU within 90 days of delivery, otherwise Italian VAT applies and a penalty of 50 percent of the tax follows. It can be regularised in the following 30 days (art. 8 DPR 633/1972, art. 7 D.Lgs. 471/1997). Source: Turin Chamber of Commerce guide, to be confirmed with your accountant.",
+}
 
 # ---- excise guidance (DRAFT). Main source: Camera di commercio di Torino guide "Vendere vino e bevande alcoliche
 # in Italia e all'estero" (updated June 2025, quotes D.Lgs. 504/1995). Also EU pages on excise and EMCS.
