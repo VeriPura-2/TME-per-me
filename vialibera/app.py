@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import accounts, agent, auth, db, docs, personas, storage
+from . import accounts, agent, auth, db, docs, features, personas, storage
 from .menu import MENU
 from .secrets import get_secret
 
@@ -157,6 +157,8 @@ class Handler(BaseHTTPRequestHandler):
                                     "audience": os.environ.get("AUTH0_AUDIENCE", ""),
                                     "default_org": os.environ.get("AUTH0_DEFAULT_ORG", ""),
                                     "terms_version": TERMS_VERSION})
+        if path == "/features.json":
+            return self._send(200, features.public())
         if path in ("/terms", "/terms.html"):
             data = render_terms(self.path.split("lang=")[-1][:2] if "lang=" in self.path else "it")
             self.send_response(200)
