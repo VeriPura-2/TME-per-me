@@ -179,7 +179,7 @@ applyLang();
   const call = async (path, body, raw) => {
     const token = await client.getTokenSilently();
     const r = await fetch(path, {method: "POST", headers: {"Authorization": "Bearer " + token, "Content-Type": "application/json"}, body: JSON.stringify(body)});
-    return [r, raw ? (r.ok ? await r.blob() : null) : await r.json()];
+    return [r, raw ? (r.ok ? await r.blob() : await r.json().catch(() => ({}))) : await r.json()];
   };
   const me = (await call("/me", {}))[1];
   if (!me.consent) {
@@ -200,7 +200,7 @@ applyLang();
       try {
         const [r, j] = await call("/speak", {text, lang, intro: !introduced}, true);
         if (r.ok) { introduced = true; const a = new Audio(URL.createObjectURL(j)); a.play(); }
-        else { const e = await r.json(); add("bot", e.error === "voice_daily_limit" ? T[lang].v_limit : T[lang].v_err); }
+        else { add("bot", j.error === "voice_daily_limit" ? T[lang].v_limit : T[lang].v_err); }
       } catch (e) { add("bot", T[lang].v_err); }
       b.disabled = false;
     };
@@ -355,9 +355,11 @@ applyLang();
     wl.onclick = async () => {
       wl.disabled = true;
       try {
+        $("w-listen-note").textContent = t.w_listen_note;
         const [r, blob] = await call("/intro", {lang}, true);
-        if (r.ok) new Audio(URL.createObjectURL(blob)).play(); else add("bot", t.v_err);
-      } catch (e) { add("bot", t.v_err); }
+        if (r.ok) await new Audio(URL.createObjectURL(blob)).play();
+        else $("w-listen-note").textContent = t.v_err + " (" + (blob.error || r.status) + (blob.status ? " " + blob.status : "") + (blob.detail ? ": " + blob.detail : "") + ")";
+      } catch (e) { $("w-listen-note").textContent = t.v_err + " (" + e.name + ": " + e.message + ")"; }
       wl.disabled = false;
     };
     const sb = $("w-styles"); sb.innerHTML = "";

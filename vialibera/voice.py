@@ -147,8 +147,14 @@ def speak(con, user, text, persona_id, lang="it", intro_name=None, post=None, us
     try:
         audio = (post or (lambda r: urllib.request.urlopen(r, timeout=30).read()))(req)
     except urllib.error.HTTPError as e:
-        return 502, {"error": "voice_provider_error", "status": e.code}
-    except Exception:
-        return 502, {"error": "voice_unavailable"}
+        try:
+            detail = e.read().decode("utf-8", "replace")[:200]
+        except Exception:
+            detail = ""
+        print("elevenlabs error", e.code, detail, flush=True)
+        return 502, {"error": "voice_provider_error", "status": e.code, "detail": detail}
+    except Exception as e:
+        print("elevenlabs unavailable", type(e).__name__, str(e)[:200], flush=True)
+        return 502, {"error": "voice_unavailable", "detail": type(e).__name__ + ": " + str(e)[:150]}
     _add_usage(con, user, len(t))
     return 200, audio
