@@ -168,35 +168,44 @@ def fill(values):
     return out.getvalue()
 
 
-# ---- excise guidance (DRAFT). Sources: Camera di commercio di Torino guide (June 2025) and Promos Italia
-# paper on wine and excise. ADM's own forms page could not be read, so no ADM form is linked for producers.
+# ---- excise guidance (DRAFT). Main source: Camera di commercio di Torino guide "Vendere vino e bevande alcoliche
+# in Italia e all'estero" (updated June 2025, quotes D.Lgs. 504/1995). Also EU pages on excise and EMCS.
+# ADM's own pages could not be opened by us, so each point is to be confirmed with the customs office.
 EXCISE_SOURCES = [
-    {"label": "Camera di commercio di Torino: guida fiscale e doganale per vino e alcolici", "url": "https://www.to.camcom.it/book/export/html/17204"},
-    {"label": "Promos Italia: export del vino e accise", "url": "https://promositalia.camcom.it/kdocs/2019935/lexport_del_vino_italiano_e_il_ruolo_delle_accise.pdf"},
+    {"label": "Camera di commercio di Torino: guida fiscale e doganale per vino e alcolici (giugno 2025)", "url": "https://www.to.camcom.it/book/export/html/17204"},
+    {"label": "Your Europe: paying excise duties", "url": "https://europa.eu/youreurope/business/taxation/excise-duties-eu/paying-excise-duties/"},
+    {"label": "Commissione UE: EMCS e e-AD", "url": "https://taxation-customs.ec.europa.eu/taxation/excise-duties/emcs_en"},
+    {"label": "Access2Markets: excise duties and My Trade Assistant", "url": "https://trade.ec.europa.eu/access-to-markets/en/my-trade-assistant"},
     {"label": "ADM: FAQ accise", "url": "https://www.adm.gov.it/portale/en/-/faq-le-risposte-alle-domande-piu-frequenti-in-materia-di-accise"},
 ]
+_HOW = {"it": "Licenza (deposito fiscale): denuncia all'Ufficio delle Dogane competente, verifica dell'impianto, poi istanza in bollo e diritto annuale (103,29 euro per un deposito di vino, 258,23 euro per altre bevande alcoliche). Non abbiamo trovato un modulo scaricabile ADM.",
+        "en": "Licence (tax warehouse): a denuncia to the competent customs office, an inspection of the premises, then an application on stamped paper and an annual fee (EUR 103.29 for a wine warehouse, EUR 258.23 for other alcoholic drinks). We found no downloadable ADM form."}
 EXCISE = {
     "wine": {
-        "it": ["In Italia l'aliquota di accisa sul vino è zero, ma il vino resta un prodotto soggetto ad accisa.",
-               "Piccoli produttori (produzione media annua sotto i 1.000 hl): non servono deposito fiscale, codice d'accisa e cauzione (art. 37 D.Lgs. 504/1995). Le fonti indicano periodi di calcolo diversi (tre o cinque anni): conferma con ADM.",
-               "Sopra i 1.000 hl, o per spedire in sospensione d'accisa verso altri Paesi UE, di solito servono deposito fiscale (depositario autorizzato) o lo status di speditore registrato.",
-               "Vini liquorosi, mistelle e vermouth sono prodotti intermedi: serve il deposito fiscale anche per i piccoli produttori.",
-               "Per l'export fuori UE l'uscita è confermata dalla dogana di esportazione, non da un modulo accise.",
-               "Come si ottiene: denuncia all'Ufficio delle Dogane competente, poi sopralluogo e istanza in bollo con tassa annuale. Non abbiamo trovato un modulo scaricabile ADM per i produttori."],
-        "en": ["In Italy the excise rate on wine is zero, but wine is still an excise product.",
-               "Small producers (average annual output under 1,000 hl) need no tax warehouse (deposito fiscale), excise code or guarantee (art. 37 D.Lgs. 504/1995). Sources give different averaging periods (three or five years): confirm with ADM.",
-               "Above 1,000 hl, or to ship under excise suspension to other EU countries, you normally need a tax warehouse (authorised warehousekeeper) or registered consignor status.",
-               "Fortified wines, mistelle and vermouth are intermediate products: a tax warehouse is needed even for small producers.",
-               "For exports outside the EU, exit is confirmed by the export customs office, not by an excise form.",
-               "How to get it: a denuncia to the competent customs office (Ufficio delle Dogane), then an inspection and an application on stamped paper with an annual fee. We found no downloadable ADM form for producers."],
+        "it": ["Il vino ha accisa a aliquota zero in Italia ma resta un prodotto soggetto ad accisa.",
+               "Piccolo produttore (media annua sotto i 1.000 hl nelle ultime tre campagne viticole consecutive): niente deposito fiscale, codice d'accisa e cauzione finché l'aliquota è zero (art. 37 D.Lgs. 504/1995). Servono comunque registro di cantina telematico, documento di accompagnamento e controlli.",
+               "Il piccolo produttore non può fare vini liquorosi o aromatizzati (vermouth, mistelle): sono prodotti intermedi e richiedono un deposito fiscale.",
+               "Sopra i 1.000 hl, o con prodotti intermedi, serve un deposito fiscale con licenza e codice d'accisa.",
+               "Export fuori UE, uscita da una dogana italiana: dichiarazione di esportazione (di solito tramite spedizioniere doganale), fattura senza IVA con la dicitura dell'art. 8 DPR 633/1972 e prova di uscita (MRN, cassetto doganale). Documenti di trasporto interni (DDT).",
+               "Export fuori UE, uscita da una dogana di un altro Paese UE: il piccolo produttore emette l'MVV-E, il deposito fiscale l'e-AD, entrambi sulla dogana di esportazione.",
+               _HOW["it"]],
+        "en": ["Wine has a zero excise rate in Italy but is still an excise product.",
+               "Small producer (average output under 1,000 hl over the last three consecutive wine campaigns): no tax warehouse, excise code or guarantee while the rate is zero (art. 37 D.Lgs. 504/1995). You still need the electronic cellar register, an accompanying document and to accept controls.",
+               "A small producer cannot make fortified or aromatised wines (vermouth, mistelle): they are intermediate products and need a tax warehouse.",
+               "Above 1,000 hl, or with intermediate products, you need a tax warehouse with a licence and excise code.",
+               "Export outside the EU, leaving through an Italian customs office: export declaration (usually through a customs broker), invoice without VAT with the art. 8 DPR 633/1972 wording, and proof of exit (MRN, customs drawer). Ordinary domestic transport documents (DDT).",
+               "Export outside the EU, leaving through another EU country's customs office: the small producer issues an MVV-E, a tax warehouse issues an e-AD, both addressed to the export customs office.",
+               _HOW["en"]],
     },
     "spirits": {
-        "it": ["Per produrre o depositare spiriti in sospensione d'accisa servono di norma deposito fiscale e codice d'accisa.",
-               "Per la vendita al consumatore in Italia servono i contrassegni di Stato.",
-               "Come si ottiene: denuncia all'Ufficio delle Dogane competente, poi sopralluogo e istanza in bollo con tassa annuale. Non abbiamo trovato un modulo scaricabile ADM per i produttori."],
-        "en": ["To produce or store spirits under excise suspension you normally need a tax warehouse and an excise code.",
-               "Spirits sold to consumers in Italy need state seals (contrassegni di Stato).",
-               "How to get it: a denuncia to the competent customs office (Ufficio delle Dogane), then an inspection and an application on stamped paper with an annual fee. We found no downloadable ADM form for producers."],
+        "it": ["Per produrre o detenere alcol e bevande spiritose in sospensione d'accisa serve un deposito fiscale con licenza e codice d'accisa. Il regime del piccolo produttore vale solo per il vino.",
+               "Export fuori UE: la vendita in sospensione d'accisa comporta l'e-AD, emesso sulla dogana di esportazione se la merce esce da un altro Paese UE; con uscita da una dogana italiana valgono i documenti di circolazione interna.",
+               "Dichiarazione di esportazione e prova di uscita come per il vino; l'uscita conferma la fine della sospensione e libera la cauzione.",
+               _HOW["it"]],
+        "en": ["To produce or hold alcohol and spirits under excise suspension you need a tax warehouse with a licence and an excise code. The small-producer regime applies only to wine.",
+               "Export outside the EU: a sale under excise suspension requires an e-AD, addressed to the export customs office if the goods leave through another EU country; leaving through an Italian customs office, ordinary domestic documents apply.",
+               "Export declaration and proof of exit work as for wine; exit ends the suspension and releases the guarantee.",
+               _HOW["en"]],
     },
 }
 
