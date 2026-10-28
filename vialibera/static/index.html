@@ -294,12 +294,13 @@ applyLang();
     const cur = r.ok ? j.plan : pl.default;
     Object.entries(pl.plans).forEach(([id, p]) => {
       const c = mk("div", null, "card" + (id === cur ? " on" : ""));
-      c.appendChild(mk("strong", p.name[lang])); c.appendChild(mk("div", p.tier[lang], "muted"));
+      c.appendChild(mk("strong", p.name[lang] + (id === cur ? " ✓" : ""))); c.appendChild(mk("div", p.tier[lang], "muted"));
       const price = pl.prices && pl.prices.data[id];
       if (price) c.appendChild(mk("div", price.monthly ? eur(price.monthly) + " " + t.j_month : t.j_free));
       const n = p.max_projects || "∞"; c.appendChild(mk("div", n + " " + (lang === "it" ? (n === 1 ? "progetto" : "progetti") : (n === 1 ? "project" : "projects")), "muted"));
       c.onclick = async () => {
         const [rp, jp] = await call("/plan", {plan: id}); await loadJourney();
+        if (!rp.ok) { $("j-done").innerHTML = ""; $("j-done").appendChild(mk("p", t.err + (jp.error || rp.status))); return; }
         if (rp.ok && jp.invite_credit === "granted") { const dn = $("j-done"); dn.appendChild(mk("p", t.j_credit_got)); dn.appendChild(mk("span", t.j_sim, "sim")); }
       };
       box.appendChild(c);
