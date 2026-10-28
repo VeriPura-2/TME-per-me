@@ -280,16 +280,19 @@ applyLang();
   let jsel = null;
   async function loadJourney() {
     const t = T[lang];
-    $("j-plans").textContent = t.j_loading; $("j-req").textContent = ""; $("j-pk").textContent = "";
+    const y = window.scrollY;
+    if (!$("j-plans").children.length) $("j-plans").textContent = t.j_loading;
     try { await loadJourneyInner(); } catch (e) { $("j-plans").textContent = t.j_fail + " (" + e.name + ")"; }
+    window.scrollTo(0, y);
   }
   async function loadJourneyInner() {
     const t = T[lang];
     $("j-title").textContent = t.j_title; $("j-plans-t").textContent = t.j_plans; $("j-req-t").textContent = t.j_req; $("j-pk-t").textContent = t.j_pk;
     $("j-done").innerHTML = "";
     const pl = await (await fetch("/plans.json")).json();
-    if (!caseId) { $("j-req").textContent = t.j_nocase; $("j-pk").textContent = ""; }
-    const [r, j] = await call("/journey", {case_id: caseId, selected: jsel});
+    const cid = caseId || me.latest_case || null;
+    if (!cid) { $("j-req").textContent = t.j_nocase; $("j-pk").textContent = ""; }
+    const [r, j] = await call("/journey", {case_id: cid, selected: jsel});
     const box = $("j-plans"); box.innerHTML = "";
     const cur = r.ok ? j.plan : pl.default;
     Object.entries(pl.plans).forEach(([id, p]) => {
@@ -344,7 +347,7 @@ applyLang();
       pay.onclick = async () => {
         if (pay.disabled) return; pay.disabled = true;
         let r2, j2;
-        try { [r2, j2] = await call("/simpay", {case_id: caseId, selected: jsel}); } finally { setTimeout(() => { pay.disabled = false; }, 1500); }
+        try { [r2, j2] = await call("/simpay", {case_id: caseId || me.latest_case, selected: jsel}); } finally { setTimeout(() => { pay.disabled = false; }, 1500); }
         const dn = $("j-done"); dn.innerHTML = "";
         if (!r2.ok) { dn.textContent = t.err + (j2.error || r2.status); return; }
         simMark(dn, j2.payment); dn.appendChild(mk("p", j2.payment.data.message[lang]));
