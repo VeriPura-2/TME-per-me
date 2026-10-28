@@ -41,7 +41,9 @@ REQUIRED = [
     ("company", "contact", "Main contact name, email, phone", "free text", None),
     ("company", "export_experience", "Export experience", "options: none | occasional | regular", None),
     ("company", "certifications", "Certifications held", "multi options: organic | DOP/DOCG/IGP | halal | kosher | BRC | IFS | ISO | none", None),
-    ("company", "export_registration", "Export registration (EORI, excise where relevant)", "options: all in place | partly | not started | not sure", None),
+    ("company", "export_registration", "Export registration (EORI, and Italian excise status for wine)", "options: all in place | partly | not started | not sure", "wine"),
+    ("company", "export_registration", "Export registration (EORI, and Italian excise status for spirits)", "options: all in place | partly | not started | not sure", "spirits"),
+    ("company", "export_registration", "Export registration (EORI number)", "options: all in place | not started | not sure", None),
 ]
 
 
