@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 
@@ -28,13 +29,18 @@ INTRO = {"it": "Sono {name}, un export manager con intelligenza artificiale.",
 _KEY = None
 
 
+_KEY_AT = 0.0
+KEY_TTL = 300  # seconds; a changed key is picked up without a restart
+
+
 def api_key():
-    global _KEY
-    if _KEY is None:
+    global _KEY, _KEY_AT
+    if _KEY is None or time.time() - _KEY_AT > KEY_TTL:
         try:
             _KEY = get_secret("ELEVENLABS_API_KEY")
+            _KEY_AT = time.time()
         except Exception:
-            return None
+            return _KEY  # keep the last good key if Secret Manager is briefly unreachable
     return _KEY
 
 

@@ -16,7 +16,7 @@ def who(u):
 
 class VoiceTest(unittest.TestCase):
     def setUp(self):
-        voice._KEY = None
+        voice._KEY = None; voice._KEY_AT = 0.0
         accounts.record_consent(app.con(), "v1", app.TERMS_VERSION, "it", True)
         app.con().execute("DELETE FROM voice_usage"); app.con().commit()
         self.calls = []
@@ -96,6 +96,16 @@ class VoiceTest(unittest.TestCase):
             self.assertEqual(app.handle_speak({"text": "Ciao"}, who("v1"), post=self.fake)[0], 404)
         finally:
             os.environ["VOICE_REPLIES"] = "1"
+
+    def test_key_is_reread_after_ttl(self):
+        os.environ["ELEVENLABS_API_KEY"] = "old"
+        voice._KEY = None; voice._KEY_AT = 0.0
+        self.assertEqual(voice.api_key(), "old")
+        os.environ["ELEVENLABS_API_KEY"] = "new"
+        self.assertEqual(voice.api_key(), "old")   # still cached
+        voice._KEY_AT -= voice.KEY_TTL + 1
+        self.assertEqual(voice.api_key(), "new")
+        os.environ["ELEVENLABS_API_KEY"] = "test-key"
 
     def test_provider_failure_is_a_clean_error(self):
         def boom(r):
