@@ -5,18 +5,21 @@ Config (environment, or Secret Manager for the key):
   ELEVENLABS_BASE         default https://api.eu.residency.elevenlabs.io (EU residency, Enterprise plan)
   ELEVENLABS_MODEL        default eleven_flash_v2_5 (supports Italian)
   ELEVENLABS_VOICES       JSON map of persona id to voice id, e.g. {"cosimo": "..."}
+  ELEVENLABS_VOICES_F / ELEVENLABS_VOICES_M  comma lists of voice ids for women and men personas
   ELEVENLABS_VOICE_DEFAULT  fallback voice id
+  VOICE_REPLIES           "1" shows a Listen button on every reply (off by default, saves credits)
   VOICE_DAILY_CHARS       per user per day, default 1500
   VOICE_TOTAL_CHARS       hard budget across all users, default 15000 (protects the credits)
 Stock library voices only. No cloned voices of real people.
 """
+import hashlib
 import json
 import os
 import re
 import urllib.error
 import urllib.request
 
-from . import db
+from . import db, personas, storage
 from .secrets import get_secret
 
 MAX_REPLY_CHARS = 700
@@ -56,7 +59,53 @@ def voice_for(persona_id):
         m = json.loads(os.environ.get("ELEVENLABS_VOICES", "{}"))
     except ValueError:
         m = {}
-    return m.get(persona_id) or os.environ.get("ELEVENLABS_VOICE_DEFAULT")
+    if m.get(persona_id):
+        return m[persona_id]
+    p = personas.BY_ID.get(persona_id)
+    if p:
+        ids = [x.strip() for x in os.environ.get("ELEVENLABS_VOICES_" + p["gender"].upper(), "").split(",") if x.strip()]
+        if ids:  # stable choice: the same persona always gets the same voice
+            return ids[int(hashlib.sha256(persona_id.encode()).hexdigest(), 16) % len(ids)]
+    return os.environ.get("ELEVENLABS_VOICE_DEFAULT")
+
+
+INTRO_SCRIPT = {
+    "it": ("Ciao, sono {name}, un export manager con intelligenza artificiale. Ti aiuto a capire come esportare i tuoi "
+           "prodotti alimentari: quali regole, documenti, etichette e dazi servono per un mercato, e ti preparo un "
+           "pacchetto di servizi con prezzi chiari. Ti faccio una domanda alla volta, puoi saltarne quante vuoi, e non "
+           "paghi nulla finché non approvi. Questa è una dimostrazione: alcune funzioni sono simulate e lo vedrai "
+           "indicato. Da qui in avanti continuiamo per iscritto. Scegli da dove iniziare."),
+    "en": ("Hello, I am {name}, an AI export manager. I help you work out how to export your food products: which rules, "
+           "documents, labels and duties apply to a market, and I prepare a package of services with clear prices. I ask "
+           "one question at a time, you can skip as many as you like, and you pay nothing until you approve. This is a "
+           "demonstration: some features are simulated and marked as such. From here on we continue in writing. "
+           "Choose where to start."),
+}
+
+
+def intro_text(name, lang):
+    return INTRO_SCRIPT["en" if lang == "en" else "it"].format(name=name)
+
+
+def intro_audio(con, persona_id, lang, post=None):
+    """The welcome speech. Generated once per persona, language and wording, then served from storage for free."""
+    p = personas.BY_ID.get(persona_id)
+    voice = voice_for(persona_id)
+    if not p or not voice:
+        return 503, {"error": "voice_not_configured"}
+    text = intro_text(p["name"], lang)
+    key = "voice/intro_%s_%s.mp3" % (persona_id, hashlib.sha256((text + voice).encode()).hexdigest()[:10])
+    try:
+        return 200, storage.store().get(key)
+    except Exception:
+        pass
+    code, audio = speak(con, "system:intro", text, persona_id, lang, post=post, user_cap=False, raw_text=True)
+    if code == 200:
+        try:
+            storage.store().put(key, audio)
+        except Exception:
+            pass
+    return code, audio
 
 
 def _used_today(con, user):
@@ -73,19 +122,19 @@ def _add_usage(con, user, n):
     con.commit()
 
 
-def speak(con, user, text, persona_id, lang="it", intro_name=None, post=None):
+def speak(con, user, text, persona_id, lang="it", intro_name=None, post=None, user_cap=True, raw_text=False):
     """Returns (status, audio bytes or error dict). `post` is injectable for tests."""
     key = api_key()
     voice = voice_for(persona_id)
     if not key or not voice:
         return 503, {"error": "voice_not_configured"}
-    t = clean(text)
+    t = text if raw_text else clean(text)
     if intro_name:
         t = INTRO["en" if lang == "en" else "it"].format(name=intro_name) + " " + t
     if not t:
         return 400, {"error": "nothing to say"}
     limit = int(os.environ.get("VOICE_DAILY_CHARS", "1500"))
-    if _used_today(con, user) + len(t) > limit:
+    if user_cap and _used_today(con, user) + len(t) > limit:
         return 429, {"error": "voice_daily_limit"}
     total = con.execute("SELECT COALESCE(SUM(chars), 0) AS n FROM voice_usage").fetchone()["n"]
     if total + len(t) > int(os.environ.get("VOICE_TOTAL_CHARS", "15000")):

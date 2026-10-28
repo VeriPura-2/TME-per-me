@@ -5,6 +5,8 @@ import unittest
 os.environ["DB_PATH"] = ":memory:"
 os.environ["ELEVENLABS_API_KEY"] = "test-key"
 os.environ["ELEVENLABS_VOICE_DEFAULT"] = "voice123"
+os.environ["LOCAL_STORE"] = __import__("tempfile").mkdtemp()
+os.environ["VOICE_REPLIES"] = "1"
 from vialibera import accounts, app, voice
 
 
@@ -58,6 +60,42 @@ class VoiceTest(unittest.TestCase):
             self.assertEqual((code, out["error"]), (429, "voice_budget_used"))
         finally:
             del os.environ["VOICE_TOTAL_CHARS"]
+
+    def test_intro_is_generated_once_then_served_free(self):
+        accounts.save_profile(app.con(), "v1", persona_id="cosimo")
+        c1, a1 = app.handle_intro({"lang": "it"}, who("v1"), post=self.fake)
+        c2, a2 = app.handle_intro({"lang": "it"}, who("v1"), post=self.fake)
+        self.assertEqual((c1, c2, a1, a2), (200, 200, b"ID3audio", b"ID3audio"))
+        self.assertEqual(len(self.calls), 1)
+        said = json.loads(self.calls[0].data)["text"]
+        self.assertIn("Cosimo", said)
+        self.assertIn("per iscritto", said)
+
+    def test_intro_english_says_rest_is_text(self):
+        accounts.save_profile(app.con(), "v1", persona_id="giulia")
+        app.handle_intro({"lang": "en"}, who("v1"), post=self.fake)
+        self.assertIn("continue in writing", json.loads(self.calls[0].data)["text"])
+
+    def test_intro_picks_a_persona_when_none(self):
+        app.con().execute("DELETE FROM profiles WHERE user_sub='v1'"); app.con().commit()
+        self.assertEqual(app.handle_intro({"lang": "it"}, who("v1"), post=self.fake)[0], 200)
+        self.assertIsNotNone(accounts.get_profile(app.con(), "v1")["persona_id"])
+
+    def test_gender_lists_choose_stable_voice(self):
+        os.environ["ELEVENLABS_VOICES_F"] = "f1,f2"; os.environ["ELEVENLABS_VOICES_M"] = "m1,m2"
+        try:
+            self.assertIn(voice.voice_for("chiara"), ("f1", "f2"))
+            self.assertIn(voice.voice_for("marco"), ("m1", "m2"))
+            self.assertEqual(voice.voice_for("chiara"), voice.voice_for("chiara"))
+        finally:
+            del os.environ["ELEVENLABS_VOICES_F"], os.environ["ELEVENLABS_VOICES_M"]
+
+    def test_reply_voice_can_be_switched_off(self):
+        os.environ["VOICE_REPLIES"] = "0"
+        try:
+            self.assertEqual(app.handle_speak({"text": "Ciao"}, who("v1"), post=self.fake)[0], 404)
+        finally:
+            os.environ["VOICE_REPLIES"] = "1"
 
     def test_provider_failure_is_a_clean_error(self):
         def boom(r):

@@ -145,9 +145,25 @@ def _case_for(body, who):
     return row, None
 
 
+def handle_intro(body, who, post=None):
+    """Spoken welcome. Picks the persona if none yet, so the voice matches the person who then chats."""
+    if not who or not consent_ok(who):
+        return 403, {"error": "consent_required"}
+    c = con()
+    prof = accounts.get_profile(c, who["user"])
+    pid = prof["persona_id"]
+    if not pid:
+        pid = personas.pick(who["user"], prof["style"], 1)["id"]
+        accounts.save_profile(c, who["user"], persona_id=pid)
+    code, out = voice.intro_audio(c, pid, "en" if body.get("lang") == "en" else "it", post=post)
+    return code, out
+
+
 def handle_speak(body, who, post=None):
     if not consent_ok(who) or not who:
         return 403, {"error": "consent_required"}
+    if os.environ.get("VOICE_REPLIES") != "1":
+        return 404, {"error": "reply_voice_off"}
     p = accounts.get_profile(con(), who["user"])
     pid = p["persona_id"]
     name = personas.BY_ID[pid]["name"] if pid in personas.BY_ID else None
@@ -228,7 +244,8 @@ class Handler(BaseHTTPRequestHandler):
                                     "audience": os.environ.get("AUTH0_AUDIENCE", ""),
                                     "default_org": os.environ.get("AUTH0_DEFAULT_ORG", ""),
                                     "terms_version": TERMS_VERSION,
-                                    "voice": voice.configured()})
+                                    "voice": voice.configured(),
+                                    "voice_replies": os.environ.get("VOICE_REPLIES") == "1"})
         if path == "/plans.json":
             body = plans.public()
             if features.is_sim("price_menu"):
@@ -277,7 +294,7 @@ class Handler(BaseHTTPRequestHandler):
         return auth.verify(self.headers.get("Authorization")) if auth.enabled() else None
 
     def do_POST(self):
-        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak")
+        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro")
                 or self.path.startswith("/doc/")):
             return self._send(404, {})
         try:
@@ -297,8 +314,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_consent(body, who))
             if self.path == "/profile":
                 return self._send(*handle_profile(body, who))
-            if self.path == "/speak":
-                code, out = handle_speak(body, who)
+            if self.path in ("/speak", "/intro"):
+                code, out = (handle_speak if self.path == "/speak" else handle_intro)(body, who)
                 if code == 200:
                     self.send_response(200)
                     self.send_header("Content-Type", "audio/mpeg")
