@@ -14,7 +14,7 @@ FEATURES = {
     "tariff_lookup":    {"phase": 1, "mode": "sim", "sim_file": "sim/tariff.py"},
     "options_packet":   {"phase": 1, "mode": "sim", "sim_file": "sim/packet.py"},
     "price_menu":       {"phase": 1, "mode": "sim", "sim_file": "sim/prices.py"},
-    "payment":          {"phase": 1, "mode": "sim", "sim_file": "sim/payment.py"},
+    "payment":          {"phase": 1, "mode": "sim", "sim_file": "sim/payment.py"},  # real Stripe test payments take over automatically when STRIPE_SECRET_KEY exists, see stripe_pay.py
     "deliverables":     {"phase": 1, "mode": "sim", "sim_file": "sim/deliverables.py"},
     "voice_output":     {"phase": 2, "mode": "live"},
     "staff_help":       {"phase": 1, "mode": "manual"},

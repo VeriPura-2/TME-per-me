@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import permissions, team, accounts, agent, auth, db, docs, features, invites, personas, plans, storage, voice
+from . import permissions, team, accounts, agent, auth, db, docs, features, invites, personas, plans, storage, stripe_pay, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -201,8 +201,13 @@ def handle_plan(body, who):
     if body.get("plan") in plans.PLANS:
         if not permissions.can(con(), who, "plan"):
             return 403, {"error": "forbidden"}
+        if stripe_pay.enabled():  # with payments on, paid plans change only through Stripe
+            if plans.get(body["plan"])["monthly"]:
+                return 409, {"error": "use_checkout"}
+            if stripe_pay.has_active_subscription(con(), who["user"]):
+                return 409, {"error": "use_portal"}
         accounts.set_plan(con(), who["user"], body["plan"])
-        if features.is_sim("invite_trigger"):
+        if features.is_sim("invite_trigger") and not stripe_pay.enabled():
             from .sim import invite_trigger
             out["invite_credit"] = invite_trigger.on_plan_chosen(con(), who["user"], body["plan"])
         else:
@@ -300,6 +305,8 @@ def handle_simpay(body, who):
     row, err = _case_for(body, who, "order")
     if err:
         return err
+    if stripe_pay.enabled():
+        return 409, {"error": "use_pay"}  # real (test) payments are on: the simulated button must not give work away
     if not (features.is_sim("payment") and features.is_sim("options_packet")):
         return 501, {"error": "payment is not simulated"}
     from .sim import packet, payment, deliverables
@@ -332,6 +339,126 @@ def handle_simpay(body, who):
     return 200, out
 
 
+def _base(handler_host=None):
+    return os.environ.get("PUBLIC_BASE_URL") or (f"https://{handler_host}" if handler_host else "")
+
+
+def _packet(body, row, who):
+    """The approved packet for a case, from the same builder the simulated payment uses."""
+    from .sim import packet
+    plan = accounts.get_plan(con(), who["user"]) or plans.DEFAULT
+    sel = [i for i in (body.get("selected") or []) if i in packet.NAMES]
+    if not sel:
+        return None
+    return packet.build(sel, plan)["data"]
+
+
+def handle_pay(body, who, host=None):
+    """Start a real (test-mode) payment: returns a Stripe Checkout address, or records a credit-only payment."""
+    row, err = _case_for(body, who, "order")
+    if err:
+        return err
+    if not stripe_pay.enabled():
+        return 501, {"error": "payments_not_configured"}
+    pk = _packet(body, row, who)
+    if not pk:
+        return 400, {"error": "no items selected"}
+    c = con()
+    total = pk["total_cents"]
+    credit = min(invites.balance(c, who["user"]), total)
+    ids = sorted(i["id"] for i in pk["items"])
+    if total - credit <= 0:  # fully covered by credit: nothing to charge
+        d = stripe_pay.record_payment(c, row["id"], who["user"], "CREDIT-" + db.now(), ids, total, credit)
+        return 200, {"paid": True, "payment": d}
+    try:
+        out = stripe_pay.checkout_items(c, who, row["id"], pk["items"], total, credit, _base(host),
+                                        lang="en" if body.get("lang") == "en" else "it", email=body.get("email"))
+    except stripe_pay.StripeError as e:
+        return (400 if e.status == 400 else 502), {"error": str(e)}
+    return 200, {"url": out["url"]}
+
+
+def handle_plan_checkout(body, who, host=None):
+    if not who:
+        return 400, {"error": "sign-in required"}
+    if not stripe_pay.enabled():
+        return 501, {"error": "payments_not_configured"}
+    if not permissions.can(con(), who, "plan"):
+        return 403, {"error": "forbidden"}
+    if body.get("plan") not in plans.PLANS or not plans.get(body["plan"])["monthly"]:
+        return 400, {"error": "not a paid plan"}
+    try:
+        if stripe_pay.has_active_subscription(con(), who["user"]):
+            return 200, stripe_pay.portal(con(), who, _base(host), body.get("email"))
+        return 200, stripe_pay.checkout_plan(con(), who, body["plan"], _base(host),
+                                             lang="en" if body.get("lang") == "en" else "it", email=body.get("email"))
+    except stripe_pay.StripeError as e:
+        return (400 if e.status == 400 else 502), {"error": str(e)}
+
+
+def handle_billing_portal(body, who, host=None):
+    if not who:
+        return 400, {"error": "sign-in required"}
+    if not stripe_pay.enabled():
+        return 501, {"error": "payments_not_configured"}
+    if not permissions.can(con(), who, "plan"):
+        return 403, {"error": "forbidden"}
+    try:
+        return 200, stripe_pay.portal(con(), who, _base(host), body.get("email"))
+    except stripe_pay.StripeError as e:
+        return 502, {"error": str(e)}
+
+
+def handle_pay_confirm(body, who):
+    """The return page asks Stripe directly whether the session was paid, so the result shows even before the webhook arrives."""
+    if not who:
+        return 400, {"error": "sign-in required"}
+    if not stripe_pay.enabled():
+        return 501, {"error": "payments_not_configured"}
+    sid = str(body.get("session_id", ""))
+    if not sid.startswith("cs_"):
+        return 400, {"error": "bad session"}
+    try:
+        s = stripe_pay.retrieve_session(sid)
+    except stripe_pay.StripeError as e:
+        return 502, {"error": str(e)}
+    meta = s.get("metadata") or {}
+    c = con()
+    mine = meta.get("user") == who["user"] or invites.holder(c, who["user"]) == meta.get("holder")
+    if not mine:
+        return 404, {"error": "not found"}
+    if meta.get("kind") == "items":
+        row = c.execute("SELECT * FROM cases WHERE id=?", (meta.get("case_id"),)).fetchone()
+        if row is None or not accounts.can_access(c, row, who):
+            return 404, {"error": "not found"}
+    res = stripe_pay.session_paid(c, s)
+    out = {"status": res["status"], "kind": meta.get("kind"), "mode": stripe_pay.mode()}
+    if res["status"] == "paid" and meta.get("kind") == "items":
+        ids = [x for x in meta.get("items", "").split(",") if x]
+        total = int(meta.get("total_cents", 0))
+        credit = int(meta.get("credit_cents", 0))
+        out.update(ref=sid, total_cents=total, credit_used_cents=credit, payable_cents=total - credit)
+        if features.is_sim("deliverables"):
+            from .sim import deliverables
+            out["deliverables"] = deliverables.sample(ids)
+    if res["status"] == "paid" and meta.get("kind") == "plan":
+        out["plan"] = accounts.get_plan(c, who["user"]) or plans.DEFAULT
+    return 200, out
+
+
+def handle_stripe_webhook(raw, signature):
+    """No sign-in here: the signature is the proof. Bad signature gets 400, everything else 200 so Stripe does not retry forever."""
+    try:
+        secret = get_secret("STRIPE_WEBHOOK_SECRET")
+    except Exception:
+        return 503, {"error": "webhook not configured"}
+    try:
+        event = stripe_pay.verify_webhook(raw, signature or "", secret)
+    except stripe_pay.StripeError as e:
+        return 400, {"error": str(e)}
+    return 200, {"result": stripe_pay.process_event(con(), event)}
+
+
 def render_terms(lang):
     import markdown
     name = "en" if lang == "en" else "it"
@@ -358,6 +485,7 @@ class Handler(BaseHTTPRequestHandler):
                                     "voice_replies": os.environ.get("VOICE_REPLIES") == "1"})
         if path == "/plans.json":
             body = plans.public()
+            body["stripe"] = stripe_pay.status()
             if features.is_sim("price_menu"):
                 from .sim import prices
                 body["prices"] = prices.prices()
@@ -404,10 +532,15 @@ class Handler(BaseHTTPRequestHandler):
         return auth.verify(self.headers.get("Authorization")) if auth.enabled() else None
 
     def do_POST(self):
-        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf")
+        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team")):
             return self._send(404, {})
         try:
+            if self.path == "/stripe/webhook":
+                n = int(self.headers.get("Content-Length", 0))
+                if n > 1_000_000:
+                    return self._send(413, {})
+                return self._send(*handle_stripe_webhook(self.rfile.read(n), self.headers.get("Stripe-Signature")))
             try:
                 who = self._who()
             except auth.AuthError:
@@ -454,6 +587,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_plan(body, who))
             if self.path == "/journey":
                 return self._send(*handle_journey(body, who))
+            host = self.headers.get("X-Forwarded-Host") or self.headers.get("Host")
+            if self.path == "/pay":
+                return self._send(*handle_pay(body, who, host))
+            if self.path == "/pay/confirm":
+                return self._send(*handle_pay_confirm(body, who))
+            if self.path == "/plan/checkout":
+                return self._send(*handle_plan_checkout(body, who, host))
+            if self.path == "/billing/portal":
+                return self._send(*handle_billing_portal(body, who, host))
             if self.path == "/simpay":
                 return self._send(*handle_simpay(body, who))
             if self.path == "/me":

@@ -159,6 +159,23 @@ CREATE TABLE IF NOT EXISTS histories (
   data TEXT NOT NULL,                  -- JSON list of API messages
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS stripe_customers (
+  holder TEXT PRIMARY KEY,             -- 'co:<company id>' or a person's sub: who pays
+  customer_id TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS stripe_subs (
+  holder TEXT PRIMARY KEY,
+  subscription_id TEXT,
+  plan TEXT NOT NULL,
+  status TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS stripe_events (
+  id TEXT PRIMARY KEY,                 -- Stripe event id, processed once
+  type TEXT NOT NULL,
+  at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS raw_responses (
   ref TEXT PRIMARY KEY,
   at TEXT NOT NULL,
