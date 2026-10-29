@@ -5,6 +5,15 @@
 :root{--bg:#fff;--fg:#1a1a1a;--muted:#5f6368;--line:#dadce0;--accent:#0b57d0;--card:#f6f8fc}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121212;--fg:#e8e8e8;--muted:#9aa0a6;--line:#3c4043;--accent:#8ab4f8;--card:#1e1f22}}
 :root[data-theme="dark"]{--bg:#121212;--fg:#e8e8e8;--muted:#9aa0a6;--line:#3c4043;--accent:#8ab4f8;--card:#1e1f22}
+/* wide, light scrollbars so they are easy to find */
+:root{--sb-thumb:#8f959d;--sb-track:#e6e9ee}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sb-thumb:#c9ccd1;--sb-track:#2c2d31}}
+:root[data-theme="dark"]{--sb-thumb:#c9ccd1;--sb-track:#2c2d31}
+::-webkit-scrollbar{width:18px;height:18px}
+::-webkit-scrollbar-track{background:var(--sb-track)}
+::-webkit-scrollbar-thumb{background:var(--sb-thumb);border-radius:9px;border:3px solid var(--sb-track);min-height:48px}
+::-webkit-scrollbar-thumb:hover{background:var(--fg)}
+@supports not selector(::-webkit-scrollbar){*{scrollbar-width:auto;scrollbar-color:var(--sb-thumb) var(--sb-track)}}
 body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;max-width:720px;margin:0 auto;padding:16px}
 header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 h1{margin:0;font-size:1.5rem}
