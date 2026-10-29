@@ -1,22 +1,22 @@
 > **BOZZA v0.1 in attesa di revisione legale. Non ancora approvata da un legale. Le voci tra [parentesi quadre] vanno completate.**
 
-# Via Libera: Condizioni del servizio
+# MioExport: Condizioni del servizio
 
 Versione 2026-10-v0.3. L'italiano è la lingua principale di queste condizioni. In caso di difformità tra il testo italiano e quello inglese prevale il testo italiano.
 
 ## 1. Chi siamo
 
-Via Libera è gestita da [DENOMINAZIONE SOCIALE DELLA SOCIETÀ GESTORE] («**noi**», «**Via Libera**»), sede legale [INDIRIZZO], partita IVA [P.IVA], registro imprese [NUMERO REA / REGISTRO], capitale sociale [IMPORTO], email [EMAIL], PEC [PEC]. Queste informazioni sono fornite ai sensi del D.Lgs. 70/2003.
+MioExport è gestito da [DENOMINAZIONE SOCIALE DELLA SOCIETÀ GESTORE] («**noi**», «**MioExport**»), sede legale [INDIRIZZO], partita IVA [P.IVA], registro imprese [NUMERO REA / REGISTRO], capitale sociale [IMPORTO], email [EMAIL], PEC [PEC]. Queste informazioni sono fornite ai sensi del D.Lgs. 70/2003.
 
-## 2. Che cosa fa Via Libera
+## 2. Che cosa fa MioExport
 
-Via Libera aiuta le imprese alimentari e delle bevande italiane a preparare e realizzare le esportazioni. Un assistente basato su intelligenza artificiale pone domande, costruisce una scheda pratica e propone servizi da un listino fisso. Alcuni servizi sono svolti da personale VeriPura o da fornitori terzi indipendenti.
+MioExport aiuta le imprese alimentari e delle bevande italiane a preparare e realizzare le esportazioni. Un assistente basato su intelligenza artificiale pone domande, costruisce una scheda pratica e propone servizi da un listino fisso. Alcuni servizi sono svolti da personale VeriPura o da fornitori terzi indipendenti.
 
-**L'esportatore sei tu.** Ogni decisione è tua e il rischio di ogni esportazione resta a tuo carico. Via Libera non agisce come tuo spedizioniere doganale, legale o consulente fiscale e non presenta dichiarazioni per tuo conto, salvo che un servizio lo preveda per iscritto.
+**L'esportatore sei tu.** Ogni decisione è tua e il rischio di ogni esportazione resta a tuo carico. MioExport non agisce come tuo spedizioniere doganale, legale o consulente fiscale e non presenta dichiarazioni per tuo conto, salvo che un servizio lo preveda per iscritto.
 
 ## 3. Chi può usare il servizio
 
-Via Libera è riservata a imprese e professionisti, non ai consumatori. Accettando, confermi di agire per un'impresa e di avere il potere di vincolarla.
+MioExport è riservato a imprese e professionisti, non ai consumatori. Accettando, confermi di agire per un'impresa e di avere il potere di vincolarla.
 
 ## 4. Stai parlando con un'intelligenza artificiale
 

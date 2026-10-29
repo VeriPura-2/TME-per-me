@@ -14,8 +14,8 @@ LINKS = {
     "check": "https://ec.europa.eu/taxation_customs/dds2/eos/eori_validation.jsp",
 }
 NOTE = {
-    "it": "Bozza. Controlla ogni dato, scarica il modulo, firmalo e consegnalo all'Ufficio delle Dogane che scegli. Via Libera non lo presenta e non lo firma.",
-    "en": "Draft. Check every field, download the form, sign it and file it with the customs office you choose. Via Libera does not file or sign it.",
+    "it": "Bozza. Controlla ogni dato, scarica il modulo, firmalo e consegnalo all'Ufficio delle Dogane che scegli. MioExport non lo presenta e non lo firma.",
+    "en": "Draft. Check every field, download the form, sign it and file it with the customs office you choose. MioExport does not file or sign it.",
 }
 # key, label it, label en, page, baseline y (top-down), required
 FIELDS = [
@@ -158,7 +158,7 @@ def fill(values):
         if i == 1:
             c.setFont("Helvetica", 6.5)
             c.setFillGray(0.45)
-            c.drawString(45, 24, "Precompilato da Via Libera (bozza). Verificare i dati prima di firmare. Consenso, data e firma a cura del richiedente.")
+            c.drawString(45, 24, "Precompilato da MioExport (bozza). Verificare i dati prima di firmare. Consenso, data e firma a cura del richiedente.")
         c.save()
         buf.seek(0)
         page.merge_page(PdfReader(buf).pages[0])

@@ -9,7 +9,7 @@ from . import db, docs, fields, gates, personas
 
 MODEL = "claude-sonnet-5-5"
 
-SYSTEM = """You are the Via Libera Trade Export Manager for Italian food SMEs.
+SYSTEM = """You are the MioExport Trade Export Manager for Italian food SMEs.
 You work in the client's language and in plain words.
 
 How you interview:

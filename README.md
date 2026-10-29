@@ -1,4 +1,4 @@
-# TME per me (Via Libera)
+# TME per me (MioExport, formerly working name Via Libera)
 
 AI Trade Export Manager for Italian food SMEs. Staging build.
 

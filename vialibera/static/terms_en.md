@@ -1,22 +1,22 @@
 > **DRAFT v0.1 for legal review. Not yet approved by counsel. Items in [square brackets] must be completed.**
 
-# Via Libera: Terms of Service
+# MioExport: Terms of Service
 
 Version 2026-10-v0.3. Italian is the primary language of these terms. If the English and Italian texts differ, the Italian text prevails.
 
 ## 1. Who we are
 
-Via Libera is operated by [LEGAL NAME OF OPERATING COMPANY] ("**we**", "**Via Libera**"), registered office [ADDRESS], VAT number [VAT], company register [REA / REGISTRY NUMBER], share capital [AMOUNT], email [EMAIL], certified email (PEC) [PEC]. These details are given under Legislative Decree 70/2003.
+MioExport is operated by [LEGAL NAME OF OPERATING COMPANY] ("**we**", "**MioExport**"), registered office [ADDRESS], VAT number [VAT], company register [REA / REGISTRY NUMBER], share capital [AMOUNT], email [EMAIL], certified email (PEC) [PEC]. These details are given under Legislative Decree 70/2003.
 
-## 2. What Via Libera does
+## 2. What MioExport does
 
-Via Libera helps Italian food and beverage businesses prepare and carry out exports. An AI assistant asks questions, builds a case file, and proposes services from a fixed menu. Some services are carried out by VeriPura staff or by independent third-party providers.
+MioExport helps Italian food and beverage businesses prepare and carry out exports. An AI assistant asks questions, builds a case file, and proposes services from a fixed menu. Some services are carried out by VeriPura staff or by independent third-party providers.
 
-**You are the exporter.** You make every decision and carry the risk of each export. Via Libera does not act as your customs agent, lawyer, or tax adviser, and does not file declarations on your behalf unless a service says so in writing.
+**You are the exporter.** You make every decision and carry the risk of each export. MioExport does not act as your customs agent, lawyer, or tax adviser, and does not file declarations on your behalf unless a service says so in writing.
 
 ## 3. Who may use the service
 
-Via Libera is for businesses and professionals only, not consumers. By accepting you confirm that you act for a business and have authority to bind it.
+MioExport is for businesses and professionals only, not consumers. By accepting you confirm that you act for a business and have authority to bind it.
 
 ## 4. You are talking to an AI
 
