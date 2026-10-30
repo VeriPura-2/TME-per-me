@@ -187,3 +187,42 @@ class SuperadminTest(unittest.TestCase):
 
     def test_company_roles_unchanged(self):
         self.assertEqual(app.handle_journey({"case_id": self.case}, who("own"))[0], 200)
+
+
+class AdminViewTest(unittest.TestCase):
+    def setUp(self):
+        self.cid, self.case = company("A", {"own": ("owner", "active"), "pen": ("member", "pending")})
+        self.sa = who("staff1")
+        self.sa["roles"] = [permissions.STAFF_CLAIM]
+
+    def test_non_staff_refused_everywhere(self):
+        for path in ("/admin/companies", "/admin/company", "/admin/audit", "/admin/verify", "/admin/plan"):
+            self.assertEqual(app.handle_admin(path, {"company": self.cid, "plan": "parti"}, who("own"))[0], 403, path)
+
+    def test_list_and_detail(self):
+        code, out = app.handle_admin("/admin/companies", {}, self.sa)
+        row = next(c for c in out["companies"] if c["id"] == self.cid)
+        self.assertEqual((code, row["members"], row["pending"]), (200, 1, 1))
+        self.assertGreaterEqual(row["cases"], 1)
+        code, d = app.handle_admin("/admin/company", {"company": self.cid}, self.sa)
+        self.assertEqual((code, len(d["members"])), (200, 2))
+        self.assertIn(self.case, [c["id"] for c in d["cases"]])
+
+    def test_staff_changes_are_logged(self):
+        self.assertEqual(app.handle_admin("/admin/verify", {"company": self.cid}, self.sa)[0], 200)
+        self.assertEqual(app.handle_admin("/admin/plan", {"company": self.cid, "plan": "parti"}, self.sa)[0], 200)
+        self.assertEqual(app.handle_admin("/admin/plan", {"company": self.cid, "plan": "nope"}, self.sa)[0], 400)
+        co = app.con().execute("SELECT status, plan FROM companies WHERE id=?", (self.cid,)).fetchone()
+        self.assertEqual((co["status"], co["plan"]), ("verified", "parti"))
+        kinds = [e["data"]["action"] for e in app.handle_admin("/admin/audit", {}, self.sa)[1]["events"] if e["kind"] == "staff_change"]
+        self.assertIn("verify", kinds)
+        self.assertIn("set_plan", kinds)
+
+    def test_staff_can_manage_team_of_any_company(self):
+        self.assertEqual(app.handle_team("/team/decide", {"user": "pen", "approve": True, "company": self.cid}, self.sa)[0], 200)
+        self.assertEqual(app.handle_team("/team/role", {"user": "pen", "role": "manager", "company": self.cid}, self.sa)[0], 200)
+        self.assertEqual(permissions.role_in(app.con(), self.cid, "pen"), "manager")
+        # an owner naming another company does not get the same power
+        company("B", {"bown": ("owner", "active")})
+        self.assertEqual(app.handle_team("/team/remove", {"user": "bown", "company": "co-B"}, who("own"))[0], 404)
+        self.assertEqual(permissions.role_in(app.con(), "co-B", "bown"), "owner")  # untouched

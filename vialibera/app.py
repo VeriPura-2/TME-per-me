@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import permissions, team, accounts, agent, auth, db, docs, features, invites, personas, plans, storage, stripe_pay, voice
+from . import admin, permissions, team, accounts, agent, auth, db, docs, features, invites, personas, plans, storage, stripe_pay, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -272,15 +272,34 @@ def handle_team(path, body, who):
     if path == "/team/accept":
         return team.accept(c, who, str(body.get("token") or ""))
     if path == "/team/decide":
-        return team.decide(c, who, str(body.get("user") or ""), bool(body.get("approve")))
+        return team.decide(c, who, str(body.get("user") or ""), bool(body.get("approve")), body.get("company"))
     if path == "/team/role":
-        return team.set_role(c, who, str(body.get("user") or ""), str(body.get("role") or ""))
+        return team.set_role(c, who, str(body.get("user") or ""), str(body.get("role") or ""), body.get("company"))
     if path == "/team/remove":
-        return team.remove(c, who, str(body.get("user") or ""))
+        return team.remove(c, who, str(body.get("user") or ""), body.get("company"))
     if path == "/team/consent":
         return handle_company_consent(body, who)
     if path == "/team/invite":
-        return team.invite(c, who, str(body.get("role") or "member"))
+        return team.invite(c, who, str(body.get("role") or "member"), body.get("company"))
+    return 404, {}
+
+
+def handle_admin(path, body, who):
+    """VeriPura superadmin only (Auth0 roles claim). See admin.py."""
+    if not who:
+        return 400, {"error": "sign-in required"}
+    c = con()
+    cid = str(body.get("company") or "")
+    if path == "/admin/companies":
+        return admin.companies(c, who)
+    if path == "/admin/company":
+        return admin.company(c, who, cid)
+    if path == "/admin/audit":
+        return admin.audit(c, who)
+    if path == "/admin/verify":
+        return admin.verify(c, who, cid, bool(body.get("verified", True)))
+    if path == "/admin/plan":
+        return admin.set_plan(c, who, cid, str(body.get("plan") or ""))
     return 404, {}
 
 
@@ -539,7 +558,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
-                or self.path.startswith("/doc/") or self.path.startswith("/team")):
+                or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")):
             return self._send(404, {})
         try:
             if self.path == "/stripe/webhook":
@@ -574,6 +593,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(code, out)
             if self.path.startswith("/team"):
                 return self._send(*handle_team(self.path, body, who))
+            if self.path.startswith("/admin/"):
+                return self._send(*handle_admin(self.path, body, who))
             if self.path == "/eori":
                 return self._send(*handle_eori(body, who))
             if self.path == "/eori/pdf":
@@ -619,6 +640,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, {"consent": ok or not who, "terms_version": TERMS_VERSION, "consent_via": via,
                                         "latest_case": latest,
                                         "role": permissions.my_role(con(), who) if who else None,
+                                        "superadmin": permissions.is_superadmin(who),
                                         **(accounts.get_profile(con(), who["user"]) if who else {})})
             self._send(*handle_chat(body, who=who))
         except Exception as e:  # keep the service up, report a typed error

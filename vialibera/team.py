@@ -36,15 +36,21 @@ def overview(con, who, label=None):
     return 200, out
 
 
-def _owner_only(con, who):
+def _owner_only(con, who, company=None, action="team"):
+    """The company the caller may manage. A superadmin names the company; the change is logged as staff_change."""
+    if company and permissions.is_superadmin(who):
+        if con.execute("SELECT 1 FROM companies WHERE id=?", (company,)).fetchone() is None:
+            return None
+        db.log_event(con, None, who["user"], "staff_change", {"company": company, "action": action})
+        return company
     cid = permissions.company_of(con, who["user"])
     if not cid or not permissions.allowed(permissions.role_in(con, cid, who["user"]), "team"):
         return None
     return cid
 
 
-def decide(con, who, user, approve):
-    cid = _owner_only(con, who)
+def decide(con, who, user, approve, company=None):
+    cid = _owner_only(con, who, company, "decide")
     if not cid:
         return 403, {"error": "forbidden"}
     row = con.execute("SELECT status FROM memberships WHERE company_id=? AND user_sub=?", (cid, user)).fetchone()
@@ -60,8 +66,8 @@ def decide(con, who, user, approve):
     return 200, {"ok": True}
 
 
-def set_role(con, who, user, role):
-    cid = _owner_only(con, who)
+def set_role(con, who, user, role, company=None):
+    cid = _owner_only(con, who, company, "set_role")
     if not cid:
         return 403, {"error": "forbidden"}
     if role not in permissions.ROLES:
@@ -77,8 +83,8 @@ def set_role(con, who, user, role):
     return 200, {"ok": True}
 
 
-def remove(con, who, user):
-    cid = _owner_only(con, who)
+def remove(con, who, user, company=None):
+    cid = _owner_only(con, who, company, "remove")
     if not cid:
         return 403, {"error": "forbidden"}
     cur = permissions.role_in(con, cid, user)
@@ -92,8 +98,8 @@ def remove(con, who, user):
     return 200, {"ok": True}
 
 
-def invite(con, who, role):
-    cid = _owner_only(con, who)
+def invite(con, who, role, company=None):
+    cid = _owner_only(con, who, company, "invite")
     if not cid:
         return 403, {"error": "forbidden"}
     if role not in permissions.ROLES:

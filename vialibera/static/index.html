@@ -43,6 +43,7 @@ a{color:var(--accent)}
     <button id="jbtn" hidden></button>
     <button id="ibtn" hidden></button>
     <button id="tbtn" hidden></button>
+    <button id="sbtn" hidden>Staff</button>
     <button id="logout" hidden></button>
   </div>
 </header>
@@ -89,6 +90,14 @@ a{color:var(--accent)}
   <div id="t-consent"></div>
   <div id="t-inv"></div>
   <p class="muted" id="t-rules"></p>
+</div>
+
+<div id="staff" class="card" hidden>
+  <h2>VeriPura staff</h2>
+  <p class="muted">Superadmin view. Opening a company and every change is logged.</p>
+  <div id="s-list"></div>
+  <div id="s-detail"></div>
+  <div id="s-audit"></div>
 </div>
 
 <div id="welcome" class="card" hidden>
@@ -510,6 +519,46 @@ applyLang();
       inv.append(mk("div", t.t_for, "muted"), sel, b, out);
     }
   }
+  // ---- staff (superadmin only; the server refuses everyone else)
+  const sd = (n) => (n || "").slice(0, 16).replace("T", " ");
+  async function loadStaff() {
+    const [r, j] = await call("/admin/companies", {}); const box = $("s-list"); box.innerHTML = ""; $("s-detail").innerHTML = "";
+    if (!r.ok) { box.textContent = "Not allowed."; return; }
+    const tb = mk("table"); tb.style.cssText = "width:100%;border-collapse:collapse";
+    const head = mk("tr"); ["Company", "VAT", "Plan", "People", "Pending", "Cases", "Last activity", "Terms", "Status"].forEach(h => head.appendChild(mk("th", h)));
+    tb.appendChild(head);
+    j.companies.forEach(c => {
+      const tr = mk("tr"); tr.style.cursor = "pointer";
+      [c.name || "(no name)", c.vat, c.plan || "-", c.members, c.pending ? "⚠ " + c.pending : "0", c.cases, sd(c.last_activity), c.terms_accepted ? "yes" : "no", c.status].forEach(v => tr.appendChild(mk("td", String(v))));
+      tr.onclick = () => openStaffCompany(c.id, j.plans); tb.appendChild(tr);
+    });
+    box.appendChild(tb); if (!j.companies.length) box.textContent = "No companies yet.";
+    const [ra, ja] = await call("/admin/audit", {}); const au = $("s-audit"); au.innerHTML = "";
+    if (ra.ok) { au.appendChild(mk("h3", "Staff activity (latest)")); ja.events.slice(0, 15).forEach(e => au.appendChild(mk("div", sd(e.at) + " · " + e.actor.slice(-8) + " · " + e.kind + " · " + (e.data.action || "") + " " + (e.data.company || ""), "muted"))); }
+  }
+  async function openStaffCompany(id, plans) {
+    const [r, j] = await call("/admin/company", {company: id}); const d = $("s-detail"); d.innerHTML = ""; if (!r.ok) return;
+    const co = j.company; d.appendChild(mk("h3", (co.legal_name || "(no name)") + " · " + co.vat + " · " + co.status));
+    const bar = mk("div"); const v = mk("button", co.status === "verified" ? "Mark unverified" : "Mark VAT verified");
+    v.onclick = async () => { await call("/admin/verify", {company: id, verified: co.status !== "verified"}); loadStaff().then(() => openStaffCompany(id, plans)); };
+    const ps = mk("select"); plans.forEach(p => { const o = mk("option", p); o.value = p; if (p === co.plan) o.selected = true; ps.appendChild(o); });
+    const pb = mk("button", "Set plan"); pb.onclick = async () => { await call("/admin/plan", {company: id, plan: ps.value}); loadStaff().then(() => openStaffCompany(id, plans)); };
+    bar.append(v, " ", ps, pb, mk("span", "  Credit: " + j.credit, "muted")); d.appendChild(bar);
+    d.appendChild(mk("h4", "People"));
+    j.members.forEach(m => {
+      const row = mk("div"); row.style.cssText = "margin:6px 0"; row.appendChild(mk("strong", (m.label || m.user.slice(-8)) + " (" + m.status + ") "));
+      if (m.status === "pending") ["Approve", "Refuse"].forEach((x, i) => { const b = mk("button", x); b.onclick = async () => { await call("/team/decide", {company: id, user: m.user, approve: i === 0}); openStaffCompany(id, plans); }; row.appendChild(b); });
+      else { const sel = mk("select"); ["owner", "manager", "member", "reviewer"].forEach(x => { const o = mk("option", x); o.value = x; if (x === m.role) o.selected = true; sel.appendChild(o); });
+        sel.onchange = async () => { await call("/team/role", {company: id, user: m.user, role: sel.value}); openStaffCompany(id, plans); };
+        const rm = mk("button", "Remove"); rm.onclick = async () => { await call("/team/remove", {company: id, user: m.user}); openStaffCompany(id, plans); }; row.append(sel, rm); }
+      d.appendChild(row);
+    });
+    d.appendChild(mk("h4", "Cases"));
+    j.cases.forEach(c => d.appendChild(mk("div", (c.product || "-") + " → " + (c.country || "-") + " · " + c.status + " · " + sd(c.updated_at), "muted")));
+    d.appendChild(mk("h4", "Recent events"));
+    j.events.slice(0, 10).forEach(e => d.appendChild(mk("div", sd(e.at) + " · " + e.actor.slice(-8) + " · " + e.kind, "muted")));
+  }
+  if (me.superadmin) { $("sbtn").hidden = false; $("sbtn").onclick = () => { const p = $("staff"); p.hidden = !p.hidden; if (!p.hidden) loadStaff(); }; }
   $("tbtn").onclick = () => { const p = $("team"); p.hidden = !p.hidden; if (!p.hidden) loadTeam(); };
   $("jbtn").onclick = () => { const p = $("journey"); p.hidden = !p.hidden; if (!p.hidden) { jsel = null; loadJourney(); } };
   let curPersona = null;
