@@ -55,7 +55,7 @@ def handle_chat(body, llm=None, who=None):
         role = permissions.case_role(c, row, who)
         if not permissions.allowed(role, "write"):
             return 403, {"error": "forbidden"}
-        if role == "staff":
+        if role in ("staff", "support"):
             permissions.audit_staff(c, who, row, "write")
     else:
         if not permissions.can(c, who, "write"):
@@ -168,7 +168,7 @@ def _case_for(body, who, action="read"):
     role = permissions.case_role(con(), row, who)
     if not permissions.allowed(role, action):
         return None, (403, {"error": "forbidden"})
-    if role == "staff":
+    if role in ("staff", "support"):
         permissions.audit_staff(con(), who, row, action)
     return row, None
 
@@ -300,6 +300,10 @@ def handle_admin(path, body, who):
         return admin.verify(c, who, cid, bool(body.get("verified", True)))
     if path == "/admin/plan":
         return admin.set_plan(c, who, cid, str(body.get("plan") or ""))
+    if path == "/admin/queue":
+        return admin.queue(c, who)
+    if path == "/admin/item":
+        return admin.set_item(c, who, str(body.get("item_id") or ""), str(body.get("state") or ""))
     return 404, {}
 
 
@@ -640,7 +644,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, {"consent": ok or not who, "terms_version": TERMS_VERSION, "consent_via": via,
                                         "latest_case": latest,
                                         "role": permissions.my_role(con(), who) if who else None,
-                                        "superadmin": permissions.is_superadmin(who),
+                                        "superadmin": permissions.is_superadmin(who), "staff_level": permissions.staff_level(who),
                                         **(accounts.get_profile(con(), who["user"]) if who else {})})
             self._send(*handle_chat(body, who=who))
         except Exception as e:  # keep the service up, report a typed error

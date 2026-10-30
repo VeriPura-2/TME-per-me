@@ -226,3 +226,42 @@ class AdminViewTest(unittest.TestCase):
         company("B", {"bown": ("owner", "active")})
         self.assertEqual(app.handle_team("/team/remove", {"user": "bown", "company": "co-B"}, who("own"))[0], 404)
         self.assertEqual(permissions.role_in(app.con(), "co-B", "bown"), "owner")  # untouched
+
+
+class SupportAndQueueTest(unittest.TestCase):
+    def setUp(self):
+        from vialibera import gates
+        self.gates = gates
+        self.cid, self.case = company("A", {"own": ("owner", "active")})
+        self.sa = who("staff1"); self.sa["roles"] = [permissions.STAFF_CLAIM]
+        self.sup = who("help1"); self.sup["roles"] = [permissions.SUPPORT_CLAIM]
+        c = app.con()
+        self.item = gates.add_item(c, self.case, "lab_cert", {"lab_cert": {"price_cents": 5000, "compliance": True}})
+        gates.set_state(c, self.item, "paid", "client")
+        c.commit()
+
+    def test_support_reads_but_cannot_change(self):
+        self.assertEqual(app.handle_journey({"case_id": self.case}, self.sup)[0], 200)
+        self.assertEqual(app.handle_chat({"message": "hi", "case_id": self.case}, who=self.sup)[0], 403)
+        self.assertEqual(app.handle_admin("/admin/companies", {}, self.sup)[0], 200)
+        self.assertEqual(app.handle_admin("/admin/queue", {}, self.sup)[0], 200)
+        for path, body in (("/admin/verify", {"company": self.cid}), ("/admin/plan", {"company": self.cid, "plan": "parti"}),
+                           ("/admin/item", {"item_id": self.item, "state": "in progress"}), ("/admin/audit", {})):
+            self.assertEqual(app.handle_admin(path, body, self.sup)[0], 403, path)
+        self.assertEqual(app.handle_team("/team/role", {"user": "own", "role": "member", "company": self.cid}, self.sup)[0], 403)
+        self.assertEqual(permissions.role_in(app.con(), self.cid, "own"), "owner")
+        n = app.con().execute("SELECT COUNT(*) AS n FROM events WHERE kind='staff_access' AND actor='help1'").fetchone()["n"]
+        self.assertGreaterEqual(n, 1)
+
+    def test_queue_lists_the_item(self):
+        code, out = app.handle_admin("/admin/queue", {}, self.sa)
+        self.assertIn(self.item, [i["id"] for i in out["items"]])
+
+    def test_staff_moves_item_through_the_gates(self):
+        self.assertEqual(app.handle_admin("/admin/item", {"item_id": self.item, "state": "delivered"}, self.sa)[0], 400)  # gate
+        self.assertEqual(app.handle_admin("/admin/item", {"item_id": self.item, "state": "in progress"}, self.sa)[0], 200)
+        self.assertEqual(app.handle_admin("/admin/item", {"item_id": self.item, "state": "review"}, self.sa)[0], 200)
+        self.assertEqual(app.handle_admin("/admin/item", {"item_id": self.item, "state": "delivered"}, self.sa)[0], 200)
+        self.assertEqual(app.handle_admin("/admin/item", {"item_id": self.item, "state": "paid"}, self.sa)[0], 400)  # not a staff target
+        ids = [i["id"] for i in app.handle_admin("/admin/queue", {}, self.sa)[1]["items"]]
+        self.assertNotIn(self.item, ids)

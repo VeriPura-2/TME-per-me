@@ -5,11 +5,12 @@ VeriPura superadmin: Auth0 roles claim contains STAFF_CLAIM (assigned only in Au
 all companies, every access to a company case is written to the events log (staff_access), and it cannot pay for a company.
 """
 STAFF_CLAIM = "veripura_superadmin"
+SUPPORT_CLAIM = "veripura_support"   # read-only helper: sees companies, cases and the work queue, changes nothing
 ROLES = ("owner", "manager", "member", "reviewer")  # company roles; "staff" is separate (superadmin)
 
 # action -> roles allowed
 ACTIONS = {
-    "read":  ("owner", "manager", "member", "reviewer", "staff"),
+    "read":  ("owner", "manager", "member", "reviewer", "staff", "support"),
     "write": ("owner", "manager", "member", "staff"),      # chat, upload, edit documents, fill forms
     "order": ("owner", "manager"),                         # approve services and pay (staff cannot pay for a company)
     "plan":  ("owner", "staff"),                           # choose or change the company plan
@@ -23,6 +24,19 @@ def allowed(role, action):
 
 def is_superadmin(who):
     return bool(who) and STAFF_CLAIM in (who.get("roles") or [])
+
+
+def is_support(who):
+    return bool(who) and SUPPORT_CLAIM in (who.get("roles") or [])
+
+
+def is_staff(who):
+    """Any VeriPura staff member: superadmin (full) or support (read only)."""
+    return is_superadmin(who) or is_support(who)
+
+
+def staff_level(who):
+    return "superadmin" if is_superadmin(who) else "support" if is_support(who) else None
 
 
 def audit_staff(con, who, case_row, action):
@@ -52,7 +66,7 @@ def my_role(con, who):
     cid = company_of(con, who["user"])
     if cid:
         return role_in(con, cid, who["user"])
-    return "staff" if is_superadmin(who) else "owner"
+    return {"superadmin": "staff", "support": "support"}.get(staff_level(who), "owner")
 
 
 def case_role(con, case_row, who):
@@ -61,8 +75,8 @@ def case_role(con, case_row, who):
         return "owner"
     if case_row["company_id"]:
         r = role_in(con, case_row["company_id"], who["user"])
-        if r is None and is_superadmin(who):
-            return "staff"
+        if r is None and is_staff(who):
+            return "staff" if is_superadmin(who) else "support"
         return r
     if case_row["owner_sub"] == who["user"]:
         return "owner"

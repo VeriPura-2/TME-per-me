@@ -45,7 +45,7 @@ def can_access(con, case_row, who):
     if who is None:
         return True
     from . import permissions
-    if permissions.is_superadmin(who):
+    if permissions.is_staff(who):
         return True
     if case_row["company_id"]:
         return is_member(con, case_row["company_id"], who["user"])

@@ -94,7 +94,8 @@ a{color:var(--accent)}
 
 <div id="staff" class="card" hidden>
   <h2>VeriPura staff</h2>
-  <p class="muted">Superadmin view. Opening a company and every change is logged.</p>
+  <p class="muted" id="s-note"></p>
+  <div id="s-queue"></div>
   <div id="s-list"></div>
   <div id="s-detail"></div>
   <div id="s-audit"></div>
@@ -521,7 +522,28 @@ applyLang();
   }
   // ---- staff (superadmin only; the server refuses everyone else)
   const sd = (n) => (n || "").slice(0, 16).replace("T", " ");
+  const full = me.staff_level === "superadmin";
+  async function loadQueue() {
+    const [r, j] = await call("/admin/queue", {}); const q = $("s-queue"); q.innerHTML = ""; if (!r.ok) return;
+    q.appendChild(mk("h3", "Work queue (" + j.items.length + ")"));
+    if (!j.items.length) q.appendChild(mk("p", "Nothing waiting for staff.", "muted"));
+    j.items.forEach(i => {
+      const row = mk("div"); row.style.cssText = "margin:6px 0";
+      row.appendChild(mk("strong", i.code + (i.compliance ? " (compliance)" : "") + " · " + i.state + " "));
+      row.appendChild(mk("span", (i.company || "(no company)") + " · " + (i.product || "-") + " → " + (i.country || "-") + " · since " + sd(i.since) + " ", "muted"));
+      if (full) {
+        const next = i.state === "paid" ? ["in progress", "Start work"] : i.state === "in progress" ? (i.compliance ? ["review", "Send to review"] : ["delivered", "Mark delivered"]) : ["delivered", "Mark delivered"];
+        const b = mk("button", next[1]);
+        b.onclick = async () => { const [rr, jj] = await call("/admin/item", {item_id: i.id, state: next[0]}); if (!rr.ok) alert(jj.detail || jj.error); loadQueue(); };
+        row.appendChild(b);
+      }
+      q.appendChild(row);
+    });
+    if (j.unverified.length) q.appendChild(mk("p", "VAT not yet verified: " + j.unverified.map(u => (u.name || "(no name)") + " " + u.vat).join(", "), "muted"));
+  }
   async function loadStaff() {
+    $("s-note").textContent = full ? "Superadmin view. Opening a company and every change is logged." : "Support view (read only). Opening a company is logged.";
+    loadQueue();
     const [r, j] = await call("/admin/companies", {}); const box = $("s-list"); box.innerHTML = ""; $("s-detail").innerHTML = "";
     if (!r.ok) { box.textContent = "Not allowed."; return; }
     const tb = mk("table"); tb.style.cssText = "width:100%;border-collapse:collapse";
@@ -533,7 +555,8 @@ applyLang();
       tr.onclick = () => openStaffCompany(c.id, j.plans); tb.appendChild(tr);
     });
     box.appendChild(tb); if (!j.companies.length) box.textContent = "No companies yet.";
-    const [ra, ja] = await call("/admin/audit", {}); const au = $("s-audit"); au.innerHTML = "";
+    const au = $("s-audit"); au.innerHTML = "";
+    const [ra, ja] = full ? await call("/admin/audit", {}) : [{ok: false}, {}];
     if (ra.ok) { au.appendChild(mk("h3", "Staff activity (latest)")); ja.events.slice(0, 15).forEach(e => au.appendChild(mk("div", sd(e.at) + " · " + e.actor.slice(-8) + " · " + e.kind + " · " + (e.data.action || "") + " " + (e.data.company || ""), "muted"))); }
   }
   async function openStaffCompany(id, plans) {
@@ -543,11 +566,13 @@ applyLang();
     v.onclick = async () => { await call("/admin/verify", {company: id, verified: co.status !== "verified"}); loadStaff().then(() => openStaffCompany(id, plans)); };
     const ps = mk("select"); plans.forEach(p => { const o = mk("option", p); o.value = p; if (p === co.plan) o.selected = true; ps.appendChild(o); });
     const pb = mk("button", "Set plan"); pb.onclick = async () => { await call("/admin/plan", {company: id, plan: ps.value}); loadStaff().then(() => openStaffCompany(id, plans)); };
-    bar.append(v, " ", ps, pb, mk("span", "  Credit: " + j.credit, "muted")); d.appendChild(bar);
+    if (full) bar.append(v, " ", ps, pb);
+    bar.append(mk("span", "  Plan: " + (co.plan || "-") + " · Credit: " + j.credit, "muted")); d.appendChild(bar);
     d.appendChild(mk("h4", "People"));
     j.members.forEach(m => {
       const row = mk("div"); row.style.cssText = "margin:6px 0"; row.appendChild(mk("strong", (m.label || m.user.slice(-8)) + " (" + m.status + ") "));
-      if (m.status === "pending") ["Approve", "Refuse"].forEach((x, i) => { const b = mk("button", x); b.onclick = async () => { await call("/team/decide", {company: id, user: m.user, approve: i === 0}); openStaffCompany(id, plans); }; row.appendChild(b); });
+      if (!full) row.appendChild(mk("span", m.role, "muted"));
+      else if (m.status === "pending") ["Approve", "Refuse"].forEach((x, i) => { const b = mk("button", x); b.onclick = async () => { await call("/team/decide", {company: id, user: m.user, approve: i === 0}); openStaffCompany(id, plans); }; row.appendChild(b); });
       else { const sel = mk("select"); ["owner", "manager", "member", "reviewer"].forEach(x => { const o = mk("option", x); o.value = x; if (x === m.role) o.selected = true; sel.appendChild(o); });
         sel.onchange = async () => { await call("/team/role", {company: id, user: m.user, role: sel.value}); openStaffCompany(id, plans); };
         const rm = mk("button", "Remove"); rm.onclick = async () => { await call("/team/remove", {company: id, user: m.user}); openStaffCompany(id, plans); }; row.append(sel, rm); }
@@ -558,7 +583,7 @@ applyLang();
     d.appendChild(mk("h4", "Recent events"));
     j.events.slice(0, 10).forEach(e => d.appendChild(mk("div", sd(e.at) + " · " + e.actor.slice(-8) + " · " + e.kind, "muted")));
   }
-  if (me.superadmin) { $("sbtn").hidden = false; $("sbtn").onclick = () => { const p = $("staff"); p.hidden = !p.hidden; if (!p.hidden) loadStaff(); }; }
+  if (me.staff_level) { $("sbtn").hidden = false; $("sbtn").onclick = () => { const p = $("staff"); p.hidden = !p.hidden; if (!p.hidden) loadStaff(); }; }
   $("tbtn").onclick = () => { const p = $("team"); p.hidden = !p.hidden; if (!p.hidden) loadTeam(); };
   $("jbtn").onclick = () => { const p = $("journey"); p.hidden = !p.hidden; if (!p.hidden) { jsel = null; loadJourney(); } };
   let curPersona = null;

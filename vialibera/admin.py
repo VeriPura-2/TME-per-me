@@ -8,6 +8,12 @@ from . import db, invites, permissions, plans
 
 
 def _guard(who):
+    """Read access: superadmin or support."""
+    return who is not None and permissions.is_staff(who)
+
+
+def _full(who):
+    """Change access: superadmin only."""
     return who is not None and permissions.is_superadmin(who)
 
 
@@ -54,7 +60,7 @@ def company(con, who, cid):
 
 def audit(con, who, limit=100):
     """Who on staff looked at or changed what. Superadmins only."""
-    if not _guard(who):
+    if not _full(who):
         return 403, {"error": "forbidden"}
     rows = con.execute("SELECT at, actor, kind, data FROM events WHERE kind IN ('staff_access','staff_change') ORDER BY id DESC LIMIT ?",
                        (min(int(limit), 500),)).fetchall()
@@ -63,7 +69,7 @@ def audit(con, who, limit=100):
 
 def verify(con, who, cid, verified=True):
     """Staff confirm the VAT number is real (VIES or the company's own papers)."""
-    if not _guard(who):
+    if not _full(who):
         return 403, {"error": "forbidden"}
     if con.execute("SELECT 1 FROM companies WHERE id=?", (cid,)).fetchone() is None:
         return 404, {"error": "no such company"}
@@ -74,7 +80,7 @@ def verify(con, who, cid, verified=True):
 
 
 def set_plan(con, who, cid, plan):
-    if not _guard(who):
+    if not _full(who):
         return 403, {"error": "forbidden"}
     if plan not in plans.PLANS:
         return 400, {"error": "unknown plan"}
@@ -84,4 +90,49 @@ def set_plan(con, who, cid, plan):
     con.execute("UPDATE companies SET plan=? WHERE id=?", (plan, cid))
     con.commit()
     _log(con, who, "staff_change", cid, action="set_plan", old=old["plan"], new=plan)
+    return 200, {"ok": True}
+
+
+WORK_STATES = ("paid", "in progress", "review")
+STAFF_TARGETS = ("in progress", "review", "delivered")
+
+
+def queue(con, who):
+    """What staff owe clients: paid or running items that staff must do (managed level, compliance), oldest first."""
+    if not _guard(who):
+        return 403, {"error": "forbidden"}
+    managed = plans.LEVELS[3]["items"]
+    marks = ",".join("?" * len(managed))
+    rows = con.execute(
+        "SELECT i.id, i.code, i.state, i.is_compliance, i.updated_at, i.case_id, c.company_id, co.legal_name, c.product, c.market "
+        "FROM items i JOIN cases c ON c.id=i.case_id LEFT JOIN companies co ON co.id=c.company_id "
+        f"WHERE i.state IN ('paid','in progress','review') AND (i.code IN ({marks}) OR i.is_compliance=1 OR i.state='review') "
+        "ORDER BY i.updated_at ASC", managed).fetchall()
+    items = []
+    for r in rows:
+        prod, mkt = json.loads(r["product"] or "{}"), json.loads(r["market"] or "{}")
+        items.append({"id": r["id"], "code": r["code"], "state": r["state"], "compliance": bool(r["is_compliance"]),
+                      "since": r["updated_at"], "case": r["case_id"], "company_id": r["company_id"], "company": r["legal_name"],
+                      "product": prod.get("name_brand") or prod.get("category"), "country": mkt.get("country")})
+    unverified = [{"id": r["id"], "name": r["legal_name"], "vat": r["vat"]} for r in con.execute(
+        "SELECT id, legal_name, vat FROM companies WHERE status='unverified' ORDER BY created_at").fetchall()]
+    return 200, {"items": items, "unverified": unverified}
+
+
+def set_item(con, who, item_id, state):
+    """Staff move an item forward. The gates still apply: no work before payment, compliance needs review before delivery."""
+    if not _full(who):
+        return 403, {"error": "forbidden"}
+    if state not in STAFF_TARGETS:
+        return 400, {"error": "state not allowed"}
+    row = con.execute("SELECT i.state, c.company_id FROM items i JOIN cases c ON c.id=i.case_id WHERE i.id=?", (item_id,)).fetchone()
+    if row is None:
+        return 404, {"error": "no such item"}
+    from . import gates
+    try:
+        gates.set_state(con, item_id, state, "staff")
+    except gates.GateError as e:
+        return 400, {"error": "gate", "detail": str(e)}
+    con.commit()
+    _log(con, who, "staff_change", row["company_id"], action="item_state", item=item_id, old=row["state"], new=state)
     return 200, {"ok": True}
