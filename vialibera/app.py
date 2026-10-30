@@ -52,8 +52,11 @@ def handle_chat(body, llm=None, who=None):
         row = c.execute("SELECT owner_sub, company_id, org_id FROM cases WHERE id=?", (cid,)).fetchone()
         if row is None or not accounts.can_access(c, row, who):
             return 404, {"error": "case not found"}  # same answer for other people's cases
-        if not permissions.allowed(permissions.case_role(c, row, who), "write"):
+        role = permissions.case_role(c, row, who)
+        if not permissions.allowed(role, "write"):
             return 403, {"error": "forbidden"}
+        if role == "staff":
+            permissions.audit_staff(c, who, row, "write")
     else:
         if not permissions.can(c, who, "write"):
             return 403, {"error": "forbidden"}
@@ -162,8 +165,11 @@ def _case_for(body, who, action="read"):
     row = con().execute("SELECT * FROM cases WHERE id=?", (body.get("case_id"),)).fetchone()
     if row is None or not accounts.can_access(con(), row, who):
         return None, (404, {"error": "case not found"})
-    if not permissions.allowed(permissions.case_role(con(), row, who), action):
+    role = permissions.case_role(con(), row, who)
+    if not permissions.allowed(role, action):
         return None, (403, {"error": "forbidden"})
+    if role == "staff":
+        permissions.audit_staff(con(), who, row, action)
     return row, None
 
 

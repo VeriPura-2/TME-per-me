@@ -44,6 +44,9 @@ def can_access(con, case_row, who):
     """who is None only when sign-in is switched off (dev). A company case follows membership only."""
     if who is None:
         return True
+    from . import permissions
+    if permissions.is_superadmin(who):
+        return True
     if case_row["company_id"]:
         return is_member(con, case_row["company_id"], who["user"])
     if case_row["owner_sub"] == who["user"]:

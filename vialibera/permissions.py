@@ -1,22 +1,35 @@
 """Who may do what inside a company. One place, used by every handler.
 
 Roles live in memberships (our own database). The company pays, so the plan and the payment sit on the company.
-VeriPura staff (Auth0 roles claim) are not handled here yet: they have no access to client companies by default.
+VeriPura superadmin: Auth0 roles claim contains STAFF_CLAIM (assigned only in Auth0, never in our database). It works across
+all companies, every access to a company case is written to the events log (staff_access), and it cannot pay for a company.
 """
-ROLES = ("owner", "manager", "member", "reviewer")
+STAFF_CLAIM = "veripura_superadmin"
+ROLES = ("owner", "manager", "member", "reviewer")  # company roles; "staff" is separate (superadmin)
 
 # action -> roles allowed
 ACTIONS = {
-    "read":  ("owner", "manager", "member", "reviewer"),
-    "write": ("owner", "manager", "member"),      # chat, upload, edit documents, fill forms
-    "order": ("owner", "manager"),                # approve services and pay
-    "plan":  ("owner",),                          # choose or change the company plan
-    "team":  ("owner",),                          # approve people, change roles, invite, remove
+    "read":  ("owner", "manager", "member", "reviewer", "staff"),
+    "write": ("owner", "manager", "member", "staff"),      # chat, upload, edit documents, fill forms
+    "order": ("owner", "manager"),                         # approve services and pay (staff cannot pay for a company)
+    "plan":  ("owner", "staff"),                           # choose or change the company plan
+    "team":  ("owner", "staff"),                           # approve people, change roles, invite, remove
 }
 
 
 def allowed(role, action):
     return role in ACTIONS.get(action, ())
+
+
+def is_superadmin(who):
+    return bool(who) and STAFF_CLAIM in (who.get("roles") or [])
+
+
+def audit_staff(con, who, case_row, action):
+    """Log one line each time a superadmin touches a company case that is not their own."""
+    from . import db
+    db.log_event(con, case_row["id"] if "id" in case_row.keys() else None, who["user"], "staff_access",
+                 {"action": action, "company": case_row["company_id"]})
 
 
 def role_in(con, company_id, user_sub):
@@ -37,7 +50,9 @@ def my_role(con, who):
     if who is None:
         return "owner"
     cid = company_of(con, who["user"])
-    return role_in(con, cid, who["user"]) if cid else "owner"
+    if cid:
+        return role_in(con, cid, who["user"])
+    return "staff" if is_superadmin(who) else "owner"
 
 
 def case_role(con, case_row, who):
@@ -45,7 +60,10 @@ def case_role(con, case_row, who):
     if who is None:
         return "owner"
     if case_row["company_id"]:
-        return role_in(con, case_row["company_id"], who["user"])
+        r = role_in(con, case_row["company_id"], who["user"])
+        if r is None and is_superadmin(who):
+            return "staff"
+        return r
     if case_row["owner_sub"] == who["user"]:
         return "owner"
     if case_row["org_id"] and case_row["org_id"] == who.get("org"):

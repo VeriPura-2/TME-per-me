@@ -165,3 +165,25 @@ class CompanyCreditAndConsentTest(unittest.TestCase):
         app.handle_company_consent({"accept_terms": True, "accept_onerous": True, "authorised": True}, who("own"))
         team.remove(self.c, who("own"), "mem")
         self.assertFalse(app.consent_ok(who("mem")))
+
+
+class SuperadminTest(unittest.TestCase):
+    def setUp(self):
+        self.cid, self.case = company("A", {"own": ("owner", "active")})
+
+    def sa(self, claim=permissions.STAFF_CLAIM):
+        w = who("staff1")
+        w["roles"] = [claim]
+        return w
+
+    def test_superadmin_reads_any_company_and_is_logged(self):
+        self.assertEqual(app.handle_journey({"case_id": self.case}, self.sa())[0], 200)
+        n = app.con().execute("SELECT COUNT(*) AS n FROM events WHERE kind='staff_access' AND actor='staff1'").fetchone()["n"]
+        self.assertGreaterEqual(n, 1)
+
+    def test_superadmin_cannot_pay_or_be_faked(self):
+        self.assertFalse(permissions.allowed("staff", "order"))
+        self.assertEqual(app.handle_journey({"case_id": self.case}, self.sa("other_role"))[0], 404)
+
+    def test_company_roles_unchanged(self):
+        self.assertEqual(app.handle_journey({"case_id": self.case}, who("own"))[0], 200)
