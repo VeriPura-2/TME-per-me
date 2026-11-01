@@ -48,6 +48,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
     <button id="jbtn" hidden></button>
     <button id="ibtn" hidden></button>
     <button id="tbtn" hidden></button>
+    <button id="wbtn" hidden></button>
     <button id="sbtn" hidden>Staff</button>
     <button id="logout" hidden></button>
   </div>
@@ -95,13 +96,19 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <div id="t-list"></div>
   <div id="t-consent"></div>
   <div id="t-inv"></div>
+  <div id="t-tem"></div>
   <p class="muted" id="t-rules"></p>
 </div>
+
+<div id="engage" class="card" hidden></div>
+
+<div id="temws" class="card" hidden></div>
 
 <div id="staff" class="card" hidden>
   <h2>VeriPura staff</h2>
   <p class="muted" id="s-note"></p>
   <div id="s-core"></div>
+  <div id="s-tems"></div>
   <div id="s-add"></div>
   <div id="s-queue"></div>
   <div id="s-list"></div>
@@ -139,6 +146,46 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
 <script src="https://cdn.jsdelivr.net/npm/@auth0/auth0-spa-js@2.1.3/dist/auth0-spa-js.production.js"></script>
 <footer class="legal">MioTEM is operated by A&amp;O CONSULT S.A.S., 14059 Vesime (AT), Italy. VAT (P.IVA) 01765920051. PEC aeoconsultsas@pec.it.<br><a href="/terms?lang=it" target="_blank">Condizioni</a> · <a href="/terms?lang=it#privacy" target="_blank">Privacy</a> · <a href="/terms?lang=en" target="_blank">Terms</a> · <a href="/terms?lang=en#privacy" target="_blank">Privacy (EN)</a></footer>
 <script>
+const TT = {
+  it: {tem_btn: "Clienti TEM", ws_title: "Area consulente export", ws_firm: "Studio", ws_lead: "responsabile", ws_member: "membro",
+       ws_team: "Squadra dello studio", ws_invite: "Invita un collega", ws_seats: "Posti", ws_unlimited: "non limitati",
+       ws_clients: "Clienti", ws_none: "Nessun cliente ancora. Crea un link d'incarico e mandalo al cliente.",
+       ws_engage: "Nuovo cliente: link d'incarico", ws_engage_note: "Link valido 14 giorni, monouso. Il cliente accede con la sua email, inserisce i dati dell'azienda e accetta l'incarico.",
+       ws_copy: "Copia", ws_open: "Apri", ws_newp: "Nuovo progetto", ws_cat: "Prodotto", ws_country: "Destinazione", ws_name: "Nome prodotto",
+       ws_create: "Crea", ws_missing: "documenti mancanti", ws_assign: "Assegnati", ws_back: "Torna ai clienti",
+       ws_case: "Scheda pratica", ws_answered: "risposte", ws_todo: "Ancora da chiedere", ws_req: "Documenti richiesti",
+       ws_confirm: "Conferma", ws_unconfirm: "Annulla conferma", ws_confirmed: "confermato da", ws_note_q: "Nota (facoltativa) per la conferma:",
+       ws_docs: "Documenti del progetto", ws_upload: "Carica nel progetto", ws_lib: "Archivio del cliente", ws_add: "Aggiungi al progetto",
+       ws_core: "Controlli VeriPura CORE", ws_notes: "Note", ws_internal: "Interna (studio e VeriPura)", ws_client: "Visibile al cliente",
+       ws_addnote: "Aggiungi nota", ws_transcript: "Intervista (sola lettura)", ws_chat: "Lavora in chat su questo progetto",
+       ws_chat_on: "Ora la chat lavora su questo progetto.", ws_remove: "Rimuovi",
+       en_title: "Incarico al consulente export", en_from: "Il consulente", en_asks: "chiede di poter lavorare per la tua azienda in MioTEM.",
+       en_vat: "Partita IVA", en_name: "Ragione sociale", en_addr: "Sede legale", en_sig: "Nome e cognome del firmatario", en_role: "Ruolo (es. legale rappresentante)",
+       en_scope: "Autorizzo il consulente a:", en_a1: "Autorizzo il consulente per le attività elencate", en_a2: "Accetto l'invio di documenti a VeriPura CORE, servizio ospitato negli Stati Uniti",
+       en_a3: 'Accetto le <a href="/terms?lang=it" target="_blank">Condizioni e l\'informativa privacy</a> di MioTEM e approvo specificamente le clausole onerose (artt. 1341 e 1342 c.c.)',
+       en_btn: "Accetta l'incarico", en_ok: "Incarico accettato. Il consulente può ora lavorare per la tua azienda. Puoi revocarlo in qualsiasi momento dalla sezione Squadra.",
+       en_bad: "Link d'incarico non valido o scaduto.", tc_title: "Consulenti export", tc_since: "dal", tc_revoked: "revocato", tc_revoke: "Revoca accesso",
+       tc_log: "Accessi dei consulenti", tem_joined: "Sei entrato nello studio del consulente.", c_notes: "Messaggi del tuo consulente export"},
+  en: {tem_btn: "TEM clients", ws_title: "Export consultant workspace", ws_firm: "Firm", ws_lead: "lead", ws_member: "member",
+       ws_team: "Firm team", ws_invite: "Invite a colleague", ws_seats: "Seats", ws_unlimited: "not limited",
+       ws_clients: "Clients", ws_none: "No clients yet. Create an engagement link and send it to the client.",
+       ws_engage: "New client: engagement link", ws_engage_note: "Link valid for 14 days, single use. The client signs in with their email, enters the company details and accepts the engagement.",
+       ws_copy: "Copy", ws_open: "Open", ws_newp: "New project", ws_cat: "Product", ws_country: "Destination", ws_name: "Product name",
+       ws_create: "Create", ws_missing: "documents missing", ws_assign: "Assigned", ws_back: "Back to clients",
+       ws_case: "Case file", ws_answered: "answered", ws_todo: "Still to ask", ws_req: "Required documents",
+       ws_confirm: "Confirm", ws_unconfirm: "Undo confirmation", ws_confirmed: "confirmed by", ws_note_q: "Note (optional) for the confirmation:",
+       ws_docs: "Project documents", ws_upload: "Upload to project", ws_lib: "Client library", ws_add: "Add to project",
+       ws_core: "VeriPura CORE checks", ws_notes: "Notes", ws_internal: "Internal (firm and VeriPura)", ws_client: "Visible to the client",
+       ws_addnote: "Add note", ws_transcript: "Interview (read only)", ws_chat: "Work on this project in the chat",
+       ws_chat_on: "The chat now works on this project.", ws_remove: "Remove",
+       en_title: "Engagement of an export consultant", en_from: "The consultant", en_asks: "asks to work for your company in MioTEM.",
+       en_vat: "VAT number", en_name: "Legal company name", en_addr: "Registered address", en_sig: "Signatory full name", en_role: "Role (for example legal representative)",
+       en_scope: "I authorise the consultant to:", en_a1: "I authorise the consultant for the activities listed", en_a2: "I accept that documents are sent to VeriPura CORE, a service hosted in the United States",
+       en_a3: 'I accept the MioTEM <a href="/terms?lang=en" target="_blank">Terms and privacy notice</a> and specifically approve the onerous clauses (arts. 1341 and 1342 Italian Civil Code)',
+       en_btn: "Accept the engagement", en_ok: "Engagement accepted. The consultant can now work for your company. You can revoke it at any time in the Team section.",
+       en_bad: "The engagement link is not valid or has expired.", tc_title: "Export consultants", tc_since: "since", tc_revoked: "revoked", tc_revoke: "Revoke access",
+       tc_log: "Consultant access log", tem_joined: "You have joined the consultant firm.", c_notes: "Messages from your export consultant"},
+};
 const T = {
   it: {
     signin: "Accedi / Registrati", signout: "Esci", send: "Invia", ph: "Racconta il tuo prodotto e il mercato",
@@ -180,7 +227,7 @@ const store = {
   get(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 };
-try { const q = new URLSearchParams(location.search); const ic = q.get("invite"); if (ic) localStorage.setItem("vl_invite", ic.slice(0, 40)); const tt = q.get("team"); if (tt) localStorage.setItem("vl_team", tt.slice(0, 80)); const pd = q.get("paid"); if (pd) localStorage.setItem("vl_paid", pd.slice(0, 120)); if (q.get("paycancel")) localStorage.setItem("vl_paycancel", "1"); if (pd || q.get("paycancel")) history.replaceState({}, "", "/"); } catch (e) {}
+try { const q = new URLSearchParams(location.search); const ic = q.get("invite"); if (ic) localStorage.setItem("vl_invite", ic.slice(0, 40)); const tt = q.get("team"); if (tt) localStorage.setItem("vl_team", tt.slice(0, 80)); const tf = q.get("tem"); if (tf) localStorage.setItem("vl_tem", tf.slice(0, 80)); const eg = q.get("engage"); if (eg) localStorage.setItem("vl_engage", eg.slice(0, 80)); if (tf || eg || tt) history.replaceState({}, "", "/"); const pd = q.get("paid"); if (pd) localStorage.setItem("vl_paid", pd.slice(0, 120)); if (q.get("paycancel")) localStorage.setItem("vl_paycancel", "1"); if (pd || q.get("paycancel")) history.replaceState({}, "", "/"); } catch (e) {}
 let lang = store.get("vl_lang", "it");
 let theme = store.get("vl_theme", "");
 let ctx = {};
@@ -233,10 +280,34 @@ applyLang();
     return [r, raw ? (r.ok ? await r.blob() : await r.json().catch(() => ({}))) : await r.json()];
   };
   let invitedNote = "";
+  const mk0 = (tag, text, cls) => { const e = document.createElement(tag); if (text) e.textContent = text; if (cls) e.className = cls; return e; };
+  async function engagementForm(token) {
+    const tt = TT[lang], box = $("engage"); box.innerHTML = ""; box.hidden = false;
+    const [ri, ji] = await call("/tem/engage_info", {token});
+    if (!ri.ok) { box.appendChild(mk0("p", tt.en_bad)); localStorage.removeItem("vl_engage"); return; }
+    box.appendChild(mk0("h2", tt.en_title));
+    box.appendChild(mk0("p", tt.en_from + " " + ji.firm.name + (ji.firm.vat ? " (" + ji.firm.vat + ")" : "") + " " + tt.en_asks));
+    const inp = (ph) => { const i = mk0("input"); i.type = "text"; i.placeholder = ph; i.style.cssText = "width:100%;margin:4px 0"; box.appendChild(i); return i; };
+    const vat = inp(tt.en_vat), nm = inp(tt.en_name), ad = inp(tt.en_addr), sg = inp(tt.en_sig), rl = inp(tt.en_role);
+    box.appendChild(mk0("p", tt.en_scope)); const ul = mk0("ul"); ji.scope[lang].forEach(x => ul.appendChild(mk0("li", x))); box.appendChild(ul);
+    const cks = [tt.en_a1, tt.en_a2, tt.en_a3].map(txt => { const l = mk0("label"); l.style.display = "block"; const c = mk0("input"); c.type = "checkbox"; const sp = mk0("span"); sp.innerHTML = " " + txt; l.append(c, sp); box.appendChild(l); return c; });
+    const btn = mk0("button", tt.en_btn, "primary"), out = mk0("p"); box.append(btn, out);
+    await new Promise(res => { btn.onclick = async () => {
+      const [r, j] = await call("/tem/engage_accept", {token, lang, email: ctx.email, vat: vat.value, legal_name: nm.value, address: ad.value,
+        signatory_name: sg.value, signatory_role: rl.value, accept_scope: cks[0].checked, accept_core: cks[1].checked, accept_terms: cks[2].checked});
+      if (r.ok) { localStorage.removeItem("vl_engage"); box.innerHTML = ""; box.appendChild(mk0("p", tt.en_ok)); res(); }
+      else { out.textContent = (T[lang].err) + (j.detail || j.error || r.status); if (j.error === "link_invalid") { localStorage.removeItem("vl_engage"); res(); } } }; });
+  }
   try {  // a team invite is accepted before the terms gate: the company's acceptance may already cover the person
     const tk = localStorage.getItem("vl_team");
     if (tk) { const [rt] = await call("/team/accept", {token: tk}); localStorage.removeItem("vl_team"); invitedNote = rt.ok ? "t_welcome" : "t_bad"; }
   } catch (e) {}
+  try {
+    const tf = localStorage.getItem("vl_tem");
+    if (tf) { const [rf] = await call("/tem/join", {token: tf, label: ctx.email}); localStorage.removeItem("vl_tem"); if (rf.ok) invitedNote = "tem_joined"; }
+  } catch (e) {}
+  const eg = localStorage.getItem("vl_engage");
+  if (eg) await engagementForm(eg);
   const me = (await call("/me", {}))[1];
   if (me.consent_via === "company" && !invitedNote) invitedNote = "c_via";
   if (!me.consent) {
@@ -418,7 +489,8 @@ applyLang();
           row.appendChild(document.createTextNode(i[lang] + " "));
           if (i.who) row.appendChild(mk("span", "(" + i.who[lang] + ") ", "muted"));
           row.appendChild(mk("span", i.on_file ? t.j_onfile : (i.importer_side ? t.j_side : t.j_missing), "muted"));
-          if (i.verified === false) row.appendChild(mk("span", " " + t.j_verify, "verify"));
+          if (i.confirmed) row.appendChild(mk("span", " ✓ " + TT[lang].ws_confirmed + " " + i.confirmed.by, "tick"));
+          else if (i.verified === false) row.appendChild(mk("span", " " + t.j_verify, "verify"));
           if (i.source) { const s = mk("a", " " + t.j_src); s.href = i.source; s.target = "_blank"; s.rel = "noopener"; s.style.marginLeft = "6px"; row.appendChild(s); }
           if (i.only_if) row.appendChild(mk("div", t.j_onlyif + ": " + i.only_if[lang], "muted"));
           if (i.note) row.appendChild(mk("div", i.note[lang], "muted"));
@@ -441,6 +513,7 @@ applyLang();
         (x.check.alerts || []).forEach(a => row.appendChild(mk("div", a.severity + ": " + a.message, "muted")));
         cb.appendChild(row); });
     }
+    if (j.notes && j.notes.length) { cb.appendChild(mk("h3", TT[lang].c_notes)); j.notes.forEach(n => cb.appendChild(mk("div", n.at.slice(0, 10) + " · " + n.by + ": " + n.text))); }
     loadEori(j.case && j.case.export_registration, cid);
     const pk = $("j-pk"); pk.innerHTML = "";
     if (j.packet) {
@@ -614,6 +687,7 @@ applyLang();
   async function loadStaff() {
     addCompanyForm();
     coreSwitch();
+    staffTems();
     $("s-note").textContent = full ? "Superadmin view. Opening a company and every change is logged." : "Support view (read only). Opening a company is logged.";
     loadQueue();
     await loadCompanies();
@@ -659,8 +733,118 @@ applyLang();
     d.appendChild(mk("h4", "Recent events"));
     j.events.slice(0, 10).forEach(e => d.appendChild(mk("div", sd(e.at) + " · " + e.actor.slice(-8) + " · " + e.kind, "muted")));
   }
+  // ---- TEM workspace (export consultant firms). The server enforces who sees which client.
+  const CATS = ["pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other"];
+  const COUNTRIES = ["UK", "USA", "Canada", "Germany", "Japan", "other"];
+  const sel0 = (opts, cur) => { const s = mk("select"); opts.forEach(o => { const e = mk("option", o); e.value = o; if (o === cur) e.selected = true; s.appendChild(e); }); return s; };
+  const linkBox = (parent, url, note) => { const i = mk("input"); i.type = "text"; i.readOnly = true; i.value = url; i.style.width = "70%"; const c = mk("button", TT[lang].ws_copy);
+    c.onclick = async () => { try { await navigator.clipboard.writeText(url); } catch (e) { i.select(); } }; parent.append(i, " ", c); if (note) parent.appendChild(mk("div", note, "muted")); };
+  async function loadTem() {
+    const tt = TT[lang], box = $("temws"); box.innerHTML = "";
+    const [r, j] = await call("/tem/me", {}); if (!r.ok || !j.firm) { box.textContent = T[lang].err + (j.error || r.status); return; }
+    const lead = j.role === "lead";
+    box.appendChild(mk("h2", tt.ws_title));
+    box.appendChild(mk("p", tt.ws_firm + ": " + j.firm.name + " · " + (lead ? tt.ws_lead : tt.ws_member) + " · " + tt.ws_seats + ": " + (j.firm.seats || tt.ws_unlimited), "muted"));
+    if (lead) {
+      box.appendChild(mk("h3", tt.ws_team));
+      j.members.forEach(m => { const row = mk("div", (m.label || m.user.slice(-8)) + " · " + (m.role === "lead" ? tt.ws_lead : tt.ws_member) + " ");
+        if (m.role !== "lead") { const b = mk("button", tt.ws_remove); b.onclick = async () => { await call("/tem/remove", {user: m.user}); loadTem(); }; row.appendChild(b); }
+        box.appendChild(row); });
+      const ib = mk("button", tt.ws_invite), io = mk("div"); ib.onclick = async () => { io.innerHTML = ""; const [rr, jj] = await call("/tem/invite", {});
+        if (rr.ok) linkBox(io, location.origin + "/?tem=" + jj.token, T[lang].t_link); else io.textContent = T[lang].err + (jj.error || rr.status); };
+      box.append(ib, io);
+    }
+    box.appendChild(mk("h3", tt.ws_clients));
+    const eb = mk("button", tt.ws_engage), eo = mk("div"); eb.onclick = async () => { eo.innerHTML = ""; const [rr, jj] = await call("/tem/engage_link", {});
+      if (rr.ok) linkBox(eo, location.origin + "/?engage=" + jj.token, tt.ws_engage_note); else eo.textContent = T[lang].err + (jj.error || rr.status); };
+    box.append(eb, eo);
+    if (!j.clients.length) box.appendChild(mk("p", tt.ws_none, "muted"));
+    j.clients.forEach(c => {
+      const cd = mk("div", null, "card"); cd.appendChild(mk("strong", c.name + " (" + c.vat + ")"));
+      cd.appendChild(mk("span", " · " + tt.tc_since + " " + sd(c.since), "muted"));
+      c.projects.forEach(p => { const row = mk("div", (p.product || "-") + " → " + (p.country || "-") + " · " + p.status + (p.missing != null ? " · " + p.missing + " " + tt.ws_missing : "") + " ");
+        const ob = mk("button", tt.ws_open); ob.onclick = () => temProject(p.id); row.appendChild(ob); cd.appendChild(row); });
+      const np = mk("div"); const cs = sel0(CATS), co = sel0(COUNTRIES), nn = mk("input"); nn.type = "text"; nn.placeholder = tt.ws_name; nn.style.width = "30%";
+      const cb = mk("button", tt.ws_create); cb.onclick = async () => { const [rr, jj] = await call("/tem/new_project", {company: c.id, category: cs.value, country: co.value, name: nn.value});
+        if (rr.ok) temProject(jj.case_id); else alert(jj.error || rr.status); };
+      np.append(mk("span", tt.ws_newp + ": ", "muted"), cs, " ", co, " ", nn, " ", cb); cd.appendChild(np);
+      if (lead && j.members.length > 1) { const as = mk("div", tt.ws_assign + ": ", "muted");
+        j.members.filter(m => m.role !== "lead").forEach(m => { const l = mk("label"); const ck = mk("input"); ck.type = "checkbox"; ck.checked = (c.assigned || []).includes(m.user);
+          ck.onchange = async () => { await call("/tem/assign", {company: c.id, user: m.user, on: ck.checked}); }; l.append(ck, " " + (m.label || m.user.slice(-8)) + "  "); as.appendChild(l); });
+        cd.appendChild(as); }
+      box.appendChild(cd);
+    });
+  }
+  async function temProject(caseId0) {
+    const tt = TT[lang], t = T[lang], box = $("temws"); box.innerHTML = "";
+    const [r, j] = await call("/tem/project", {case_id: caseId0}); if (!r.ok) { box.textContent = t.err + (j.error || r.status); return; }
+    const back = mk("button", "← " + tt.ws_back); back.onclick = loadTem; box.appendChild(back);
+    const k = j.case; box.appendChild(mk("h2", k.client.name + " · " + (k.product.name_brand || k.product.category || "-") + " → " + (k.market.country || "-")));
+    const chat = mk("button", tt.ws_chat); chat.onclick = () => { caseId = caseId0; $("welcome").hidden = true; $("app").hidden = false; add("bot", tt.ws_chat_on); $("msg").focus(); };
+    box.appendChild(chat);
+    box.appendChild(mk("h3", tt.ws_case));
+    box.appendChild(mk("div", j.progress.answered + " / " + j.progress.total + " " + tt.ws_answered, "muted"));
+    [["product", k.product], ["market", k.market], ["company", k.company]].forEach(([sec, obj]) => Object.entries(obj).forEach(([key, v]) => box.appendChild(mk("div", sec + " · " + key + ": " + (typeof v === "string" ? v : JSON.stringify(v)), "muted"))));
+    if (j.progress.missing.length) box.appendChild(mk("div", tt.ws_todo + ": " + j.progress.missing.map(m => m.label + (m.later ? " (later)" : "")).join(", "), "muted"));
+    box.appendChild(mk("h3", tt.ws_req));
+    const d = j.required_docs;
+    if (!d) box.appendChild(mk("div", t.j_nocase, "muted"));
+    else [1, 2, 3, 4].forEach(l => { const rows = d.data.items.filter(i => i.layer === l); if (!rows.length) return; box.appendChild(mk("strong", d.data.layers[l][lang]));
+      rows.forEach(i => { const row = mk("div"); row.appendChild(mk("span", i.on_file ? "✓ " : "○ ", i.on_file ? "tick" : "todo")); row.appendChild(document.createTextNode(i[lang] + " "));
+        row.appendChild(mk("span", "(" + i.who[lang] + ") ", "muted"));
+        if (i.confirmed) row.appendChild(mk("span", tt.ws_confirmed + " " + i.confirmed.by + (i.confirmed.note ? ": " + i.confirmed.note : "") + " ", "tick"));
+        else if (!i.verified) row.appendChild(mk("span", t.j_verify + " ", "verify"));
+        if (i.source) { const a = mk("a", t.j_src); a.href = i.source; a.target = "_blank"; a.rel = "noopener"; row.appendChild(a); row.appendChild(document.createTextNode(" ")); }
+        if (i.confirmed || !i.verified) { const b = mk("button", i.confirmed ? tt.ws_unconfirm : tt.ws_confirm); b.onclick = async () => {
+            const note = i.confirmed ? null : prompt(tt.ws_note_q, ""); if (note === null && !i.confirmed) return;
+            await call("/tem/confirm", {case_id: caseId0, item: i.id, note, on: !i.confirmed}); temProject(caseId0); }; row.appendChild(b); }
+        if (i.only_if) row.appendChild(mk("div", t.j_onlyif + ": " + i.only_if[lang], "muted"));
+        box.appendChild(row); }); });
+    box.appendChild(mk("h3", tt.ws_docs));
+    const dl = async (doc) => { const rr = await api("/doc/" + doc.id); const bl = await rr.blob(); const a = document.createElement("a"); a.href = URL.createObjectURL(bl); a.download = doc.filename; a.click(); };
+    const inProj = new Set(j.documents.map(x => x.id));
+    j.documents.forEach(x => { const row = mk("div", x.filename + " [" + (x.doc_type || "?") + "] "); const o = mk("button", t.d_open); o.onclick = () => dl(x); row.appendChild(o);
+      const ck = (j.core.documents.find(y => y.id === x.id) || {}).check; if (ck) row.appendChild(mk("span", " " + ck.label[lang] + (ck.simulated ? " (" + t.j_core_test + ")" : ""), "core-" + ck.result));
+      box.appendChild(row); });
+    const up = mk("input"); up.type = "file"; up.multiple = true; up.onchange = async e => { for (const f of e.target.files) {
+        const rr = await api("/upload", {method: "POST", body: f, headers: {"X-Filename": encodeURIComponent(f.name), "X-Case": caseId0}}); if (!rr.ok) { const jj = await rr.json(); alert(f.name + ": " + (jj.error || rr.status)); } } temProject(caseId0); };
+    box.append(mk("div", tt.ws_upload + ":", "muted"), up);
+    const lib = j.library.filter(x => !inProj.has(x.id));
+    if (lib.length) { box.appendChild(mk("div", tt.ws_lib + ":", "muted"));
+      lib.forEach(x => { const row = mk("div", x.filename + " [" + (x.doc_type || "?") + "] "); const o = mk("button", t.d_open); o.onclick = () => dl(x);
+        const a = mk("button", tt.ws_add); a.onclick = async () => { await api("/doc/" + x.id, {method: "POST", body: JSON.stringify({link_case: caseId0})}); temProject(caseId0); };
+        row.append(o, " ", a); box.appendChild(row); }); }
+    box.appendChild(mk("h3", tt.ws_notes));
+    j.notes.forEach(n => box.appendChild(mk("div", sd(n.at) + " · " + n.by + " · " + (n.visibility === "client" ? tt.ws_client : tt.ws_internal) + ": " + n.text, n.visibility === "client" ? "" : "muted")));
+    const ta = mk("textarea"); ta.rows = 2; ta.style.width = "100%"; const vs = mk("select"); [["internal", tt.ws_internal], ["client", tt.ws_client]].forEach(([v, lab]) => { const o = mk("option", lab); o.value = v; vs.appendChild(o); });
+    const nb = mk("button", tt.ws_addnote); nb.onclick = async () => { if (!ta.value.trim()) return; await call("/tem/note", {case_id: caseId0, text: ta.value, visibility: vs.value}); temProject(caseId0); };
+    box.append(ta, vs, " ", nb);
+    if (j.transcript.length) { const det = mk("details"); det.appendChild(mk("summary", tt.ws_transcript));
+      j.transcript.forEach(m => det.appendChild(mk("div", (m.role === "user" ? "▶ " : "◀ ") + m.text, m.role === "user" ? "" : "muted"))); box.appendChild(det); }
+  }
+  if (me.tem) { $("wbtn").hidden = false; $("wbtn").textContent = TT[lang].tem_btn; $("wbtn").onclick = () => { const p = $("temws"); p.hidden = !p.hidden; if (!p.hidden) loadTem(); }; }
+  async function loadTeamTem() {
+    const tt = TT[lang], box = $("t-tem"); box.innerHTML = "";
+    const [r, j] = await call("/tem/client", {}); if (!r.ok || !j.firms.length) return;
+    box.appendChild(mk("h3", tt.tc_title));
+    j.firms.forEach(f => { const row = mk("div", f.name + " · " + (f.status === "active" ? tt.tc_since + " " + sd(f.since) : tt.tc_revoked + " " + sd(f.revoked_at)) + " ");
+      if (f.status === "active" && j.can_revoke) { const b = mk("button", tt.tc_revoke); b.onclick = async () => { if (!confirm(tt.tc_revoke + ": " + f.name + "?")) return; await call("/tem/revoke", {firm: f.id}); loadTeamTem(); }; row.appendChild(b); }
+      box.appendChild(row); });
+    if (j.log.length) { const det = mk("details"); det.appendChild(mk("summary", tt.tc_log)); j.log.forEach(e => det.appendChild(mk("div", sd(e.at) + " · " + (e.firm || "") + " · " + e.action, "muted"))); box.appendChild(det); }
+  }
+  async function staffTems() {
+    const box = $("s-tems"); box.innerHTML = ""; const [r, j] = await call("/admin/tem_firms", {}); if (!r.ok) return;
+    box.appendChild(mk("h3", "TEM firms (" + j.firms.length + ")"));
+    j.firms.forEach(f => { const row = mk("div", f.name + (f.vat ? " · " + f.vat : "") + " · members " + f.members + " · clients " + f.clients + " · seats " + (f.seats || "not limited") + " ", "muted");
+      if (full) { const b = mk("button", "New lead link"), o = mk("div"); b.onclick = async () => { o.innerHTML = ""; const [rr, jj] = await call("/admin/tem_lead_link", {firm: f.id}); if (rr.ok) linkBox(o, location.origin + "/?tem=" + jj.token, "Single use, 14 days."); }; row.append(b, o); }
+      box.appendChild(row); });
+    if (full) { const n = mk("input"), v = mk("input"), st = mk("input"); n.placeholder = "Firm name"; v.placeholder = "VAT (optional)"; st.placeholder = "Seats (empty = not limited)"; st.type = "number";
+      const b = mk("button", "Add TEM firm"), o = mk("div"); b.onclick = async () => { o.innerHTML = ""; const [rr, jj] = await call("/admin/tem_firm", {name: n.value, vat: v.value, seats: st.value || null});
+        if (rr.ok) { linkBox(o, location.origin + "/?tem=" + jj.lead_token, "Send this to the firm lead. Single use, 14 days."); } else o.textContent = jj.error || rr.status; };
+      box.append(n, " ", v, " ", st, " ", b, o); }
+  }
   if (me.staff_level) { $("sbtn").hidden = false; $("sbtn").onclick = () => { const p = $("staff"); p.hidden = !p.hidden; if (!p.hidden) loadStaff(); }; }
-  $("tbtn").onclick = () => { const p = $("team"); p.hidden = !p.hidden; if (!p.hidden) loadTeam(); };
+  $("tbtn").onclick = () => { const p = $("team"); p.hidden = !p.hidden; if (!p.hidden) { loadTeam(); loadTeamTem(); } };
   $("jbtn").onclick = () => { const p = $("journey"); p.hidden = !p.hidden; if (!p.hidden) { jsel = null; loadJourney(); } };
   let curPersona = null;
   function setPersona(p) {
@@ -722,7 +906,7 @@ applyLang();
     $("w-title").textContent = me.latest_case ? t.w_back : t.w_title;
     $("w-names").textContent = t.w_names; $("w-can").textContent = t.w_can; $("w-expect").textContent = t.w_expect; $("w-ask").textContent = t.w_ask;
     $("w-style").textContent = t.w_style;
-    $("w-invite").hidden = !invitedNote; if (invitedNote) $("w-invite").textContent = t[invitedNote];
+    $("w-invite").hidden = !invitedNote; if (invitedNote) $("w-invite").textContent = t[invitedNote] || TT[lang][invitedNote];
     const wl = $("w-listen"); wl.hidden = !cfg.voice; wl.textContent = t.w_listen; $("w-listen-note").textContent = cfg.voice ? t.w_listen_note : "";
     wl.onclick = async () => {
       wl.disabled = true;

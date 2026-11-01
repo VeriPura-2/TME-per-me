@@ -10,8 +10,8 @@ ROLES = ("owner", "manager", "member", "reviewer")  # company roles; "staff" is 
 
 # action -> roles allowed
 ACTIONS = {
-    "read":  ("owner", "manager", "member", "reviewer", "staff", "support"),
-    "write": ("owner", "manager", "member", "staff"),      # chat, upload, edit documents, fill forms
+    "read":  ("owner", "manager", "member", "reviewer", "staff", "support", "tem"),
+    "write": ("owner", "manager", "member", "staff", "tem"),  # chat, upload, edit documents, fill forms (tem: engaged consultant)
     "order": ("owner", "manager"),                         # approve services and pay (staff cannot pay for a company)
     "plan":  ("owner", "staff"),                           # choose or change the company plan
     "team":  ("owner", "staff"),                           # approve people, change roles, invite, remove
@@ -75,6 +75,10 @@ def case_role(con, case_row, who):
         return "owner"
     if case_row["company_id"]:
         r = role_in(con, case_row["company_id"], who["user"])
+        if r is None:
+            from . import tems
+            if tems.has_access(con, who, case_row["company_id"]):
+                return "tem"
         if r is None and is_staff(who):
             return "staff" if is_superadmin(who) else "support"
         return r

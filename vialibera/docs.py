@@ -68,8 +68,17 @@ def upload(con, who, filename, data, product=None, market=None, case_id=None):
         return 400, {"error": "file content does not match its type"}
     sha = hashlib.sha256(data).hexdigest()
     comp = _company_of(con, who)
-    dup = con.execute("SELECT id FROM documents WHERE sha256=? AND (owner_sub=? OR (company_id IS NOT NULL AND company_id=?))",
-                      (sha, who["user"], comp)).fetchone()
+    if case_id:  # uploads into a project belong to that project's company (a TEM works for many companies)
+        crow = con.execute("SELECT owner_sub, company_id, org_id FROM cases WHERE id=?", (case_id,)).fetchone()
+        if crow is None or not accounts.can_access(con, crow, who):
+            return 404, {"error": "case not found"}
+        if crow["company_id"]:
+            comp = crow["company_id"]
+    if case_id and comp:  # inside a company project, duplicates are looked up in that company only
+        dup = con.execute("SELECT id FROM documents WHERE sha256=? AND company_id=?", (sha, comp)).fetchone()
+    else:
+        dup = con.execute("SELECT id FROM documents WHERE sha256=? AND (owner_sub=? OR (company_id IS NOT NULL AND company_id=?))",
+                          (sha, who["user"], comp)).fetchone()
     if dup:
         return 200, {"id": dup["id"], "duplicate": True}
     did = str(uuid.uuid4())
@@ -97,7 +106,12 @@ def can_see(con, row, who):
         return True
     if row["owner_sub"] == who["user"]:
         return True
-    return bool(row["company_id"]) and accounts.is_member(con, row["company_id"], who["user"])
+    if not row["company_id"]:
+        return False
+    if accounts.is_member(con, row["company_id"], who["user"]):
+        return True
+    from . import tems
+    return tems.has_access(con, who, row["company_id"])
 
 
 def get_doc(con, doc_id, who):
@@ -107,8 +121,11 @@ def get_doc(con, doc_id, who):
 
 def link(con, who, case_id, doc_id, commit=True):
     case = con.execute("SELECT owner_sub, company_id, org_id FROM cases WHERE id=?", (case_id,)).fetchone()
-    if case is None or not accounts.can_access(con, case, who) or get_doc(con, doc_id, who) is None:
+    doc = get_doc(con, doc_id, who)
+    if case is None or not accounts.can_access(con, case, who) or doc is None:
         return False
+    if case["company_id"] and doc["company_id"] != case["company_id"]:
+        return False  # a document only goes to projects of the company that owns it
     con.execute("INSERT INTO project_docs(case_id, document_id, created_at) VALUES (?,?,?) ON CONFLICT (case_id, document_id) DO NOTHING",
                 (case_id, doc_id, db.now()))
     if commit:
@@ -136,6 +153,11 @@ def update(con, who, doc_id, fields):
 
 def listing(con, who, case_id=None, product=None, doc_type=None):
     comp = _company_of(con, who) if who else None
+    if case_id:  # a project's documents belong to the project's company, also when a TEM is looking
+        crow = con.execute("SELECT owner_sub, company_id, org_id FROM cases WHERE id=?", (case_id,)).fetchone()
+        if crow is None or not accounts.can_access(con, crow, who):
+            return []
+        comp = crow["company_id"] or comp
     sql = ("SELECT d.* FROM documents d WHERE (d.owner_sub=? OR (d.company_id IS NOT NULL AND d.company_id=?))")
     args = [who["user"] if who else "", comp or ""]
     if case_id:

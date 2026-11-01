@@ -93,6 +93,8 @@ def send(con, who, case_id, doc_id, via="staff", core=None):
     if not _linked(con, case_id, doc_id):
         return 404, {"error": "document is not in this project"}
     doc = con.execute("SELECT * FROM documents WHERE id=?", (doc_id,)).fetchone()
+    if case["company_id"] and doc["company_id"] != case["company_id"]:
+        return 403, {"error": "document belongs to another company"}
     last = con.execute("SELECT state FROM core_checks WHERE case_id=? AND document_id=? ORDER BY at DESC LIMIT 1",
                        (case_id, doc_id)).fetchone()
     if last and last["state"] == "unknown":
