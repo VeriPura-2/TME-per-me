@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import admin, permissions, team, accounts, agent, auth, db, docs, features, invites, personas, plans, requirements, storage, stripe_pay, voice
+from . import admin, permissions, team, accounts, agent, auth, core_checks, db, docs, features, invites, personas, plans, requirements, storage, stripe_pay, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -123,10 +123,35 @@ def handle_upload(headers, data, who):
     if not permissions.can(con(), who, "write"):
         return 403, {"error": "forbidden"}
     from urllib.parse import unquote
-    return docs.upload(con(), who, unquote(headers.get("X-Filename", "file")), data,
-                       product=unquote(headers.get("X-Product", "")) or None,
-                       market=unquote(headers.get("X-Market", "")) or None,
-                       case_id=headers.get("X-Case") or None)
+    case_id = headers.get("X-Case") or None
+    code, out = docs.upload(con(), who, unquote(headers.get("X-Filename", "file")), data,
+                            product=unquote(headers.get("X-Product", "")) or None,
+                            market=unquote(headers.get("X-Market", "")) or None,
+                            case_id=case_id)
+    if code == 200 and case_id and not out.get("duplicate"):
+        core_checks.on_upload(con(), case_id, out["id"])  # only when the automatic switch is on
+    return code, out
+
+
+def handle_core(path, body, who):
+    """VeriPura Core checks. View: anyone on the case. Send and switch: superadmin. Refresh: staff."""
+    if not who and auth.enabled():
+        return 400, {"error": "sign-in required"}
+    c = con()
+    case_id = str(body.get("case_id") or "")
+    if path == "/core/view":
+        return core_checks.view(c, who, case_id)
+    if path == "/core/send":
+        return core_checks.send(c, who, case_id, str(body.get("document_id") or ""))
+    if path == "/core/refresh":
+        return core_checks.refresh(c, who, case_id)
+    if path == "/core/auto":
+        return core_checks.set_auto(c, who, bool(body.get("on")))
+    if path == "/core/auto_state":
+        if not permissions.is_staff(who):
+            return 403, {"error": "forbidden"}
+        return 200, {"auto": core_checks.auto_enabled(c), "mode": core_checks.adapter().mode}
+    return 404, {}
 
 
 def handle_docs(query, who):
@@ -266,6 +291,7 @@ def handle_journey(body, who):
     elif features.is_sim("required_docs_other"):
         from .sim import required_docs
         out["required_docs"] = required_docs.required(case["product"].get("category"), have)
+    out["core"] = core_checks.summary(c, row["id"])
     if features.is_sim("options_packet"):
         from .sim import packet
         sel = body.get("selected") or packet.wanted_items(case["market"].get("needs"))
@@ -588,7 +614,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
-                or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")):
+                or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
+                or self.path.startswith("/core/")):
             return self._send(404, {})
         try:
             if self.path == "/stripe/webhook":
@@ -625,6 +652,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_team(self.path, body, who))
             if self.path.startswith("/admin/"):
                 return self._send(*handle_admin(self.path, body, who))
+            if self.path.startswith("/core/"):
+                return self._send(*handle_core(self.path, body, who))
             if self.path == "/eori":
                 return self._send(*handle_eori(body, who))
             if self.path == "/eori/pdf":

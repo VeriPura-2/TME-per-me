@@ -20,7 +20,7 @@ FEATURES = {
     "voice_output":     {"phase": 2, "mode": "live"},
     "staff_help":       {"phase": 1, "mode": "manual"},
     # phase 2
-    "document_check":   {"phase": 2, "mode": "sim", "sim_file": "sim/document_check.py"},
+    "document_check":   {"phase": 2, "mode": "live"},  # VeriPura Core, core_checks.py; test mode until CORE_API_URL and CORE_API_KEY exist
     "landed_cost":      {"phase": 2, "mode": "sim", "sim_file": "sim/landed_cost.py"},
     "importer_search":  {"phase": 2, "mode": "sim", "sim_file": "sim/importers.py"},
     "export_documents": {"phase": 2, "mode": "sim", "sim_file": "sim/export_docs.py"},
