@@ -22,7 +22,7 @@ def overview(con, who, label=None):
         return 200, {"company": None, "role": None, "members": [], "roles": list(permissions.ROLES)}
     _label(con, who, label)
     role = permissions.role_in(con, cid, who["user"])
-    co = con.execute("SELECT legal_name, vat, plan FROM companies WHERE id=?", (cid,)).fetchone()
+    co = con.execute("SELECT legal_name, vat, plan, created_by FROM companies WHERE id=?", (cid,)).fetchone()
     rows = con.execute("SELECT user_sub, role, status, label FROM memberships WHERE company_id=? ORDER BY created_at", (cid,)).fetchall()
     members = [{"user": r["user_sub"], "label": r["label"] or "", "role": r["role"], "status": r["status"],
                 "me": r["user_sub"] == who["user"]} for r in rows
@@ -31,7 +31,7 @@ def overview(con, who, label=None):
     from .app import TERMS_VERSION
     cc = con.execute("SELECT at FROM company_consents WHERE company_id=? AND terms_version=?", (cid, TERMS_VERSION)).fetchone()
     out = {"company": {"name": co["legal_name"], "vat": co["vat"], "plan": co["plan"],
-                       "terms_accepted_at": cc["at"] if cc else None}, "role": role,
+                       "terms_accepted_at": cc["at"] if cc else None, "created_by_staff": bool(co["created_by"])}, "role": role,
            "members": members, "roles": list(permissions.ROLES), "can_manage": permissions.allowed(role, "team")}
     return 200, out
 

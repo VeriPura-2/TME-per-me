@@ -265,3 +265,51 @@ class SupportAndQueueTest(unittest.TestCase):
         self.assertEqual(app.handle_admin("/admin/item", {"item_id": self.item, "state": "paid"}, self.sa)[0], 400)  # not a staff target
         ids = [i["id"] for i in app.handle_admin("/admin/queue", {}, self.sa)[1]["items"]]
         self.assertNotIn(self.item, ids)
+
+
+class AssistedOnboardingTest(unittest.TestCase):
+    VAT = "IT00743110157"  # valid checksum
+
+    def setUp(self):
+        for t in ("memberships", "companies", "team_invites", "company_consents"):
+            app.con().execute(f"DELETE FROM {t}")
+        app.con().commit()
+        self.sa = who("staff1"); self.sa["roles"] = [permissions.STAFF_CLAIM]
+        self.sup = who("help1"); self.sup["roles"] = [permissions.SUPPORT_CLAIM]
+
+    def test_only_superadmin_can_add(self):
+        for w in (self.sup, who("client")):
+            self.assertEqual(app.handle_admin("/admin/add_company", {"vat": self.VAT, "name": "X"}, w)[0], 403)
+
+    def test_validation(self):
+        self.assertEqual(app.handle_admin("/admin/add_company", {"vat": "IT123", "name": "X"}, self.sa)[0], 400)
+        self.assertEqual(app.handle_admin("/admin/add_company", {"vat": self.VAT, "name": " "}, self.sa)[0], 400)
+        self.assertEqual(app.handle_admin("/admin/add_company", {"vat": self.VAT, "name": "A"}, self.sa)[0], 200)
+        self.assertEqual(app.handle_admin("/admin/add_company", {"vat": self.VAT, "name": "A"}, self.sa)[0], 409)
+
+    def test_staff_not_a_member_client_becomes_owner_and_accepts_terms_alone(self):
+        code, out = app.handle_admin("/admin/add_company", {"vat": self.VAT, "name": "Cantina Rossi"}, self.sa)
+        cid = out["company"]
+        self.assertIsNone(permissions.role_in(app.con(), cid, "staff1"))  # staff are not a member
+        co = app.con().execute("SELECT created_by FROM companies WHERE id=?", (cid,)).fetchone()
+        self.assertEqual(co["created_by"], "staff1")
+        # staff cannot accept the terms for the company
+        self.assertNotEqual(app.handle_team("/team/consent", {"accept_terms": True, "accept_onerous": True, "authorised": True, "lang": "en"}, self.sa)[0], 200)
+        n = app.con().execute("SELECT COUNT(*) AS n FROM company_consents WHERE company_id=?", (cid,)).fetchone()["n"]
+        self.assertEqual(n, 0)
+        # the client opens the link and becomes owner, then still has to accept the terms
+        self.assertEqual(app.handle_team("/team/accept", {"token": out["token"]}, who("client"))[0], 200)
+        self.assertEqual(permissions.role_in(app.con(), cid, "client"), "owner")
+        self.assertFalse(accounts.has_consent(app.con(), "client", app.TERMS_VERSION))
+        # the link is single use
+        self.assertEqual(app.handle_team("/team/accept", {"token": out["token"]}, who("other"))[0], 400)
+        # the client sees that staff created the record
+        self.assertTrue(app.handle_team("/team", {}, who("client"))[1]["company"]["created_by_staff"])
+
+    def test_logged_and_new_link(self):
+        cid = app.handle_admin("/admin/add_company", {"vat": self.VAT, "name": "A"}, self.sa)[1]["company"]
+        self.assertEqual(app.handle_admin("/admin/owner_invite", {"company": cid}, self.sup)[0], 403)
+        self.assertEqual(app.handle_admin("/admin/owner_invite", {"company": cid}, self.sa)[0], 200)
+        acts = [e["data"]["action"] for e in app.handle_admin("/admin/audit", {}, self.sa)[1]["events"] if e["kind"] == "staff_change"]
+        self.assertIn("add_company", acts)
+        self.assertIn("owner_invite", acts)

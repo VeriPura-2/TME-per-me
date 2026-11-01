@@ -95,6 +95,7 @@ a{color:var(--accent)}
 <div id="staff" class="card" hidden>
   <h2>VeriPura staff</h2>
   <p class="muted" id="s-note"></p>
+  <div id="s-add"></div>
   <div id="s-queue"></div>
   <div id="s-list"></div>
   <div id="s-detail"></div>
@@ -474,7 +475,7 @@ applyLang();
     const box = $("t-list"), inv = $("t-inv"); if (!r.ok) return;
     box.innerHTML = ""; inv.innerHTML = ""; $("t-consent").innerHTML = "";
     if (!j.company) { $("t-co").textContent = ""; box.textContent = t.t_none; return; }
-    $("t-co").textContent = j.company.name + " (" + j.company.vat + ") · " + t["r_" + j.role];
+    $("t-co").textContent = j.company.name + " (" + j.company.vat + ") · " + t["r_" + j.role] + (j.company.created_by_staff ? " · " + (lang === "it" ? "record creato dallo staff VeriPura" : "record created by VeriPura staff") : "");
     j.members.forEach(m => {
       const row = mk("div"); row.style.cssText = "margin:8px 0";
       row.appendChild(mk("strong", (m.label || m.user.slice(-8)) + (m.me ? " (" + t.t_you + ")" : "")));
@@ -541,9 +542,33 @@ applyLang();
     });
     if (j.unverified.length) q.appendChild(mk("p", "VAT not yet verified: " + j.unverified.map(u => (u.name || "(no name)") + " " + u.vat).join(", "), "muted"));
   }
+  function ownerLinkBox(parent, token) {
+    const link = document.createElement("input"); link.type = "text"; link.readOnly = true; link.style.width = "70%"; link.value = location.origin + "/?team=" + token;
+    const cp = mk("button", "Copy"); cp.onclick = () => { link.select(); try { navigator.clipboard.writeText(link.value); } catch (e) {} };
+    parent.append(mk("div", "Owner link for the client (single use, 14 days). Send it to the client yourself. They accept the terms themselves.", "muted"), link, " ", cp);
+  }
+  function addCompanyForm() {
+    const box = $("s-add"); box.innerHTML = ""; if (!full) return;
+    const vat = document.createElement("input"); vat.type = "text"; vat.placeholder = "VAT number"; vat.style.margin = "0 6px 6px 0";
+    const nm = document.createElement("input"); nm.type = "text"; nm.placeholder = "Company name"; nm.style.margin = "0 6px 6px 0";
+    const b = mk("button", "Add company for a client"), out = mk("div");
+    b.onclick = async () => {
+      out.innerHTML = ""; const [r, j] = await call("/admin/add_company", {vat: vat.value, name: nm.value});
+      if (!r.ok) { out.appendChild(mk("p", j.detail || j.error)); return; }
+      vat.value = ""; nm.value = ""; ownerLinkBox(out, j.token); loadCompanies();
+    };
+    box.append(mk("h3", "Add a company (assisted onboarding)"), vat, nm, b, out);
+  }
   async function loadStaff() {
+    addCompanyForm();
     $("s-note").textContent = full ? "Superadmin view. Opening a company and every change is logged." : "Support view (read only). Opening a company is logged.";
     loadQueue();
+    await loadCompanies();
+    const au = $("s-audit"); au.innerHTML = "";
+    const [ra, ja] = full ? await call("/admin/audit", {}) : [{ok: false}, {}];
+    if (ra.ok) { au.appendChild(mk("h3", "Staff activity (latest)")); ja.events.slice(0, 15).forEach(e => au.appendChild(mk("div", sd(e.at) + " · " + e.actor.slice(-8) + " · " + e.kind + " · " + (e.data.action || "") + " " + (e.data.company || ""), "muted"))); }
+  }
+  async function loadCompanies() {
     const [r, j] = await call("/admin/companies", {}); const box = $("s-list"); box.innerHTML = ""; $("s-detail").innerHTML = "";
     if (!r.ok) { box.textContent = "Not allowed."; return; }
     const tb = mk("table"); tb.style.cssText = "width:100%;border-collapse:collapse";
@@ -551,13 +576,10 @@ applyLang();
     tb.appendChild(head);
     j.companies.forEach(c => {
       const tr = mk("tr"); tr.style.cursor = "pointer";
-      [c.name || "(no name)", c.vat, c.plan || "-", c.members, c.pending ? "⚠ " + c.pending : "0", c.cases, sd(c.last_activity), c.terms_accepted ? "yes" : "no", c.status].forEach(v => tr.appendChild(mk("td", String(v))));
+      [(c.name || "(no name)") + (c.by_staff ? " (staff)" : ""), c.vat, c.plan || "-", c.members, c.pending ? "⚠ " + c.pending : "0", c.cases, sd(c.last_activity), c.terms_accepted ? "yes" : "no", c.status].forEach(v => tr.appendChild(mk("td", String(v))));
       tr.onclick = () => openStaffCompany(c.id, j.plans); tb.appendChild(tr);
     });
     box.appendChild(tb); if (!j.companies.length) box.textContent = "No companies yet.";
-    const au = $("s-audit"); au.innerHTML = "";
-    const [ra, ja] = full ? await call("/admin/audit", {}) : [{ok: false}, {}];
-    if (ra.ok) { au.appendChild(mk("h3", "Staff activity (latest)")); ja.events.slice(0, 15).forEach(e => au.appendChild(mk("div", sd(e.at) + " · " + e.actor.slice(-8) + " · " + e.kind + " · " + (e.data.action || "") + " " + (e.data.company || ""), "muted"))); }
   }
   async function openStaffCompany(id, plans) {
     const [r, j] = await call("/admin/company", {company: id}); const d = $("s-detail"); d.innerHTML = ""; if (!r.ok) return;
@@ -566,7 +588,7 @@ applyLang();
     v.onclick = async () => { await call("/admin/verify", {company: id, verified: co.status !== "verified"}); loadStaff().then(() => openStaffCompany(id, plans)); };
     const ps = mk("select"); plans.forEach(p => { const o = mk("option", p); o.value = p; if (p === co.plan) o.selected = true; ps.appendChild(o); });
     const pb = mk("button", "Set plan"); pb.onclick = async () => { await call("/admin/plan", {company: id, plan: ps.value}); loadStaff().then(() => openStaffCompany(id, plans)); };
-    if (full) bar.append(v, " ", ps, pb);
+    if (full) { const ol = mk("button", "New owner link"), olo = mk("div"); ol.onclick = async () => { olo.innerHTML = ""; const [rr, jj] = await call("/admin/owner_invite", {company: id}); if (rr.ok) ownerLinkBox(olo, jj.token); }; bar.append(v, " ", ps, pb, " ", ol); bar.appendChild(olo); }
     bar.append(mk("span", "  Plan: " + (co.plan || "-") + " · Credit: " + j.credit, "muted")); d.appendChild(bar);
     d.appendChild(mk("h4", "People"));
     j.members.forEach(m => {

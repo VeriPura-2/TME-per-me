@@ -3,8 +3,11 @@
 Reading a company is logged (staff_access). Changing a company is logged (staff_change). Nothing here pays for a company.
 """
 import json
+import secrets
+import uuid
+from datetime import datetime, timedelta, timezone
 
-from . import db, invites, permissions, plans
+from . import db, invites, permissions, plans, team
 
 
 def _guard(who):
@@ -27,20 +30,20 @@ def companies(con, who):
         return 403, {"error": "forbidden"}
     from .app import TERMS_VERSION
     rows = []
-    for co in con.execute("SELECT id, vat, legal_name, status, plan, created_at FROM companies ORDER BY created_at DESC").fetchall():
+    for co in con.execute("SELECT id, vat, legal_name, status, plan, created_by, created_at FROM companies ORDER BY created_at DESC").fetchall():
         m = con.execute("SELECT SUM(status='active') AS a, SUM(status='pending') AS p FROM memberships WHERE company_id=?", (co["id"],)).fetchone()
         n = con.execute("SELECT COUNT(*) AS n, MAX(updated_at) AS last FROM cases WHERE company_id=?", (co["id"],)).fetchone()
         cc = con.execute("SELECT 1 FROM company_consents WHERE company_id=? AND terms_version=?", (co["id"], TERMS_VERSION)).fetchone()
         rows.append({"id": co["id"], "name": co["legal_name"], "vat": co["vat"], "status": co["status"], "plan": co["plan"],
                      "members": m["a"] or 0, "pending": m["p"] or 0, "cases": n["n"], "last_activity": n["last"],
-                     "terms_accepted": bool(cc), "created_at": co["created_at"]})
+                     "terms_accepted": bool(cc), "created_at": co["created_at"], "by_staff": bool(co["created_by"])})
     return 200, {"companies": rows, "plans": list(plans.PLANS)}
 
 
 def company(con, who, cid):
     if not _guard(who):
         return 403, {"error": "forbidden"}
-    co = con.execute("SELECT id, vat, legal_name, status, plan, created_at FROM companies WHERE id=?", (cid,)).fetchone()
+    co = con.execute("SELECT id, vat, legal_name, status, plan, created_by, created_at FROM companies WHERE id=?", (cid,)).fetchone()
     if co is None:
         return 404, {"error": "no such company"}
     members = [dict(r) for r in con.execute(
@@ -136,3 +139,43 @@ def set_item(con, who, item_id, state):
     con.commit()
     _log(con, who, "staff_change", row["company_id"], action="item_state", item=item_id, old=row["state"], new=state)
     return 200, {"ok": True}
+
+
+def add_company(con, who, vat, name):
+    """Assisted onboarding. Staff create the company record and an owner invite for the client.
+
+    Limits: staff are never a member or owner, never accept terms for the company, and the record shows who created it.
+    The client becomes owner by opening the invite link and then accepts the terms themselves.
+    """
+    if not _full(who):
+        return 403, {"error": "forbidden"}
+    from . import accounts
+    v, err = accounts.normalise_vat(vat)
+    if err:
+        return 400, {"error": "invalid_vat", "detail": err}
+    name = (name or "").strip()[:200]
+    if not name:
+        return 400, {"error": "name required"}
+    if con.execute("SELECT 1 FROM companies WHERE vat=?", (v,)).fetchone():
+        return 409, {"error": "company exists"}
+    cid = str(uuid.uuid4())
+    con.execute("INSERT INTO companies(id, vat, legal_name, created_by, created_at) VALUES (?,?,?,?,?)",
+                (cid, v, name, who["user"], db.now()))
+    con.commit()
+    _log(con, who, "staff_change", cid, action="add_company", vat=v)
+    return 200, {"ok": True, "company": cid, **owner_invite(con, who, cid)[1]}
+
+
+def owner_invite(con, who, cid):
+    """Single-use owner link for the client (valid 14 days). Staff only; nothing is sent automatically."""
+    if not _full(who):
+        return 403, {"error": "forbidden"}
+    if con.execute("SELECT 1 FROM companies WHERE id=?", (cid,)).fetchone() is None:
+        return 404, {"error": "no such company"}
+    token = secrets.token_urlsafe(24)
+    exp = (datetime.now(timezone.utc) + timedelta(days=team.INVITE_DAYS)).isoformat(timespec="seconds")
+    con.execute("INSERT INTO team_invites(token, company_id, role, created_by, expires_at, created_at) VALUES (?,?,?,?,?,?)",
+                (token, cid, "owner", who["user"], exp, db.now()))
+    con.commit()
+    _log(con, who, "staff_change", cid, action="owner_invite")
+    return 200, {"token": token, "expires_at": exp}

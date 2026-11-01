@@ -300,6 +300,10 @@ def handle_admin(path, body, who):
         return admin.verify(c, who, cid, bool(body.get("verified", True)))
     if path == "/admin/plan":
         return admin.set_plan(c, who, cid, str(body.get("plan") or ""))
+    if path == "/admin/add_company":
+        return admin.add_company(c, who, body.get("vat"), body.get("name"))
+    if path == "/admin/owner_invite":
+        return admin.owner_invite(c, who, cid)
     if path == "/admin/queue":
         return admin.queue(c, who)
     if path == "/admin/item":

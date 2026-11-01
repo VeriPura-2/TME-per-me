@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS companies (
   legal_name TEXT,
   status TEXT NOT NULL DEFAULT 'unverified',
   plan TEXT,                           -- the company pays: esplora, parti or cresci
+  created_by TEXT,                     -- set when VeriPura staff created the record on the client's behalf
   created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS memberships (
@@ -236,6 +237,7 @@ def connect_pg(host, dbname, user, password):
         con.execute(f"ALTER TABLE cases ADD COLUMN IF NOT EXISTS {col} TEXT")
     con.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan TEXT")
     con.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan TEXT")
+    con.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_by TEXT")
     con.execute("ALTER TABLE memberships ADD COLUMN IF NOT EXISTS label TEXT")
     con.commit()
     return con
