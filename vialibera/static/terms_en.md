@@ -6,7 +6,7 @@ Version 2026-10-v0.3. Italian is the primary language of these terms. If the Eng
 
 ## 1. Who we are
 
-MioTEM is operated by A&O CONSULT S.A.S. ("**we**", "**MioTEM**"), registered office 14059 Vesime (AT), Italy, VAT number 01765920051, company register [REA / REGISTRY NUMBER], share capital: not applicable (limited partnership, società in accomandita semplice), email [EMAIL], certified email (PEC) aeoconsultsas@pec.it. These details are given under Legislative Decree 70/2003.
+MioTEM is operated by A&O CONSULT S.A.S. ("**we**", "**MioTEM**"), registered office 14059 Vesime (AT), Italy, VAT number 01765920051, company register [REA / REGISTRY NUMBER], email [EMAIL], certified email (PEC) aeoconsultsas@pec.it. These details are given under Legislative Decree 70/2003.
 
 ## 2. What MioTEM does
 

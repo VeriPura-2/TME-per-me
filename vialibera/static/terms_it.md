@@ -6,7 +6,7 @@ Versione 2026-10-v0.3. L'italiano è la lingua principale di queste condizioni. 
 
 ## 1. Chi siamo
 
-MioTEM è gestito da A&O CONSULT S.A.S. («**noi**», «**MioTEM**»), sede legale 14059 Vesime (AT), Italia, partita IVA 01765920051, registro imprese [NUMERO REA / REGISTRO], capitale sociale: non applicabile (società in accomandita semplice), email [EMAIL], PEC aeoconsultsas@pec.it. Queste informazioni sono fornite ai sensi del D.Lgs. 70/2003.
+MioTEM è gestito da A&O CONSULT S.A.S. («**noi**», «**MioTEM**»), sede legale 14059 Vesime (AT), Italia, partita IVA 01765920051, registro imprese [NUMERO REA / REGISTRO], email [EMAIL], PEC aeoconsultsas@pec.it. Queste informazioni sono fornite ai sensi del D.Lgs. 70/2003.
 
 ## 2. Che cosa fa MioTEM
 
