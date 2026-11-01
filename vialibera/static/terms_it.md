@@ -71,7 +71,7 @@ Possiamo modificare queste condizioni o il listino per giustificato motivo, con 
 
 ## 16. Legge applicabile e foro competente  *(richiede approvazione specifica)*
 
-Queste condizioni sono regolate dalla legge italiana. Il foro di [CITTÀ, ITALIA] è esclusivamente competente, salvo norme inderogabili contrarie.
+Queste condizioni sono regolate dalla legge italiana. Il foro di Asti (Italia) è esclusivamente competente, salvo norme inderogabili contrarie.
 
 ## 17. Contatti e reclami
 
