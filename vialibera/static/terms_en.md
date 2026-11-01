@@ -6,7 +6,7 @@ Version 2026-10-v0.3. Italian is the primary language of these terms. If the Eng
 
 ## 1. Who we are
 
-MioTEM is operated by [LEGAL NAME OF OPERATING COMPANY] ("**we**", "**MioTEM**"), registered office [ADDRESS], VAT number [VAT], company register [REA / REGISTRY NUMBER], share capital [AMOUNT], email [EMAIL], certified email (PEC) [PEC]. These details are given under Legislative Decree 70/2003.
+MioTEM is operated by A&O CONSULT S.A.S. ("**we**", "**MioTEM**"), registered office 14059 Vesime (AT), Italy, VAT number 01765920051, company register [REA / REGISTRY NUMBER], email [EMAIL], certified email (PEC) aeoconsultsas@pec.it. These details are given under Legislative Decree 70/2003.
 
 ## 2. What MioTEM does
 
@@ -75,13 +75,13 @@ These terms are governed by Italian law. The courts of [CITY, ITALY] have exclus
 
 ## 17. Contact and complaints
 
-Write to [EMAIL] or [PEC].
+Write to [EMAIL] or aeoconsultsas@pec.it.
 
 <a id="privacy"></a>
 
 # Privacy Notice (Articles 13 and 14 GDPR)
 
-**Controller:** [LEGAL NAME OF OPERATING COMPANY], [ADDRESS], [EMAIL]. Data protection officer: [none appointed / name and email].
+**Controller:** A&O CONSULT S.A.S., 14059 Vesime (AT), Italy, [EMAIL]. Data protection officer: [none appointed / name and email].
 
 **What we collect:** your name, work email and phone; company details (legal name, VAT number, address, size, certifications); product, market and shipment information; documents and label files you upload; your conversation with the assistant; confirmations and consent records (who, when, version); technical logs (IP address, device, time).
 
