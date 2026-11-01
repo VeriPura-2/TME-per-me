@@ -113,6 +113,8 @@ def invite(con, who, role, company=None):
 
 
 def accept(con, who, token):
+    if permissions.is_staff(who):  # staff never become members or owners of a client company
+        return 403, {"error": "staff_cannot_join"}
     r = con.execute("SELECT * FROM team_invites WHERE token=?", (token,)).fetchone()
     if r is None or r["used_by"] or r["expires_at"] < db.now():
         return 400, {"error": "invite_invalid"}

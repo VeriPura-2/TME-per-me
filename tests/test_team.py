@@ -306,6 +306,13 @@ class AssistedOnboardingTest(unittest.TestCase):
         # the client sees that staff created the record
         self.assertTrue(app.handle_team("/team", {}, who("client"))[1]["company"]["created_by_staff"])
 
+    def test_staff_cannot_accept_an_invite(self):
+        out = app.handle_admin("/admin/add_company", {"vat": self.VAT, "name": "A"}, self.sa)[1]
+        for w in (self.sa, self.sup):
+            self.assertEqual(app.handle_team("/team/accept", {"token": out["token"]}, w)[0], 403)
+        self.assertEqual(app.con().execute("SELECT COUNT(*) AS n FROM memberships").fetchone()["n"], 0)
+        self.assertEqual(app.handle_team("/team/accept", {"token": out["token"]}, who("client"))[0], 200)  # link still unused
+
     def test_logged_and_new_link(self):
         cid = app.handle_admin("/admin/add_company", {"vat": self.VAT, "name": "A"}, self.sa)[1]["company"]
         self.assertEqual(app.handle_admin("/admin/owner_invite", {"company": cid}, self.sup)[0], 403)
