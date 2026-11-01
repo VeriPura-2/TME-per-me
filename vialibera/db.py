@@ -281,6 +281,11 @@ CREATE TABLE IF NOT EXISTS settings (
   updated_by TEXT,
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS tariff_cache (
+  key TEXT PRIMARY KEY,
+  at TEXT NOT NULL,
+  data TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS raw_responses (
   ref TEXT PRIMARY KEY,
   at TEXT NOT NULL,

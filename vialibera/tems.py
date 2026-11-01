@@ -373,7 +373,7 @@ def _case_tem(con, who, case_id):
 
 def project(con, who, case_id):
     """Everything a TEM needs on one project. Logged as a TEM access."""
-    from . import core_checks, fields, requirements
+    from . import core_checks, duties, fields, requirements
     row = _case_tem(con, who, case_id)
     if row is None:
         return 404, {"error": "no such project"}
@@ -403,7 +403,8 @@ def project(con, who, case_id):
                           "market": case["market"], "client": {"id": row["company_id"], "name": co["legal_name"], "vat": co["vat"]}},
                  "progress": {"answered": answered, "total": total, "missing": [{"label": m[2], "later": m[4]} for m in missing]},
                  "required_docs": req, "documents": pdocs, "library": library,
-                 "core": core_checks.summary(con, case_id), "notes": notes(con, case_id, internal=True), "transcript": transcript}
+                 "core": core_checks.summary(con, case_id), "notes": notes(con, case_id, internal=True), "transcript": transcript,
+                 "duties": duties.for_case(con, case)}
 
 
 # checklist confirmations and notes ---------------------------------------------------

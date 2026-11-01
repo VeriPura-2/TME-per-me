@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import admin, permissions, team, accounts, agent, auth, core_checks, db, docs, features, invites, personas, plans, requirements, storage, stripe_pay, tems, voice
+from . import admin, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, invites, personas, plans, requirements, storage, stripe_pay, tems, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -344,6 +344,7 @@ def handle_journey(body, who):
         tems.apply_confirmations(c, row["id"], out["required_docs"])
     out["core"] = core_checks.summary(c, row["id"])
     out["notes"] = tems.notes(c, row["id"], internal=False)
+    out["duties"] = duties.for_case(c, case)
     if features.is_sim("options_packet"):
         from .sim import packet
         sel = body.get("selected") or packet.wanted_items(case["market"].get("needs"))

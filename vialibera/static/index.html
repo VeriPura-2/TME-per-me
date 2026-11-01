@@ -165,7 +165,7 @@ const TT = {
        en_a3: 'Accetto le <a href="/terms?lang=it" target="_blank">Condizioni e l\'informativa privacy</a> di MioTEM e approvo specificamente le clausole onerose (artt. 1341 e 1342 c.c.)',
        en_btn: "Accetta l'incarico", en_ok: "Incarico accettato. Il consulente può ora lavorare per la tua azienda. Puoi revocarlo in qualsiasi momento dalla sezione Squadra.",
        en_bad: "Link d'incarico non valido o scaduto.", tc_title: "Consulenti export", tc_since: "dal", tc_revoked: "revocato", tc_revoke: "Revoca accesso",
-       tc_log: "Accessi dei consulenti", tem_joined: "Sei entrato nello studio del consulente.", c_notes: "Messaggi del tuo consulente export"},
+       tc_log: "Accessi dei consulenti", tem_joined: "Sei entrato nello studio del consulente.", c_notes: "Messaggi del tuo consulente export", du_t: "Dazi e IVA (fonte ufficiale)", du_src: "fonte", du_read: "letto il", du_na: "Servizio dazi non disponibile ora. Lo staff verificherà.", du_none: "n.d."},
   en: {tem_btn: "TEM clients", ws_title: "Export consultant workspace", ws_firm: "Firm", ws_lead: "lead", ws_member: "member",
        ws_team: "Firm team", ws_invite: "Invite a colleague", ws_seats: "Seats", ws_unlimited: "not limited",
        ws_clients: "Clients", ws_none: "No clients yet. Create an engagement link and send it to the client.",
@@ -184,7 +184,7 @@ const TT = {
        en_a3: 'I accept the MioTEM <a href="/terms?lang=en" target="_blank">Terms and privacy notice</a> and specifically approve the onerous clauses (arts. 1341 and 1342 Italian Civil Code)',
        en_btn: "Accept the engagement", en_ok: "Engagement accepted. The consultant can now work for your company. You can revoke it at any time in the Team section.",
        en_bad: "The engagement link is not valid or has expired.", tc_title: "Export consultants", tc_since: "since", tc_revoked: "revoked", tc_revoke: "Revoke access",
-       tc_log: "Consultant access log", tem_joined: "You have joined the consultant firm.", c_notes: "Messages from your export consultant"},
+       tc_log: "Consultant access log", tem_joined: "You have joined the consultant firm.", c_notes: "Messages from your export consultant", du_t: "Duties and VAT (official source)", du_src: "source", du_read: "read on", du_na: "Duty service unavailable right now. Staff will check.", du_none: "n/a"},
 };
 const T = {
   it: {
@@ -281,6 +281,16 @@ applyLang();
   };
   let invitedNote = "";
   const mk0 = (tag, text, cls) => { const e = document.createElement(tag); if (text) e.textContent = text; if (cls) e.className = cls; return e; };
+  function dutiesBox(parent, du) {
+    if (!du) return; const tt = TT[lang]; parent.appendChild(mk0("h3", tt.du_t));
+    if (du.unavailable) { parent.appendChild(mk0("div", tt.du_na, "muted")); return; }
+    if (du.staff) { parent.appendChild(mk0("div", du.staff[lang], "verify")); return; }
+    parent.appendChild(mk0("div", du.description + " · " + du.code, "muted"));
+    du.lines.forEach(l => parent.appendChild(mk0("div", l.label[lang] + ": " + (l.value || tt.du_none))));
+    parent.appendChild(mk0("div", du.limit[lang], "verify"));
+    const src = mk0("div", null, "muted"); const a = mk0("a", tt.du_src); a.href = du.source; a.target = "_blank"; a.rel = "noopener";
+    src.append(a, " · " + tt.du_read + " " + (du.retrieved_at || "").slice(0, 10)); parent.appendChild(src);
+  }
   async function engagementForm(token) {
     const tt = TT[lang], box = $("engage"); box.innerHTML = ""; box.hidden = false;
     const [ri, ji] = await call("/tem/engage_info", {token});
@@ -513,6 +523,7 @@ applyLang();
         (x.check.alerts || []).forEach(a => row.appendChild(mk("div", a.severity + ": " + a.message, "muted")));
         cb.appendChild(row); });
     }
+    dutiesBox(cb, j.duties);
     if (j.notes && j.notes.length) { cb.appendChild(mk("h3", TT[lang].c_notes)); j.notes.forEach(n => cb.appendChild(mk("div", n.at.slice(0, 10) + " · " + n.by + ": " + n.text))); }
     loadEori(j.case && j.case.export_registration, cid);
     const pk = $("j-pk"); pk.innerHTML = "";
@@ -800,6 +811,7 @@ applyLang();
             await call("/tem/confirm", {case_id: caseId0, item: i.id, note, on: !i.confirmed}); temProject(caseId0); }; row.appendChild(b); }
         if (i.only_if) row.appendChild(mk("div", t.j_onlyif + ": " + i.only_if[lang], "muted"));
         box.appendChild(row); }); });
+    dutiesBox(box, j.duties);
     box.appendChild(mk("h3", tt.ws_docs));
     const dl = async (doc) => { const rr = await api("/doc/" + doc.id); const bl = await rr.blob(); const a = document.createElement("a"); a.href = URL.createObjectURL(bl); a.download = doc.filename; a.click(); };
     const inProj = new Set(j.documents.map(x => x.id));

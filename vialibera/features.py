@@ -12,7 +12,7 @@ FEATURES = {
     "documents":        {"phase": 1, "mode": "live"},
     "required_docs":    {"phase": 1, "mode": "live"},  # Wave 1 lanes, requirements.py, B/C rows shown as staff to verify
     "required_docs_other": {"phase": 1, "mode": "sim", "sim_file": "sim/required_docs.py"},  # lanes outside Wave 1
-    "tariff_lookup":    {"phase": 1, "mode": "sim", "sim_file": "sim/tariff.py"},
+    "tariff_lookup":    {"phase": 1, "mode": "live"},  # duties.py: pasta to UK, olive oil to US (known answers pass live); Canada flagged for staff
     "options_packet":   {"phase": 1, "mode": "sim", "sim_file": "sim/packet.py"},
     "price_menu":       {"phase": 1, "mode": "sim", "sim_file": "sim/prices.py"},
     "payment":          {"phase": 1, "mode": "sim", "sim_file": "sim/payment.py"},  # real Stripe test payments take over automatically when STRIPE_SECRET_KEY exists, see stripe_pay.py
