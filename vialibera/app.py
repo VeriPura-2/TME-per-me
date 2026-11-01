@@ -39,6 +39,10 @@ def con():
     return CON
 
 
+STATIC_ASSETS = {"/logo-mark.png": "image/png", "/favicon.png": "image/png",
+                 "/favicon.ico": "image/x-icon", "/apple-touch-icon.png": "image/png"}
+
+
 def handle_chat(body, llm=None, who=None):
     msg = (body.get("message") or "").strip()
     if not msg:
@@ -525,6 +529,15 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, body)
         if path == "/features.json":
             return self._send(200, features.public())
+        if path in STATIC_ASSETS:
+            data = open(os.path.join(os.path.dirname(__file__), "static", path[1:]), "rb").read()
+            self.send_response(200)
+            self.send_header("Content-Type", STATIC_ASSETS[path])
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "public, max-age=86400")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            return self.wfile.write(data)
         if path in ("/terms", "/terms.html"):
             data = render_terms(self.path.split("lang=")[-1][:2] if "lang=" in self.path else "it")
             self.send_response(200)

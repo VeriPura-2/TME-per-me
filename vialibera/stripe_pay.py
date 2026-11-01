@@ -171,7 +171,7 @@ def checkout_items(con, who, case_id, items, total_cents, credit_cents, base_url
     }
     if credit_cents:
         coupon = _call("POST", "/coupons", {"amount_off": credit_cents, "currency": "eur", "duration": "once",
-                                             "max_redemptions": 1, "name": "MioExport credit"},
+                                             "max_redemptions": 1, "name": "MioTEM credit"},
                        idem="cp-" + _idem(case_id, who["user"], ids, credit_cents, int(time.time() // 60)))
         data["discounts"] = [{"coupon": coupon["id"]}]
     s = _call("POST", "/checkout/sessions", data, idem="co-" + _idem(case_id, who["user"], ids, credit_cents, int(time.time() // 60)))
@@ -195,7 +195,7 @@ def checkout_plan(con, who, plan_id, base_url, lang="it", email=None):
     s = _call("POST", "/checkout/sessions", {
         "mode": "subscription", "customer": cust, "locale": "en" if lang == "en" else "it", "metadata": meta,
         "line_items": [{"quantity": 1, "price_data": {"currency": "eur", "unit_amount": cents, "recurring": {"interval": "month"},
-                                                      "product_data": {"name": "MioExport " + p["name"]["en"]}}}],
+                                                      "product_data": {"name": "MioTEM " + p["name"]["en"]}}}],
         "subscription_data": {"metadata": meta},
         "success_url": f"{base_url}/?paid={{CHECKOUT_SESSION_ID}}", "cancel_url": f"{base_url}/?paycancel=1",
     }, idem="sub-" + _idem(holder, plan_id, int(time.time() // 60)))
