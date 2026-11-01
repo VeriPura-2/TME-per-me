@@ -6,7 +6,7 @@ Versione 2026-10-v0.3. L'italiano è la lingua principale di queste condizioni. 
 
 ## 1. Chi siamo
 
-MioTEM è gestito da A&O CONSULT S.A.S. di Fernanda Albertoni Oberlin («**noi**», «**MioTEM**»), sede legale Regione Chiesalunga 1, 14059 Vesime (AT), Italia, partita IVA 01765920051, registro imprese [NUMERO REA / REGISTRO], capitale sociale: non applicabile (società in accomandita semplice), email [EMAIL], PEC aeoconsultsas@pec.it. Queste informazioni sono fornite ai sensi del D.Lgs. 70/2003.
+MioTEM è gestito da A&O CONSULT S.A.S. («**noi**», «**MioTEM**»), sede legale 14059 Vesime (AT), Italia, partita IVA 01765920051, registro imprese [NUMERO REA / REGISTRO], capitale sociale: non applicabile (società in accomandita semplice), email [EMAIL], PEC aeoconsultsas@pec.it. Queste informazioni sono fornite ai sensi del D.Lgs. 70/2003.
 
 ## 2. Che cosa fa MioTEM
 
@@ -81,7 +81,7 @@ Scrivi a [EMAIL] o aeoconsultsas@pec.it.
 
 # Informativa sulla privacy (artt. 13 e 14 GDPR)
 
-**Titolare del trattamento:** A&O CONSULT S.A.S. di Fernanda Albertoni Oberlin, Regione Chiesalunga 1, 14059 Vesime (AT), Italia, [EMAIL]. Responsabile della protezione dei dati: [non nominato / nome ed email].
+**Titolare del trattamento:** A&O CONSULT S.A.S., 14059 Vesime (AT), Italia, [EMAIL]. Responsabile della protezione dei dati: [non nominato / nome ed email].
 
 **Dati che raccogliamo:** nome, email e telefono di lavoro; dati dell'azienda (denominazione, partita IVA, indirizzo, dimensione, certificazioni); informazioni su prodotto, mercato e spedizione; documenti ed etichette che carichi; la tua conversazione con l'assistente; conferme e registrazioni di consenso (chi, quando, versione); log tecnici (indirizzo IP, dispositivo, orario).
 
