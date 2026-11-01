@@ -177,6 +177,37 @@ CREATE TABLE IF NOT EXISTS stripe_events (
   type TEXT NOT NULL,
   at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS core_consignments (
+  case_id TEXT PRIMARY KEY,
+  consignment_id TEXT NOT NULL,        -- VeriPura Core consignment for this project
+  simulated INTEGER NOT NULL DEFAULT 0,
+  last_status TEXT,                    -- JSON, latest status answer
+  checked_at TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS core_checks (
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  document_id TEXT NOT NULL,
+  via TEXT NOT NULL,                   -- staff or auto
+  actor TEXT NOT NULL,
+  simulated INTEGER NOT NULL DEFAULT 0,
+  state TEXT NOT NULL,                 -- done, unknown (send outcome not known), error
+  core_status TEXT,
+  validation_level TEXT,
+  requires_review INTEGER,
+  outcome TEXT,                        -- matched, flagged, flagged_critical, not_checked
+  alerts TEXT,                         -- JSON
+  raw_ref TEXT,
+  error TEXT,
+  at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_by TEXT,
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS raw_responses (
   ref TEXT PRIMARY KEY,
   at TEXT NOT NULL,
