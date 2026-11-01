@@ -36,6 +36,13 @@ def con():
                                 os.environ.get("DB_USER", "app"), get_secret("DB_PASSWORD"))
         else:
             CON = db.connect(os.environ.get("DB_PATH", "/tmp/vialibera.db"))
+    elif getattr(CON, "postgres", False):
+        raw = CON.raw
+        if raw.closed:
+            CON = None
+            return con()
+        if raw.get_transaction_status() == 3:  # a failed statement left the transaction aborted
+            raw.rollback()
     return CON
 
 
@@ -665,6 +672,10 @@ class Handler(BaseHTTPRequestHandler):
                                         **(accounts.get_profile(con(), who["user"]) if who else {})})
             self._send(*handle_chat(body, who=who))
         except Exception as e:  # keep the service up, report a typed error
+            try:
+                CON.rollback()
+            except Exception:
+                pass
             self._send(500, {"error": type(e).__name__})
 
     def _send(self, code, obj):
