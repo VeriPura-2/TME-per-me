@@ -71,7 +71,7 @@ We may change these terms or the menu for good reason, with [30] days' notice by
 
 ## 16. Law and courts  *(specific approval required)*
 
-These terms are governed by Italian law. The courts of [CITY, ITALY] have exclusive jurisdiction, subject to any mandatory rule to the contrary.
+These terms are governed by Italian law. The courts of Asti, Italy have exclusive jurisdiction, subject to any mandatory rule to the contrary.
 
 ## 17. Contact and complaints
 
