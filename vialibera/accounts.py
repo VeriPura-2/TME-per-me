@@ -48,7 +48,10 @@ def can_access(con, case_row, who):
     if permissions.is_staff(who):
         return True
     if case_row["company_id"]:
-        return is_member(con, case_row["company_id"], who["user"])
+        if is_member(con, case_row["company_id"], who["user"]):
+            return True
+        from . import tems
+        return tems.has_access(con, who, case_row["company_id"])
     if case_row["owner_sub"] == who["user"]:
         return True
     return bool(case_row["org_id"]) and case_row["org_id"] == who.get("org")

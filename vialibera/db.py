@@ -177,6 +177,79 @@ CREATE TABLE IF NOT EXISTS stripe_events (
   type TEXT NOT NULL,
   at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS tem_firms (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  vat TEXT,
+  seats INTEGER,                       -- NULL = not limited until seat prices are set
+  status TEXT NOT NULL DEFAULT 'active',
+  created_by TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tem_members (
+  firm_id TEXT NOT NULL,
+  user_sub TEXT NOT NULL,
+  role TEXT NOT NULL,                  -- lead or member
+  label TEXT,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (firm_id, user_sub)
+);
+CREATE TABLE IF NOT EXISTS tem_invites (
+  token TEXT PRIMARY KEY,
+  firm_id TEXT NOT NULL,
+  role TEXT NOT NULL,
+  created_by TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_by TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tem_clients (
+  firm_id TEXT NOT NULL,
+  company_id TEXT NOT NULL,
+  status TEXT NOT NULL,                -- active or revoked
+  engaged_at TEXT NOT NULL,
+  engaged_by TEXT NOT NULL,            -- client signatory (signed-in user)
+  signatory TEXT NOT NULL,             -- JSON: name, role, email
+  scope TEXT NOT NULL,                 -- JSON: what the TEM may do
+  engagement_doc TEXT,                 -- document id of the signed engagement record
+  revoked_at TEXT,
+  revoked_by TEXT,
+  PRIMARY KEY (firm_id, company_id)
+);
+CREATE TABLE IF NOT EXISTS tem_assignments (
+  firm_id TEXT NOT NULL,
+  company_id TEXT NOT NULL,
+  user_sub TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (firm_id, company_id, user_sub)
+);
+CREATE TABLE IF NOT EXISTS engagement_links (
+  token TEXT PRIMARY KEY,
+  firm_id TEXT NOT NULL,
+  created_by TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_by TEXT,
+  company_id TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS case_notes (
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  author TEXT NOT NULL,
+  author_label TEXT,
+  visibility TEXT NOT NULL,            -- internal (TEM firm and VeriPura staff) or client
+  text TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS checklist_confirmations (
+  case_id TEXT NOT NULL,
+  item_id TEXT NOT NULL,
+  confirmed_by TEXT NOT NULL,
+  by_label TEXT,
+  note TEXT,
+  at TEXT NOT NULL,
+  PRIMARY KEY (case_id, item_id)
+);
 CREATE TABLE IF NOT EXISTS core_consignments (
   case_id TEXT PRIMARY KEY,
   consignment_id TEXT NOT NULL,        -- VeriPura Core consignment for this project

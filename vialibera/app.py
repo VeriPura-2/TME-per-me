@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import admin, permissions, team, accounts, agent, auth, core_checks, db, docs, features, invites, personas, plans, requirements, storage, stripe_pay, voice
+from . import admin, permissions, team, accounts, agent, auth, core_checks, db, docs, features, invites, personas, plans, requirements, storage, stripe_pay, tems, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -120,10 +120,18 @@ def consent_ok(who):
 def handle_upload(headers, data, who):
     if not consent_ok(who):
         return 403, {"error": "consent_required"}
-    if not permissions.can(con(), who, "write"):
+    case_id = headers.get("X-Case") or None
+    if case_id:
+        row = con().execute("SELECT * FROM cases WHERE id=?", (case_id,)).fetchone()
+        if row is None or not accounts.can_access(con(), row, who):
+            return 404, {"error": "case not found"}
+        if not permissions.allowed(permissions.case_role(con(), row, who), "write"):
+            return 403, {"error": "forbidden"}
+        if who and permissions.case_role(con(), row, who) == "tem":
+            tems.log_access(con(), who, row, "upload")
+    elif not permissions.can(con(), who, "write"):
         return 403, {"error": "forbidden"}
     from urllib.parse import unquote
-    case_id = headers.get("X-Case") or None
     code, out = docs.upload(con(), who, unquote(headers.get("X-Filename", "file")), data,
                             product=unquote(headers.get("X-Product", "")) or None,
                             market=unquote(headers.get("X-Market", "")) or None,
@@ -154,6 +162,45 @@ def handle_core(path, body, who):
     return 404, {}
 
 
+def handle_tem(path, body, who):
+    """TEM firms, engagement and workspace. See tems.py for the access rules."""
+    if not who:
+        return 400, {"error": "sign-in required"}
+    c = con()
+    case_id = str(body.get("case_id") or "")
+    if path == "/tem/me":
+        return tems.overview(c, who)
+    if path == "/tem/join":
+        return tems.join(c, who, str(body.get("token") or ""), body.get("label"))
+    if path == "/tem/engage_info":
+        return tems.engage_info(c, who, str(body.get("token") or ""))
+    if path == "/tem/engage_accept":
+        return tems.engage_accept(c, who, str(body.get("token") or ""), body, TERMS_VERSION)
+    if path == "/tem/client":
+        return tems.client_view(c, who)
+    if path == "/tem/revoke":
+        return tems.revoke(c, who, str(body.get("firm") or ""))
+    if path == "/tem/note":
+        return tems.add_note(c, who, case_id, body.get("text"), body.get("visibility"))
+    if path == "/tem/confirm":
+        return tems.confirm_item(c, who, case_id, str(body.get("item") or ""), body.get("note"), body.get("on", True) is not False)
+    if not consent_ok(who):  # working on clients needs the TEM's own acceptance of the terms
+        return 403, {"error": "consent_required"}
+    if path == "/tem/invite":
+        return tems.invite_member(c, who)
+    if path == "/tem/remove":
+        return tems.remove_member(c, who, str(body.get("user") or ""))
+    if path == "/tem/assign":
+        return tems.assign(c, who, str(body.get("company") or ""), str(body.get("user") or ""), body.get("on", True) is not False)
+    if path == "/tem/engage_link":
+        return tems.engage_link(c, who)
+    if path == "/tem/new_project":
+        return tems.new_project(c, who, str(body.get("company") or ""), body.get("category"), body.get("country"), body.get("name"))
+    if path == "/tem/project":
+        return tems.project(c, who, case_id)
+    return 404, {}
+
+
 def handle_docs(query, who):
     if not consent_ok(who):
         return 403, {"error": "consent_required"}
@@ -166,7 +213,9 @@ def handle_doc_update(doc_id, body, who):
     if not consent_ok(who):
         return 403, {"error": "consent_required"}
     if not permissions.can(con(), who, "write"):
-        return 403, {"error": "forbidden"}
+        d = docs.get_doc(con(), doc_id, who)  # a TEM may edit the documents of its engaged clients
+        if d is None or not tems.has_access(con(), who, d["company_id"]):
+            return 403, {"error": "forbidden"}
     if body.get("link_case"):
         if not docs.link(con(), who, body["link_case"], doc_id):
             return 404, {"error": "not found"}
@@ -291,7 +340,10 @@ def handle_journey(body, who):
     elif features.is_sim("required_docs_other"):
         from .sim import required_docs
         out["required_docs"] = required_docs.required(case["product"].get("category"), have)
+    if out.get("required_docs") and not out["required_docs"].get("simulated"):
+        tems.apply_confirmations(c, row["id"], out["required_docs"])
     out["core"] = core_checks.summary(c, row["id"])
+    out["notes"] = tems.notes(c, row["id"], internal=False)
     if features.is_sim("options_packet"):
         from .sim import packet
         sel = body.get("selected") or packet.wanted_items(case["market"].get("needs"))
@@ -345,6 +397,12 @@ def handle_admin(path, body, who):
         return admin.owner_invite(c, who, cid)
     if path == "/admin/queue":
         return admin.queue(c, who)
+    if path == "/admin/tem_firms":
+        return tems.list_firms(c, who)
+    if path == "/admin/tem_firm":
+        return tems.create_firm(c, who, body.get("name"), body.get("vat"), body.get("seats"))
+    if path == "/admin/tem_lead_link":
+        return tems.lead_link(c, who, str(body.get("firm") or ""))
     if path == "/admin/item":
         return admin.set_item(c, who, str(body.get("item_id") or ""), str(body.get("state") or ""))
     return 404, {}
@@ -615,7 +673,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
-                or self.path.startswith("/core/")):
+                or self.path.startswith("/core/") or self.path.startswith("/tem/")):
             return self._send(404, {})
         try:
             if self.path == "/stripe/webhook":
@@ -654,6 +712,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_admin(self.path, body, who))
             if self.path.startswith("/core/"):
                 return self._send(*handle_core(self.path, body, who))
+            if self.path.startswith("/tem/"):
+                return self._send(*handle_tem(self.path, body, who))
             if self.path == "/eori":
                 return self._send(*handle_eori(body, who))
             if self.path == "/eori/pdf":
@@ -700,6 +760,7 @@ class Handler(BaseHTTPRequestHandler):
                                         "latest_case": latest,
                                         "role": permissions.my_role(con(), who) if who else None,
                                         "superadmin": permissions.is_superadmin(who), "staff_level": permissions.staff_level(who),
+                                        "tem": tems.firm_of(con(), who["user"]) if who else None,
                                         **(accounts.get_profile(con(), who["user"]) if who else {})})
             self._send(*handle_chat(body, who=who))
         except Exception as e:  # keep the service up, report a typed error
