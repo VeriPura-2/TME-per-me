@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import admin, permissions, team, accounts, agent, auth, db, docs, features, invites, personas, plans, storage, stripe_pay, voice
+from . import admin, permissions, team, accounts, agent, auth, db, docs, features, invites, personas, plans, requirements, storage, stripe_pay, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -261,7 +261,9 @@ def handle_journey(body, who):
            "plan": plan, "role": permissions.case_role(c, row, who), "case": {"product": case["product"].get("name_brand"), "country": case["market"].get("country"),
                                   "category": case["product"].get("category"),
                                   "export_registration": case["company"].get("export_registration")}}
-    if features.is_sim("required_docs"):
+    if requirements.covers(case["product"].get("category"), case["market"].get("country")):
+        out["required_docs"] = requirements.required(case["product"].get("category"), case["market"].get("country"), have)
+    elif features.is_sim("required_docs_other"):
         from .sim import required_docs
         out["required_docs"] = required_docs.required(case["product"].get("category"), have)
     if features.is_sim("options_packet"):
