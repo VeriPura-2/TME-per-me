@@ -21,8 +21,6 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;max
 header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 h1{margin:0;font-size:1.5rem;display:flex;align-items:center;gap:10px}
 .logo{height:44px;width:44px}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .logo{filter:invert(1)}}
-:root[data-theme="dark"] .logo{filter:invert(1)}
 .bar button{margin-left:6px}
 button{padding:8px 14px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;cursor:pointer}
 button.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
