@@ -31,7 +31,7 @@ def companies(con, who):
     from .app import TERMS_VERSION
     rows = []
     for co in con.execute("SELECT id, vat, legal_name, status, plan, created_by, created_at FROM companies ORDER BY created_at DESC").fetchall():
-        m = con.execute("SELECT SUM(status='active') AS a, SUM(status='pending') AS p FROM memberships WHERE company_id=?", (co["id"],)).fetchone()
+        m = con.execute("SELECT COALESCE(SUM(CASE WHEN status='active' THEN 1 ELSE 0 END),0) AS a, COALESCE(SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END),0) AS p FROM memberships WHERE company_id=?", (co["id"],)).fetchone()
         n = con.execute("SELECT COUNT(*) AS n, MAX(updated_at) AS last FROM cases WHERE company_id=?", (co["id"],)).fetchone()
         cc = con.execute("SELECT 1 FROM company_consents WHERE company_id=? AND terms_version=?", (co["id"], TERMS_VERSION)).fetchone()
         rows.append({"id": co["id"], "name": co["legal_name"], "vat": co["vat"], "status": co["status"], "plan": co["plan"],
