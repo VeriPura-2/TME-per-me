@@ -1,7 +1,7 @@
 """SIMULATED required-documents checklist. Draft content from the VeriPura master
 checklist, not verified against official sources and not specific to a destination.
-Delete this file when CORE offers a required-documents call per product and market,
-and set "required_docs" to live. The match against uploaded documents is real."""
+Used only for lanes outside Wave 1 (Wave 1 lanes come from requirements.py). Delete this file
+when those lanes are added to requirements.py or CORE offers a requirements call, and remove "required_docs_other". The match against uploaded documents is real."""
 from . import tag
 
 # (id, it, en, layer, matching doc type in docs.TYPES or None)
@@ -43,6 +43,6 @@ def required(category, on_file_types):
     for tid, it, en, layer, dtype in BASE + EXTRA.get((category or "").lower(), []):
         rows.append({"id": tid, "it": it, "en": en, "layer": layer,
                      "on_file": bool(dtype and dtype in on_file_types)})
-    return tag("required_docs", {"layers": LAYERS, "items": rows,
+    return tag("required_docs_other", {"layers": LAYERS, "items": rows,
                                  "caveat": {"it": "Bozza dalla checklist VeriPura. Non verificata sulle fonti ufficiali e non specifica per il paese.",
                                             "en": "Draft from the VeriPura checklist. Not verified against official sources and not specific to the country."}})

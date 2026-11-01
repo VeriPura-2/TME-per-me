@@ -10,7 +10,8 @@ FEATURES = {
     # phase 1
     "interview":        {"phase": 1, "mode": "live"},
     "documents":        {"phase": 1, "mode": "live"},
-    "required_docs":    {"phase": 1, "mode": "sim", "sim_file": "sim/required_docs.py"},
+    "required_docs":    {"phase": 1, "mode": "live"},  # Wave 1 lanes, requirements.py, B/C rows shown as staff to verify
+    "required_docs_other": {"phase": 1, "mode": "sim", "sim_file": "sim/required_docs.py"},  # lanes outside Wave 1
     "tariff_lookup":    {"phase": 1, "mode": "sim", "sim_file": "sim/tariff.py"},
     "options_packet":   {"phase": 1, "mode": "sim", "sim_file": "sim/packet.py"},
     "price_menu":       {"phase": 1, "mode": "sim", "sim_file": "sim/prices.py"},

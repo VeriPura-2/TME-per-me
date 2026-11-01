@@ -25,7 +25,8 @@ class JourneyTest(unittest.TestCase):
         cid = make_case("j1")
         code, out = app.handle_journey({"case_id": cid}, who("j1"))
         self.assertEqual(code, 200)
-        self.assertTrue(out["required_docs"]["simulated"])
+        self.assertFalse(out["required_docs"]["simulated"])  # wine to USA is a Wave 1 lane
+        self.assertEqual(out["required_docs"]["source"], "miotem_checklist")
         self.assertTrue(out["packet"]["simulated"])
         self.assertEqual(out["plan"], "esplora")
 
@@ -37,7 +38,18 @@ class JourneyTest(unittest.TestCase):
         cid = make_case("j3")
         _, out = app.handle_journey({"case_id": cid}, who("j3"))
         ids = [i["id"] for i in out["required_docs"]["data"]["items"]]
-        self.assertIn("wine_doc", ids)
+        self.assertIn("cola", ids)
+        self.assertIn("ttb_permit", ids)
+
+    def test_lane_outside_wave1_stays_simulated(self):
+        c = app.con()
+        cid = db.create_case(c, 1, owner_sub="j4")
+        db.case_write(c, cid, "product", {"category": "wine", "name_brand": "Barolo X"})
+        db.case_write(c, cid, "market", {"country": "Japan"})
+        c.commit()
+        _, out = app.handle_journey({"case_id": cid}, who("j4"))
+        self.assertTrue(out["required_docs"]["simulated"])
+        self.assertIn("wine_doc", [i["id"] for i in out["required_docs"]["data"]["items"]])
 
     def test_dependencies_add_required_items_with_reason(self):
         items, why = packet.expand(["document_check"])
