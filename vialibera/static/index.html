@@ -762,7 +762,7 @@ applyLang();
   }
   // ---- TEM workspace (export consultant firms). The server enforces who sees which client.
   const CATS = ["pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other"];
-  const COUNTRIES = ["UK", "USA", "Canada", "Germany", "Japan", "other"];
+  const COUNTRIES = ["UK", "USA", "Canada", "Germany", "France", "Japan", "other"];
   const sel0 = (opts, cur) => { const s = mk("select"); opts.forEach(o => { const e = mk("option", o); e.value = o; if (o === cur) e.selected = true; s.appendChild(e); }); return s; };
   const linkBox = (parent, url, note) => { const i = mk("input"); i.type = "text"; i.readOnly = true; i.value = url; i.style.width = "70%"; const c = mk("button", TT[lang].ws_copy);
     c.onclick = async () => { try { await navigator.clipboard.writeText(url); } catch (e) { i.select(); } }; parent.append(i, " ", c); if (note) parent.appendChild(mk("div", note, "muted")); };

@@ -1,6 +1,6 @@
 """Required documents checklist, Wave 1 (prepared by MioTEM, verified by staff).
 
-Origin Italy. Products: dried pasta, wine, olive oil, cheese. Destinations: UK, USA, Canada, Germany.
+Origin Italy. Products: dried pasta, wine, olive oil, cheese. Destinations: UK, USA, Canada, Germany, France (added 2 Nov 2026).
 Source review: MioTEM_Wave1_Required_Documents_DRAFT.md (1 Nov 2026), approved for coding.
 
 Confidence: A = confirmed in an official source. B = secondary source, official link to attach.
@@ -16,11 +16,13 @@ CHECKED = "2026-11-01"
 PRODUCTS = {"pasta": "pasta", "wine": "wine", "olive oil": "oil", "cheese and dairy": "cheese", "cheese": "cheese"}
 DESTINATIONS = {"uk": "UK", "united kingdom": "UK", "gb": "UK", "great britain": "UK",
                 "usa": "US", "us": "US", "united states": "US", "stati uniti": "US",
-                "canada": "CA", "germany": "DE", "germania": "DE", "deutschland": "DE", "regno unito": "UK"}
+                "canada": "CA", "germany": "DE", "germania": "DE", "deutschland": "DE", "regno unito": "UK",
+                "france": "FR", "francia": "FR"}
 
 ALL_P = {"pasta", "wine", "oil", "cheese"}
 NON_EU = {"UK", "US", "CA"}
-ALL_D = NON_EU | {"DE"}
+EU_D = {"DE", "FR"}  # other EU countries: no customs, intra-EU VAT and excise rules
+ALL_D = NON_EU | EU_D
 
 LAYERS = {1: {"it": "Azienda", "en": "Company"}, 2: {"it": "Prodotto", "en": "Product"},
           3: {"it": "Mercato", "en": "Destination"}, 4: {"it": "Spedizione", "en": "Shipment"}}
@@ -35,9 +37,10 @@ WHO = {
     "vet": {"it": "Veterinario ufficiale ASL", "en": "ASL official vet"},
     "warehouse": {"it": "Deposito fiscale", "en": "Tax warehouse"},
     "buyer_de": {"it": "Di solito l'acquirente tedesco", "en": "Usually the German buyer"},
+    "buyer_fr": {"it": "Di solito l'acquirente francese", "en": "Usually the French buyer"},
     "staff": {"it": "Verifica dello staff", "en": "Staff check"},
 }
-IMPORTER_SIDE = {"importer", "buyer_de"}
+IMPORTER_SIDE = {"importer", "buyer_de", "buyer_fr"}
 
 SRC = {
     "uk_label": "https://www.food.gov.uk/business-guidance/packaging-and-labelling",
@@ -53,6 +56,10 @@ SRC = {
     "gac_cheese": "https://www.international.gc.ca/controls-controles/prod/agri/dairy-laitiers/notices-avis/909.aspx?lang=eng",
     "ca_rawcheese": "https://cscb.ca/en/article/new-requirements-aged-unpasteurized-cheese-italy",
     "lucid": "https://www.verpackungsregister.org/en/faq-detail-category/questions-about-registration",
+    # France (added 2 Nov 2026)
+    "fr_lang": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000005616341",
+    "fr_infotri": "https://www.adelphe.fr/sites/default/files/Documents/2025-10/adelphe_guide_info-tri_fr.pdf",
+    "fr_excise": "https://www.douane.gouv.fr/fiche/droits-des-alcools-et-boissons-alcooliques",
     # REX threshold, official EU sources (replaced a courier page on 2 Nov 2026)
     "rex_uk": "https://taxation-customs.ec.europa.eu/system/files/2021-03/compendium_on_rules_of_origin_q_a.pdf",
     "rex_ca": "https://trade.ec.europa.eu/access-to-markets/en/roo-explain-term/origin/CA/destination/FR/term/statementOrigin",
@@ -100,7 +107,7 @@ ROWS = [
     _r("est_number", 1, "Numero di riconoscimento CE dello stabilimento (bollo sanitario)",
        "EU-approved establishment number (oval health mark)", "asl", "C", products={"cheese"}, doc="facility_approval"),
     _r("vies", 1, "Iscrizione al VIES (operazioni intracomunitarie)", "VIES enrolment (intra-EU trade)", "exporter", "B",
-       dests={"DE"}, note_it="Gratuita, tramite l'Agenzia delle Entrate. MioTEM la controlla in automatico",
+       dests=EU_D, note_it="Gratuita, tramite l'Agenzia delle Entrate. MioTEM la controlla in automatico",
        note_en="Free, through the Agenzia delle Entrate. MioTEM checks it automatically"),
     _r("excise_auth", 1, "Deposito fiscale o rappresentante fiscale accise", "Excise tax warehouse or excise representative",
        "customs", "C", products={"wine"}),
@@ -126,12 +133,24 @@ ROWS = [
        note_en="Check the front-of-package nutrition symbol rules"),
     _r("label_de", 2, "Etichetta con le informazioni obbligatorie in tedesco (Reg. UE 1169/2011)",
        "Label with mandatory information in German (EU Reg. 1169/2011)", "exporter", "C", dests={"DE"}, doc="label"),
+    _r("label_fr", 2, "Etichetta con le informazioni obbligatorie in francese (legge Toubon, Reg. UE 1169/2011)",
+       "Label with mandatory information in French (Toubon law, EU Reg. 1169/2011)", "exporter", "B", dests={"FR"},
+       src="fr_lang", doc="label", note_it="Altre lingue ammesse in aggiunta al francese",
+       note_en="Other languages allowed in addition to French"),
+    _r("triman", 2, "Logo Triman e Info-tri sull'imballaggio", "Triman logo and Info-tri sorting label on the packaging",
+       "exporter", "B", products={"pasta", "oil", "cheese"}, dests={"FR"}, src="fr_infotri",
+       note_it="Obbligatori dal 2022 sugli imballaggi venduti ai consumatori in Francia",
+       note_en="Mandatory since 2022 on consumer packaging sold in France"),
+    _r("triman", 2, "Logo Triman e Info-tri sull'imballaggio", "Triman logo and Info-tri sorting label on the packaging",
+       "exporter", "B", products={"wine"}, dests={"FR"}, src="fr_infotri",
+       only_it="vino non in bottiglia di vetro (es. bag-in-box)", only_en="wine not in glass bottles (for example bag-in-box)",
+       note_it="Le bottiglie di vetro per bevande sono escluse", note_en="Glass beverage bottles are excluded"),
     _r("label_de_wine", 2, "Etichetta vino UE: ingredienti e valori nutrizionali (anche via QR)",
-       "EU wine label: ingredients and nutrition (QR code allowed)", "exporter", "C", products={"wine"}, dests={"DE"}),
+       "EU wine label: ingredients and nutrition (QR code allowed)", "exporter", "C", products={"wine"}, dests=EU_D),
     _r("label_de_oil", 2, "Etichetta secondo le norme UE di commercializzazione dell'olio (categoria, origine)",
-       "Label to EU olive oil marketing standards (category, origin)", "exporter", "C", products={"oil"}, dests={"DE"}),
+       "Label to EU olive oil marketing standards (category, origin)", "exporter", "C", products={"oil"}, dests=EU_D),
     _r("raw_milk_label", 2, "Dicitura \"prodotto con latte crudo\"", "\"Made with raw milk\" statement", "exporter", "C",
-       products={"cheese"}, dests={"DE"}, only_it="formaggio a latte crudo", only_en="raw milk cheese"),
+       products={"cheese"}, dests=EU_D, only_it="formaggio a latte crudo", only_en="raw milk cheese"),
     _r("raw_milk_age_us", 2, "Formaggio a latte crudo stagionato almeno 60 giorni", "Raw milk cheese aged at least 60 days",
        "exporter", "C", products={"cheese"}, dests={"US"}, only_it="formaggio a latte crudo", only_en="raw milk cheese"),
     _r("raw_milk_age_ca", 2, "Formaggio a latte crudo: stagionatura minima canadese",
@@ -192,10 +211,18 @@ ROWS = [
        src="lucid", note_it="L'esportatore si registra solo se vende direttamente a utenti finali in Germania",
        note_en="The exporter registers only when selling directly to end users in Germany"),
 
+    _r("fr_epr", 3, "Adesione a un eco-organismo francese per gli imballaggi (Citeo, Adelphe o Léko)",
+       "Membership of a French packaging scheme (Citeo, Adelphe or Léko)", "buyer_fr", "B", dests={"FR"},
+       src="fr_infotri", note_it="L'esportatore aderisce solo se vende direttamente a utenti finali in Francia",
+       note_en="The exporter joins only when selling directly to end users in France"),
+    _r("fr_excise", 3, "Accisa francese sul vino (destinatario: deposito autorizzato o destinatario registrato)",
+       "French wine excise (consignee: authorised warehousekeeper or registered consignee)", "buyer_fr", "B",
+       products={"wine"}, dests={"FR"}, src="fr_excise"),
+
     # 4. Shipment
     _r("invoice", 4, "Fattura commerciale", "Commercial invoice", "exporter", "A", dests=NON_EU, doc="invoice"),
     _r("invoice_de", 4, "Fattura con partite IVA di venditore e acquirente (verifica VIES)",
-       "Invoice with both VAT numbers (buyer checked in VIES)", "exporter", "C", dests={"DE"}, doc="invoice"),
+       "Invoice with both VAT numbers (buyer checked in VIES)", "exporter", "C", dests=EU_D, doc="invoice"),
     _r("origin_stmt", 4, "Dichiarazione di origine in fattura", "Origin statement on the invoice", "exporter", "A",
        dests={"UK"}, src="rex_uk", note_it="Accordo UE-UK: dazio zero", note_en="EU-UK TCA: 0% duty"),
     _r("origin_stmt", 4, "Dichiarazione di origine in fattura", "Origin statement on the invoice", "exporter", "A",
@@ -212,9 +239,9 @@ ROWS = [
     _r("ead", 4, "e-AD (EMCS) dal deposito fiscale al punto di uscita UE", "e-AD (EMCS) from the tax warehouse to the EU exit",
        "warehouse", "C", products={"wine"}, dests=NON_EU),
     _r("ead_de", 4, "e-AD o documento di accompagnamento semplificato (accise)",
-       "e-AD or simplified accompanying document (excise)", "warehouse", "C", products={"wine"}, dests={"DE"}),
+       "e-AD or simplified accompanying document (excise)", "warehouse", "C", products={"wine"}, dests=EU_D),
     _r("intrastat", 4, "Intrastat, se sopra la soglia", "Intrastat return, if over the threshold", "exporter", "C",
-       dests={"DE"}),
+       dests=EU_D),
 ]
 
 NOT_NEEDED = [
