@@ -153,3 +153,19 @@ class Watch(unittest.TestCase):
         self.assertIn(requirements.SRC["ca_label"], urls)  # Canadian label rules (exporter)
         self.assertIn(requirements.WATCH["eu_fic"], urls)  # EUR-Lex: the amendments page, not the original act
         self.assertNotIn(requirements.SRC["eu_fic"], urls)
+
+class PgSql(unittest.TestCase):
+    """Postgres treats % as a placeholder marker: literal % must be doubled (daily job IndexError, 2 Nov 2026)."""
+
+    def test_literal_percent_is_escaped(self):
+        from vialibera import db as _db
+        self.assertEqual(_db.pg_sql("SELECT id FROM companies WHERE vat LIKE 'IT%' AND id=?"),
+                         "SELECT id FROM companies WHERE vat LIKE 'IT%%' AND id=%s")
+
+    def test_recheck_query_formats_without_error(self):
+        # psycopg2 formats queries with Python % rules; this reproduces the IndexError without a database.
+        from vialibera import db as _db
+        sql = "SELECT id FROM companies WHERE vat LIKE 'IT%' AND (vies_state IS NULL)"
+        with self.assertRaises((IndexError, ValueError, TypeError)):
+            sql.replace("?", "%s") % ()
+        self.assertEqual(_db.pg_sql(sql) % (), sql)

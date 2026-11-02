@@ -5,6 +5,7 @@ Storage: Cloud SQL Postgres when CLOUDSQL_INSTANCE is set, otherwise local SQLit
 """
 import json
 import os
+import traceback
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import anthropic
@@ -717,6 +718,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 return self._send(*handle_job(self.headers))
             except Exception as e:
+                traceback.print_exc()  # full details in the server log, not only the error name
                 return self._send(500, {"error": type(e).__name__})
         if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
@@ -811,6 +813,7 @@ class Handler(BaseHTTPRequestHandler):
                                         **(accounts.get_profile(con(), who["user"]) if who else {})})
             self._send(*handle_chat(body, who=who))
         except Exception as e:  # keep the service up, report a typed error
+            traceback.print_exc()  # full details in the server log, not only the error name
             try:
                 CON.rollback()
             except Exception:
