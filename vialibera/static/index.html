@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MioTEM</title>
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="icon" href="/favicon.ico?v=3" sizes="any">
+<link rel="icon" type="image/png" href="/favicon.png?v=3">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
 :root{--bg:#fff;--fg:#1a1a1a;--muted:#5f6368;--line:#dadce0;--accent:#0b57d0;--card:#f6f8fc}
@@ -21,6 +21,8 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;max
 header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 h1{margin:0;font-size:1.5rem;display:flex;align-items:center;gap:10px}
 .logo{height:44px;width:44px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .logo{filter:invert(1)}}
+:root[data-theme="dark"] .logo{filter:invert(1)}
 .bar button{margin-left:6px}
 button{padding:8px 14px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;cursor:pointer}
 button.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
@@ -40,7 +42,7 @@ a{color:var(--accent)}
 footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-height:1.6}footer.legal a{color:inherit}
 </style></head><body>
 <header>
-  <h1><img class="logo" src="/logo-mark.png?v=2" alt="" width="44" height="44">MioTEM</h1>
+  <h1><img class="logo" src="/logo-mark.png?v=3" alt="" width="44" height="44">MioTEM</h1>
   <div class="bar">
     <button id="lang" aria-label="Language"></button>
     <button id="theme" aria-label="Theme"></button>
