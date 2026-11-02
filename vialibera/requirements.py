@@ -1,6 +1,7 @@
 """Required documents checklist, Wave 1 (prepared by MioTEM, verified by staff).
 
-Origin Italy. Products: dried pasta, wine, olive oil, cheese. Destinations: UK, USA, Canada, Germany, France (added 2 Nov 2026).
+Origin Italy. Products: dried pasta, wine, olive oil, cheese. Destinations: UK, USA, Canada, Germany, France, Spain, Netherlands, Belgium, Austria
+(France and the last four added 2 Nov 2026).
 Source review: MioTEM_Wave1_Required_Documents_DRAFT.md (1 Nov 2026), approved for coding.
 
 Confidence: A = confirmed in an official source. B = secondary source, official link to attach.
@@ -17,11 +18,16 @@ PRODUCTS = {"pasta": "pasta", "wine": "wine", "olive oil": "oil", "cheese and da
 DESTINATIONS = {"uk": "UK", "united kingdom": "UK", "gb": "UK", "great britain": "UK",
                 "usa": "US", "us": "US", "united states": "US", "stati uniti": "US",
                 "canada": "CA", "germany": "DE", "germania": "DE", "deutschland": "DE", "regno unito": "UK",
-                "france": "FR", "francia": "FR"}
+                "france": "FR", "francia": "FR",
+                "spain": "ES", "spagna": "ES", "españa": "ES", "espana": "ES",
+                "netherlands": "NL", "the netherlands": "NL", "paesi bassi": "NL", "olanda": "NL", "holland": "NL",
+                "nederland": "NL",
+                "belgium": "BE", "belgio": "BE", "belgique": "BE", "belgië": "BE", "belgie": "BE",
+                "austria": "AT", "österreich": "AT", "osterreich": "AT", "oesterreich": "AT"}
 
 ALL_P = {"pasta", "wine", "oil", "cheese"}
 NON_EU = {"UK", "US", "CA"}
-EU_D = {"DE", "FR"}  # other EU countries: no customs, intra-EU VAT and excise rules
+EU_D = {"DE", "FR", "ES", "NL", "BE", "AT"}  # other EU countries: no customs, intra-EU VAT and excise rules
 ALL_D = NON_EU | EU_D
 
 LAYERS = {1: {"it": "Azienda", "en": "Company"}, 2: {"it": "Prodotto", "en": "Product"},
@@ -38,9 +44,10 @@ WHO = {
     "warehouse": {"it": "Deposito fiscale", "en": "Tax warehouse"},
     "buyer_de": {"it": "Di solito l'acquirente tedesco", "en": "Usually the German buyer"},
     "buyer_fr": {"it": "Di solito l'acquirente francese", "en": "Usually the French buyer"},
+    "buyer_eu": {"it": "Di solito l'acquirente nel paese di destinazione", "en": "Usually the buyer in the destination country"},
     "staff": {"it": "Verifica dello staff", "en": "Staff check"},
 }
-IMPORTER_SIDE = {"importer", "buyer_de", "buyer_fr"}
+IMPORTER_SIDE = {"importer", "buyer_de", "buyer_fr", "buyer_eu"}
 
 SRC = {
     "uk_label": "https://www.food.gov.uk/business-guidance/packaging-and-labelling",
@@ -60,6 +67,16 @@ SRC = {
     "fr_lang": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000005616341",
     "fr_infotri": "https://www.adelphe.fr/sites/default/files/Documents/2025-10/adelphe_guide_info-tri_fr.pdf",
     "fr_excise": "https://www.douane.gouv.fr/fiche/droits-des-alcools-et-boissons-alcooliques",
+    # Spain, Netherlands, Belgium, Austria (added 2 Nov 2026)
+    "es_lang": "https://www.aesan.gob.es/en/AECOSAN/web/seguridad_alimentaria/subdetalle/norma_general_etiquetado.htm",
+    "es_pack": "https://www.miteco.gob.es/es/calidad-y-evaluacion-ambiental/temas/prevencion-y-gestion-residuos/registro-productores-producto/registro-productores-producto-seccion-envases.html",
+    "es_wine_tax": "https://www.boe.es/buscar/act.php?id=BOE-A-1992-28741",
+    "nl_lang": "https://zoek.officielebekendmakingen.nl/stb-2013-146.pdf",
+    "nl_pack": "https://ondernemersplein.overheid.nl/wetten-en-regels/afvalbeheersbijdrage-verpakkingen-betalen/",
+    "nl_excise": "https://download.belastingdienst.nl/douane/docs/tarievenlijst-accijns-acc0552z95fd.pdf",
+    "be_pack": "https://www.ucm.be/emballages",
+    "at_pack": "https://www.wko.at/noe/up/verpackungsverordnung-auslaendische-haendler-lieferanten",
+    "at_wine_tax": "https://www.usp.gv.at/themen/steuern-finanzen/weitere-steuern-und-abgaben/verbrauchsteuern_und_energieabgaben/wein_schaumwein_verbrauchsteuerrechtliche_bestimmungen.html",
     # REX threshold, official EU sources (replaced a courier page on 2 Nov 2026)
     "rex_uk": "https://taxation-customs.ec.europa.eu/system/files/2021-03/compendium_on_rules_of_origin_q_a.pdf",
     "rex_ca": "https://trade.ec.europa.eu/access-to-markets/en/roo-explain-term/origin/CA/destination/FR/term/statementOrigin",
@@ -132,11 +149,22 @@ ROWS = [
        dests={"CA"}, doc="label", note_it="Verificare il simbolo nutrizionale sul fronte",
        note_en="Check the front-of-package nutrition symbol rules"),
     _r("label_de", 2, "Etichetta con le informazioni obbligatorie in tedesco (Reg. UE 1169/2011)",
-       "Label with mandatory information in German (EU Reg. 1169/2011)", "exporter", "C", dests={"DE"}, doc="label"),
+       "Label with mandatory information in German (EU Reg. 1169/2011)", "exporter", "C", dests={"DE", "AT"}, doc="label"),
     _r("label_fr", 2, "Etichetta con le informazioni obbligatorie in francese (legge Toubon, Reg. UE 1169/2011)",
        "Label with mandatory information in French (Toubon law, EU Reg. 1169/2011)", "exporter", "B", dests={"FR"},
        src="fr_lang", doc="label", note_it="Altre lingue ammesse in aggiunta al francese",
        note_en="Other languages allowed in addition to French"),
+    _r("label_es", 2, "Etichetta con le informazioni obbligatorie almeno in spagnolo (RD 1334/1999, art. 18)",
+       "Label with mandatory information at least in Spanish (RD 1334/1999, art. 18)", "exporter", "A", dests={"ES"},
+       src="es_lang", doc="label", note_it="Ammessi adesivi in spagnolo", note_en="Spanish stickers are allowed"),
+    _r("label_nl", 2, "Etichetta con le informazioni obbligatorie almeno in olandese",
+       "Label with mandatory information at least in Dutch", "exporter", "B", dests={"NL"}, src="nl_lang", doc="label",
+       note_it="Nel 2025 il Parlamento ha chiesto di abolire l'obbligo: verificare che sia ancora in vigore",
+       note_en="Parliament asked in 2025 to drop this rule: check it still applies"),
+    _r("label_be", 2, "Etichetta nella lingua della regione linguistica di vendita (olandese, francese, tedesco)",
+       "Label in the language of the linguistic region where sold (Dutch, French, German)", "exporter", "C",
+       dests={"BE"}, doc="label", note_it="Vendita in tutto il Belgio: olandese, francese e tedesco",
+       note_en="Sold across Belgium: Dutch, French and German"),
     _r("triman", 2, "Logo Triman e Info-tri sull'imballaggio", "Triman logo and Info-tri sorting label on the packaging",
        "exporter", "B", products={"pasta", "oil", "cheese"}, dests={"FR"}, src="fr_infotri",
        note_it="Obbligatori dal 2022 sugli imballaggi venduti ai consumatori in Francia",
@@ -219,6 +247,29 @@ ROWS = [
        "French wine excise (consignee: authorised warehousekeeper or registered consignee)", "buyer_fr", "B",
        products={"wine"}, dests={"FR"}, src="fr_excise"),
 
+    _r("es_pack", 3, "Registro dei produttori di prodotto (imballaggi) e adesione a un sistema EPR spagnolo",
+       "Spanish Producer Register (packaging) and membership of a Spanish packaging scheme", "buyer_eu", "B",
+       dests={"ES"}, src="es_pack",
+       note_it="Chi immette per primo il prodotto sul mercato spagnolo. Dal 12 agosto 2026 vale la definizione UE di produttore: verificare",
+       note_en="Whoever first places the product on the Spanish market. EU producer definition applies from 12 August 2026: check"),
+    _r("nl_pack", 3, "Contributo imballaggi a Verpact (ex Afvalfonds Verpakkingen)",
+       "Packaging fee to Verpact (formerly Afvalfonds Verpakkingen)", "buyer_eu", "A", dests={"NL"}, src="nl_pack",
+       only_it="oltre 50.000 kg di imballaggi l'anno", only_en="over 50,000 kg of packaging a year",
+       note_it="L'esportatore paga solo se vende direttamente a consumatori nei Paesi Bassi",
+       note_en="The exporter pays only when selling directly to consumers in the Netherlands"),
+    _r("nl_excise", 3, "Accisa olandese sul vino", "Dutch wine excise", "buyer_eu", "A", products={"wine"},
+       dests={"NL"}, src="nl_excise"),
+    _r("be_pack", 3, "Adesione a Fost Plus (imballaggi domestici) o Valipac (imballaggi commerciali)",
+       "Membership of Fost Plus (household packaging) or Valipac (commercial packaging)", "buyer_eu", "B",
+       dests={"BE"}, src="be_pack", note_it="Responsabile: l'importatore dei prodotti imballati",
+       note_en="Responsible: the importer of the packaged products"),
+    _r("be_excise", 3, "Accisa belga sul vino (accisa e accisa speciale)", "Belgian wine excise (excise and special excise)",
+       "buyer_eu", "C", products={"wine"}, dests={"BE"}),
+    _r("at_pack", 3, "Licenza imballaggi presso un sistema austriaco di raccolta e riciclo",
+       "Packaging licence with an Austrian collection and recovery system", "buyer_eu", "B", dests={"AT"},
+       src="at_pack", note_it="Vendendo ad aziende austriache l'obbligo è dell'importatore. Vendendo a consumatori serve un rappresentante autorizzato in Austria",
+       note_en="When selling to Austrian businesses the importer is responsible. Selling to consumers needs an authorised representative in Austria"),
+
     # 4. Shipment
     _r("invoice", 4, "Fattura commerciale", "Commercial invoice", "exporter", "A", dests=NON_EU, doc="invoice"),
     _r("invoice_de", 4, "Fattura con partite IVA di venditore e acquirente (verifica VIES)",
@@ -247,6 +298,10 @@ ROWS = [
 NOT_NEEDED = [
     {"products": {"wine"}, "dests": {"UK"}, "it": "Certificato VI-1: non serve (abolito dal 1 gennaio 2022)",
      "en": "VI-1 certificate: not needed (removed from 1 January 2022)", "source": SRC["uk_wine"]},
+    {"products": {"wine"}, "dests": {"ES"}, "it": "Accisa spagnola sul vino: aliquota zero (restano le regole di circolazione, e-AD)",
+     "en": "Spanish wine excise: zero rate (movement rules still apply, e-AD)", "source": SRC["es_wine_tax"]},
+    {"products": {"wine"}, "dests": {"AT"}, "it": "Accisa austriaca sul vino: nessuna (restano le regole di circolazione, e-AD)",
+     "en": "Austrian wine excise: none (movement rules still apply, e-AD)", "source": SRC["at_wine_tax"]},
 ]
 
 CAVEAT = {"it": "Preparato da MioTEM, verificato dallo staff. Le voci segnate vanno ancora verificate.",
