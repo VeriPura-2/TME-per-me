@@ -5,8 +5,9 @@ Storage: Cloud SQL Postgres when CLOUDSQL_INSTANCE is set, otherwise local SQLit
 """
 import json
 import os
+import threading
 import traceback
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import anthropic
 
@@ -28,23 +29,79 @@ def client():
     return _client
 
 
+# Requests run in parallel threads (ThreadingHTTPServer). On Postgres each request borrows its own
+# connection from a small pool and gives it back at the end (release_con). SQLite (local dev and
+# tests) keeps one shared connection, and the server runs requests one at a time on it.
+POOL_SIZE = int(os.environ.get("DB_POOL_SIZE", "4"))  # per instance. db-f1-micro allows ~25: 4 x max 4 instances = 16
+_local = threading.local()
+_pool = None
+_pool_lock = threading.Lock()
+_slots = threading.BoundedSemaphore(POOL_SIZE)
+_sqlite_lock = threading.Lock()
+
+
+def postgres():
+    return bool(os.environ.get("CLOUDSQL_INSTANCE"))
+
+
+def _get_pool():
+    global _pool
+    with _pool_lock:
+        if _pool is None:
+            _pool = db.PGPool(f"/cloudsql/{os.environ['CLOUDSQL_INSTANCE']}", os.environ.get("DB_NAME", "vialibera"),
+                              os.environ.get("DB_USER", "app"), get_secret("DB_PASSWORD"), POOL_SIZE)
+    return _pool
+
+
 def con():
     global CON
-    if CON is None:
-        inst = os.environ.get("CLOUDSQL_INSTANCE")
-        if inst:
-            CON = db.connect_pg(f"/cloudsql/{inst}", os.environ.get("DB_NAME", "vialibera"),
-                                os.environ.get("DB_USER", "app"), get_secret("DB_PASSWORD"))
-        else:
+    if not postgres():
+        if CON is None:
             CON = db.connect(os.environ.get("DB_PATH", "/tmp/vialibera.db"))
-    elif getattr(CON, "postgres", False):
-        raw = CON.raw
-        if raw.closed:
-            CON = None
+        return CON
+    c = getattr(_local, "con", None)
+    if c is not None:
+        if c.raw.closed:  # lost mid-request: hand it back closed and borrow a fresh one
+            release_con()
             return con()
-        if raw.get_transaction_status() == 3:  # a failed statement left the transaction aborted
-            raw.rollback()
-    return CON
+        if c.raw.get_transaction_status() == 3:  # a failed statement left the transaction aborted
+            c.raw.rollback()
+        return c
+    pool = _get_pool()
+    if not _slots.acquire(timeout=30):
+        raise RuntimeError("database busy: no free connection within 30 s")
+    try:
+        c = pool.get()
+    except Exception:
+        _slots.release()
+        raise
+    _local.con = c
+    return c
+
+
+def release_con():
+    """End of a request: commit or roll back, then give the connection back to the pool."""
+    c = getattr(_local, "con", None)
+    if c is None:
+        return
+    _local.con = None
+    try:
+        ok = db.finish(c)
+        _pool.put(c, close=not ok)
+    except Exception:
+        traceback.print_exc()
+        try:
+            _pool.put(c, close=True)
+        except Exception:
+            pass
+    finally:
+        _slots.release()
+
+
+def rollback_current():
+    c = CON if not postgres() else getattr(_local, "con", None)
+    if c is not None:
+        c.rollback()
 
 
 STATIC_ASSETS = {"/logo-mark.png": "image/png", "/favicon.png": "image/png",
@@ -655,7 +712,22 @@ def render_terms(lang):
 
 
 class Handler(BaseHTTPRequestHandler):
+    def _one_request(self, fn):
+        if not postgres():  # SQLite: one shared connection, so one request at a time
+            with _sqlite_lock:
+                return fn()
+        try:
+            return fn()
+        finally:
+            release_con()
+
     def do_GET(self):
+        return self._one_request(self._get)
+
+    def do_POST(self):
+        return self._one_request(self._post)
+
+    def _get(self):
         path = self.path.split("?")[0]
         if path == "/healthz":
             return self._send(200, {"ok": True})
@@ -724,7 +796,7 @@ class Handler(BaseHTTPRequestHandler):
     def _who(self):
         return auth.verify(self.headers.get("Authorization")) if auth.enabled() else None
 
-    def do_POST(self):
+    def _post(self):
         if self.path.split("?")[0] == "/jobs/daily":
             try:
                 return self._send(*handle_job(self.headers, urlparse(self.path).query))
@@ -826,7 +898,7 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:  # keep the service up, report a typed error
             traceback.print_exc()  # full details in the server log, not only the error name
             try:
-                CON.rollback()
+                rollback_current()
             except Exception:
                 pass
             self._send(500, {"error": type(e).__name__})
@@ -840,5 +912,10 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
+class Server(ThreadingHTTPServer):
+    daemon_threads = True
+    request_queue_size = 128  # connections waiting to be accepted (the default of 5 is too small)
+
+
 if __name__ == "__main__":
-    HTTPServer(("0.0.0.0", int(os.environ.get("PORT", 8080))), Handler).serve_forever()
+    Server(("0.0.0.0", int(os.environ.get("PORT", 8080))), Handler).serve_forever()

@@ -381,7 +381,44 @@ def connect(path=":memory:"):
 def connect_pg(host, dbname, user, password):
     """host is the Cloud SQL socket dir, e.g. /cloudsql/PROJECT:REGION:INSTANCE"""
     import psycopg2
-    con = PG(psycopg2.connect(host=host, dbname=dbname, user=user, password=password))
+    return setup_pg(PG(psycopg2.connect(host=host, dbname=dbname, user=user, password=password)))
+
+
+class PGPool:
+    """Up to `size` Postgres connections shared by the request threads; schema set up once."""
+
+    def __init__(self, host, dbname, user, password, size):
+        from psycopg2.pool import ThreadedConnectionPool
+        self.pool = ThreadedConnectionPool(1, size, host=host, dbname=dbname, user=user, password=password)
+        first = self.get()
+        try:
+            setup_pg(first)
+        finally:
+            self.put(first)
+
+    def get(self):
+        return PG(self.pool.getconn())
+
+    def put(self, con, close=False):
+        self.pool.putconn(con.raw, close=close)
+
+
+def finish(con):
+    """End of a request: keep what it wrote, drop a failed transaction (psycopg2 transaction status)."""
+    raw = con.raw
+    if raw.closed:
+        return False
+    status = raw.get_transaction_status()  # 0 idle, 1 active, 2 in transaction, 3 in error, 4 unknown
+    if status == 3:
+        raw.rollback()
+    elif status == 2:  # unsaved writes: commit, as the shared connection's next commit used to
+        raw.commit()
+    elif status != 0:
+        return False  # busy or broken: close it rather than reuse it
+    return True
+
+
+def setup_pg(con):
     con.executescript(SCHEMA.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "BIGSERIAL PRIMARY KEY"))
     for col in ("org_id", "owner_sub", "company_id"):
         con.execute(f"ALTER TABLE cases ADD COLUMN IF NOT EXISTS {col} TEXT")
