@@ -46,6 +46,13 @@ class SwissFileTest(unittest.TestCase):
         self.assertTrue(tw.ch_file_url(PAGE).endswith("duty_rates_chapter_01_to_30.xlsx"))
         self.assertIsNone(tw.ch_file_url("<a href='x.pdf'>"))
 
+    def test_file_link_found_in_escaped_page_data(self):
+        # Real BAZG raw HTML, 2026-11-02: the link only appears inside the page's JSON data block.
+        raw = ('{"text":5526},"\\u003Cstrong>\\u003Ca href=\\\"https://www.bazg.admin.ch/dam/en/sd-web/'
+               'suXEbuatJI1d/duty_rates_chapter_01_to_30.xlsx\\\" target=\\\"_self\\\"')
+        self.assertEqual(tw.ch_file_url(raw),
+                         "https://www.bazg.admin.ch/dam/en/sd-web/suXEbuatJI1d/duty_rates_chapter_01_to_30.xlsx")
+
 
 def ca_text(ch):
     return open(os.path.join(os.path.dirname(__file__), "fixtures", f"ca_ch{ch}_2026.txt")).read()
