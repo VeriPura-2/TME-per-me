@@ -86,22 +86,22 @@ class Daily(unittest.TestCase):
 
     def test_source_change_sends_items_back_to_staff_until_reconfirmed(self):
         self.run_job()
-        url = requirements.SRC["gac_cheese"]
+        url = requirements.SRC["ca_rawcheese"]
         self.pages[url] = "the rules changed"
         out = self.run_job()
         self.assertEqual(out["sources"]["changed"], 1)
         req = requirements.required("cheese and dairy", "Canada", set())
         tems.apply_confirmations(self.con, "case1", req)
         jobs.apply_source_flags(self.con, "case1", req)
-        item = [i for i in req["data"]["items"] if i["id"] == "gac_permit"][0]
+        item = [i for i in req["data"]["items"] if i["id"] == "ca_zoo"][0]
         self.assertFalse(item["verified"])
         self.assertTrue(item["source_changed"])
         # a confirmation after the change clears it
-        self.con.execute("INSERT INTO checklist_confirmations(case_id, item_id, confirmed_by, by_label, at) VALUES ('case1','gac_permit','t','TEM','9999')")
+        self.con.execute("INSERT INTO checklist_confirmations(case_id, item_id, confirmed_by, by_label, at) VALUES ('case1','ca_zoo','t','TEM','9999')")
         req = requirements.required("cheese and dairy", "Canada", set())
         tems.apply_confirmations(self.con, "case1", req)
         jobs.apply_source_flags(self.con, "case1", req)
-        self.assertTrue([i for i in req["data"]["items"] if i["id"] == "gac_permit"][0]["verified"])
+        self.assertTrue([i for i in req["data"]["items"] if i["id"] == "ca_zoo"][0]["verified"])
 
     def test_unreachable_source_is_reported(self):
         def boom(u):
@@ -123,20 +123,12 @@ class Daily(unittest.TestCase):
 
 
 class Watch(unittest.TestCase):
-    def test_blocked_sources_are_watched_elsewhere_and_flag_the_right_items(self):
+    def test_importer_only_sources_are_not_watched(self):
+        # importer-only rows are never shown to the exporter, so their sources are not checked either
         urls = jobs.source_urls()
-        self.assertNotIn(requirements.SRC["usda_dairy"], urls)
-        self.assertNotIn(requirements.SRC["cfia_sfc"], urls)
-        self.assertIn(requirements.WATCH["usda_dairy"], urls)
-        con = db.connect()
-        pages = {u: "v1" for u in urls}
-        uk = UKTradeTariff(http=lambda url: load("uk_1902199090.json"))
-        us = USITCHts(http=lambda url: load("us_" + url.rsplit("=", 1)[1] + ".json"))
-        jobs.run_daily(con, uk=uk, us=us, fetch=lambda u: pages[u])
-        pages[requirements.WATCH["cfia_sfc"]] = "v2"
-        jobs.run_daily(con, uk=uk, us=us, fetch=lambda u: pages[u])
-        req = requirements.required("pasta", "Canada", set())
-        jobs.apply_source_flags(con, "c", req)
-        sfc = [i for i in req["data"]["items"] if i["id"] == "sfc"][0]
-        self.assertTrue(sfc["source_changed"])
-        self.assertEqual(sfc["source"], requirements.SRC["cfia_sfc"])  # clients still see the CFIA page
+        for k in ("usda_dairy", "cfia_sfc", "gac_cheese", "lucid"):
+            self.assertNotIn(requirements.SRC[k], urls, k)
+            self.assertNotIn(requirements.WATCH.get(k, "-"), urls, k)
+        self.assertIn(requirements.SRC["ca_rawcheese"], urls)
+        self.assertIn(requirements.SRC["fda_ffr"], urls)
+        self.assertIn(requirements.SRC["ttb"], urls)  # shared with COLA, which the exporter acts on

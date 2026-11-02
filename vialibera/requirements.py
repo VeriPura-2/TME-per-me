@@ -49,6 +49,9 @@ WHO = {
     "staff": {"it": "Verifica dello staff", "en": "Staff check"},
 }
 IMPORTER_SIDE = {"importer", "buyer_de", "buyer_fr", "buyer_eu"}
+# MioTEM serves the exporter (decided 2 Nov 2026): importer-only rows are never shown. VeriPura FOOD covers the
+# importer's side. Exception: importer-side rows where the exporter has to act or supply something.
+EXPORTER_ACTS = {"cola", "fsvp"}  # print labels only after COLA approval; give the importer the FSVP information
 
 SRC = {
     "uk_label": "https://www.food.gov.uk/business-guidance/packaging-and-labelling",
@@ -340,6 +343,10 @@ CAVEAT = {"it": "Preparato da MioTEM, verificato dallo staff. Le voci segnate va
           "en": "Prepared by MioTEM, verified by staff. Marked items are still to be verified."}
 
 
+def importer_only(r):
+    return r["who"] in IMPORTER_SIDE and r["id"] not in EXPORTER_ACTS
+
+
 def lane(category, country):
     """(product key, destination key) when the lane is in Wave 1, else None."""
     p = PRODUCTS.get((category or "").strip().lower())
@@ -359,7 +366,7 @@ def required(category, country, on_file_types):
     p, d = ln
     items = []
     for r in ROWS:
-        if p not in r["products"] or d not in r["dests"]:
+        if p not in r["products"] or d not in r["dests"] or importer_only(r):
             continue
         items.append({"id": r["id"], "layer": r["layer"], "it": r["it"], "en": r["en"], "who": WHO[r["who"]],
                       "importer_side": r["who"] in IMPORTER_SIDE, "verified": r["conf"] == "A",
