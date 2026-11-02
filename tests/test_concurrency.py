@@ -76,21 +76,48 @@ class Pool(unittest.TestCase):
             self.addCleanup(p.stop)
 
     def test_each_thread_gets_its_own_connection_and_gives_it_back(self):
-        seen, barrier = [], threading.Barrier(5)
+        n = app.POOL_SIZE
+        seen, barrier = [], threading.Barrier(n)
 
         def work():
-            c = app.con()
-            self.assertIs(app.con(), c)  # same connection for the whole request
-            seen.append(id(c))
-            barrier.wait(timeout=5)  # all 5 hold a connection at the same time
+            try:
+                c = app.con()
+                self.assertIs(app.con(), c)  # same connection for the whole request
+                seen.append(id(c))
+                barrier.wait(timeout=5)  # the whole pool is in use at the same time
+            finally:
+                app.release_con()
+
+        ts = [threading.Thread(target=work) for _ in range(n)]
+        [t.start() for t in ts]
+        [t.join(10) for t in ts]
+        self.assertEqual(len(set(seen)), n)
+        self.assertEqual(self.pool.out, set())
+        self.assertEqual(len(self.pool.returned), n)
+
+    def test_request_beyond_the_pool_waits_for_a_free_connection(self):
+        held, got = [], threading.Event()
+
+        def hold():
+            held.append(app.con())
+            time.sleep(0.5)
             app.release_con()
 
-        ts = [threading.Thread(target=work) for _ in range(5)]
+        ts = [threading.Thread(target=hold) for _ in range(app.POOL_SIZE)]
         [t.start() for t in ts]
-        [t.join(5) for t in ts]
-        self.assertEqual(len(set(seen)), 5)
+        time.sleep(0.1)  # the pool is now fully in use
+
+        def extra():
+            app.con()
+            got.set()
+            app.release_con()
+
+        e = threading.Thread(target=extra)
+        e.start()
+        self.assertFalse(got.wait(0.2))  # still waiting
+        self.assertTrue(got.wait(3))  # served once a connection came back
+        [t.join(5) for t in ts + [e]]
         self.assertEqual(self.pool.out, set())
-        self.assertEqual(len(self.pool.returned), 5)
 
     def test_slots_are_released(self):
         for _ in range(app.POOL_SIZE * 3):  # more than the pool size, one after another
