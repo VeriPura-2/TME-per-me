@@ -865,11 +865,19 @@ applyLang();
       box.appendChild(row); });
     if (j.log.length) { const det = mk("details"); det.appendChild(mk("summary", tt.tc_log)); j.log.forEach(e => det.appendChild(mk("div", sd(e.at) + " · " + (e.firm || "") + " · " + e.action, "muted"))); box.appendChild(det); }
   }
+  let jobMsg = "";
   async function staffChanges() {
     const box = $("s-changes"); box.innerHTML = ""; const [r, j] = await call("/admin/changes", {}); if (!r.ok) return;
     box.appendChild(mk("h3", "Data changes (" + j.changes.length + " open)"));
-    if (full) { const b = mk("button", "Run daily job now"), o = mk("span", "", "muted"); b.onclick = async () => { b.disabled = true; o.textContent = " running…";
-        const [rr, jj] = await call("/admin/run_daily", {}); b.disabled = false; o.textContent = rr.ok ? " done: known answers " + jj.tariffs.known_answers + ", sources changed " + jj.sources.changed + ", unreachable " + jj.sources.unreachable + ", VIES rechecked " + jj.vies.companies_rechecked : " " + (jj.error || rr.status); staffChanges(); };
+    if (full) { const b = mk("button", "Run daily job now"), o = mk("span", jobMsg, "muted"); b.onclick = async () => { b.disabled = true;
+        // one part per request, like Cloud Scheduler: each has its own time limit, a failure does not stop the next
+        const say = []; for (const part of ["sources", "vies", "tariffs"]) { o.textContent = " " + say.concat(part + ": running…").join(" · ");
+          const [rr, jj] = await call("/admin/run_daily", {part});
+          say.push(part + ": " + (!rr.ok ? "failed (" + (jj.error || rr.status) + ")"
+            : part === "sources" ? "known answers " + jj.tariffs.known_answers + ", changed " + jj.sources.changed + ", unreachable " + jj.sources.unreachable
+            : part === "vies" ? jj.vies.companies_rechecked + " rechecked"
+            : (typeof jj.tariff_watch === "string" ? jj.tariff_watch : jj.tariff_watch.read + " read, " + jj.tariff_watch.unreadable + " unreadable"))); }
+        jobMsg = " " + say.join(" · "); b.disabled = false; staffChanges(); };  // kept across the redraw
       box.append(b, o); }
     j.changes.forEach(c => { const row = mk("div", sd(c.at) + " · " + c.kind + " · " + c.summary + " · " + c.ref + " ", "muted");
       if (c.detail && Object.keys(c.detail).length) row.title = JSON.stringify(c.detail);

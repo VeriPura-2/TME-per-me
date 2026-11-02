@@ -135,15 +135,43 @@ def recheck_vies(con, http=None):
     return {"companies_rechecked": n}
 
 
-def run_daily(con, uk=None, us=None, fetch=_fetch_text, vies_http=None, tariff_readers=None):
-    out = {"started": db.now()}
-    out["tariffs"] = check_tariffs(con, uk, us)
-    out["sources"] = check_sources(con, fetch)
-    out["vies"] = recheck_vies(con, vies_http)
-    if tariff_watch.due(con):
+PARTS = ("sources", "vies", "tariffs")  # Cloud Scheduler calls each part on its own, so one failure does not stop the others
+
+
+def run_part(con, part, uk=None, us=None, fetch=_fetch_text, vies_http=None, tariff_readers=None):
+    """One part of the daily job, in its own request with its own time limit."""
+    if part not in PARTS:
+        raise ValueError(f"unknown job part: {part}")
+    out = {"part": part, "started": db.now()}
+    if part == "sources":
+        out["tariffs"] = check_tariffs(con, uk, us)  # known answers: quick, kept with the source check
+        out["sources"] = check_sources(con, fetch)
+    elif part == "vies":
+        out["vies"] = recheck_vies(con, vies_http)
+    elif tariff_watch.due(con):
         out["tariff_watch"] = tariff_watch.run(con, tariff_readers)
+    else:
+        out["tariff_watch"] = "not due"
     out["finished"] = db.now()
     db.log_event(con, None, "job", "daily_job", out)
+    return out
+
+
+def run_daily(con, uk=None, us=None, fetch=_fetch_text, vies_http=None, tariff_readers=None):
+    """All parts in one call (tests, and the old single scheduler call). A failing part is recorded, the rest still run."""
+    out = {"started": db.now()}
+    for part in PARTS:
+        try:
+            r = run_part(con, part, uk, us, fetch, vies_http, tariff_readers)
+            out.update({k: v for k, v in r.items() if k not in ("part", "started", "finished")})
+        except Exception as e:
+            try:
+                con.rollback()
+            except Exception:
+                pass
+            out[part + "_error"] = type(e).__name__
+            _change(con, "job_failed", part, f"Daily job part '{part}' failed", {"error": f"{type(e).__name__}: {e}"[:300]})
+    out["finished"] = db.now()
     return out
 
 

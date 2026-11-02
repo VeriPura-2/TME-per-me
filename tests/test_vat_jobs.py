@@ -117,6 +117,24 @@ class Daily(unittest.TestCase):
         self.run_job(vies_http=lambda u: VALID)
         self.assertIn("vies_rechecked", {c["kind"] for c in jobs.changes(self.con)})
 
+    def test_each_part_runs_on_its_own(self):
+        f = lambda u: self.pages[u]
+        s = jobs.run_part(self.con, "sources", uk=self.uk, us=self.us, fetch=f)
+        self.assertEqual(s["sources"]["changed"], 0)
+        self.assertNotIn("vies", s)
+        self.assertIn("companies_rechecked", jobs.run_part(self.con, "vies", vies_http=lambda u: VALID)["vies"])
+        self.assertEqual(jobs.run_part(self.con, "tariffs")["tariff_watch"], "not due")
+        with self.assertRaises(ValueError):
+            jobs.run_part(self.con, "everything")
+
+    def test_failing_part_does_not_stop_the_others(self):
+        self.con.execute("INSERT INTO companies(id, vat, legal_name, created_at, vies_state) VALUES ('c4','IT01765920051','A',?,'not_in_vies')", (db.now(),))
+        with mock.patch("vialibera.jobs.recheck_vies", side_effect=IndexError("tuple index out of range")):
+            out = self.run_job()
+        self.assertEqual(out["vies_error"], "IndexError")
+        self.assertEqual(out["tariff_watch"], "not due")  # the part after the failure still ran
+        self.assertIn("job_failed", {c["kind"] for c in jobs.changes(self.con)})
+
     def test_dismiss(self):
         self.run_job()
         jobs._change(self.con, "duty_changed", "x", "test")

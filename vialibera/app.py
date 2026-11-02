@@ -204,8 +204,9 @@ def handle_tem(path, body, who):
     return 404, {}
 
 
-def handle_job(headers):
-    """Daily job, called by Cloud Scheduler with the X-Job-Secret header. No user sign-in."""
+def handle_job(headers, query=""):
+    """Daily job, called by Cloud Scheduler with the X-Job-Secret header. No user sign-in.
+    ?part=sources|vies|tariffs runs one part; no part runs all of them."""
     import hmac
     try:
         secret = get_secret("JOB_SECRET")
@@ -213,6 +214,11 @@ def handle_job(headers):
         return 503, {"error": "job not configured"}
     if not hmac.compare_digest(str(headers.get("X-Job-Secret") or ""), secret):
         return 401, {"error": "unauthorized"}
+    part = (parse_qs(query).get("part") or [""])[0]
+    if part:
+        if part not in jobs.PARTS:
+            return 400, {"error": "unknown part", "parts": list(jobs.PARTS)}
+        return 200, jobs.run_part(con(), part)
     return 200, jobs.run_daily(con())
 
 
@@ -426,6 +432,11 @@ def handle_admin(path, body, who):
     if path == "/admin/run_daily":
         if not permissions.is_superadmin(who):
             return 403, {"error": "forbidden"}
+        part = str(body.get("part") or "")
+        if part:
+            if part not in jobs.PARTS:
+                return 400, {"error": "unknown part"}
+            return 200, jobs.run_part(c, part)
         return 200, jobs.run_daily(c)
     if path == "/admin/tariff_watch":
         if not permissions.is_staff(who):
@@ -714,9 +725,9 @@ class Handler(BaseHTTPRequestHandler):
         return auth.verify(self.headers.get("Authorization")) if auth.enabled() else None
 
     def do_POST(self):
-        if self.path == "/jobs/daily":
+        if self.path.split("?")[0] == "/jobs/daily":
             try:
-                return self._send(*handle_job(self.headers))
+                return self._send(*handle_job(self.headers, urlparse(self.path).query))
             except Exception as e:
                 traceback.print_exc()  # full details in the server log, not only the error name
                 return self._send(500, {"error": type(e).__name__})
