@@ -75,8 +75,9 @@ def check_tariffs(con, uk=None, us=None):
 # 3: checklist sources ------------------------------------------------------------------
 
 def source_urls():
-    urls = {r["source"] for r in requirements.ROWS if r["source"]}
-    urls |= {n["source"] for n in requirements.NOT_NEEDED if n.get("source")}
+    """URLs the job checks: each source, or its watch URL when the source refuses cloud servers."""
+    urls = {requirements.watch_url(r["source"]) for r in requirements.ROWS if r["source"]}
+    urls |= {requirements.watch_url(n["source"]) for n in requirements.NOT_NEEDED if n.get("source")}
     return sorted(urls)
 
 
@@ -94,7 +95,7 @@ def check_sources(con, fetch=_fetch_text):
             con.execute("INSERT INTO source_snapshots(url, sha256, checked_at) VALUES (?,?,?)", (url, sha, db.now()))
         elif prev["sha256"] != sha:
             changed += 1
-            rows = [r["id"] for r in requirements.ROWS if r["source"] == url]
+            rows = [r["id"] for r in requirements.ROWS if r["source"] and requirements.watch_url(r["source"]) == url]
             _change(con, "source_changed", url, f"Checklist source changed: {len(rows)} item(s) to re-verify", {"items": rows})
             con.execute("UPDATE source_snapshots SET sha256=?, checked_at=?, changed_at=? WHERE url=?", (sha, db.now(), db.now(), url))
         else:
@@ -110,7 +111,7 @@ def apply_source_flags(con, case_id, req):
     changed = {r["url"]: r["changed_at"] for r in con.execute(
         "SELECT url, changed_at FROM source_snapshots WHERE changed_at IS NOT NULL").fetchall()}
     for i in req["data"]["items"]:
-        at = changed.get(i.get("source"))
+        at = changed.get(requirements.watch_url(i.get("source")))
         if not at:
             continue
         conf = i.get("confirmed")

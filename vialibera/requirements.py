@@ -57,6 +57,25 @@ SRC = {
 }
 
 
+# Pages people read are not always readable by the daily job: some official sites refuse requests from
+# cloud servers (checked from Google Cloud on 2 Nov 2026). For those, the job watches an official source
+# for the same rule instead. Clients still see the page in SRC.
+WATCH = {
+    # USDA FAS page answers 403 to cloud servers: watch the regulation's amendment list (eCFR official API).
+    "usda_dairy": "https://www.ecfr.gov/api/versioner/v1/versions/title-7.json?part=6",
+    # CFIA page answers 404 to cloud servers: watch the Safe Food for Canadians Regulations.
+    "cfia_sfc": "https://laws-lois.justice.gc.ca/eng/regulations/SOR-2018-108/",
+}
+
+
+def watch_url(source):
+    """The URL the daily job checks for a given client-facing source."""
+    for k, url in SRC.items():
+        if url == source and k in WATCH:
+            return WATCH[k]
+    return source
+
+
 def _r(rid, layer, it, en, who, conf, products=ALL_P, dests=ALL_D, src=None, doc=None, only_it=None, only_en=None,
        note_it=None, note_en=None):
     return {"id": rid, "layer": layer, "it": it, "en": en, "who": who, "conf": conf, "products": products,

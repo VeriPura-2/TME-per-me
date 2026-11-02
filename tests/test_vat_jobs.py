@@ -120,3 +120,23 @@ class Daily(unittest.TestCase):
         cid = jobs.changes(self.con)[0]["id"]
         jobs.dismiss(self.con, {"user": "admin"}, cid)
         self.assertEqual(jobs.changes(self.con), [])
+
+
+class Watch(unittest.TestCase):
+    def test_blocked_sources_are_watched_elsewhere_and_flag_the_right_items(self):
+        urls = jobs.source_urls()
+        self.assertNotIn(requirements.SRC["usda_dairy"], urls)
+        self.assertNotIn(requirements.SRC["cfia_sfc"], urls)
+        self.assertIn(requirements.WATCH["usda_dairy"], urls)
+        con = db.connect()
+        pages = {u: "v1" for u in urls}
+        uk = UKTradeTariff(http=lambda url: load("uk_1902199090.json"))
+        us = USITCHts(http=lambda url: load("us_" + url.rsplit("=", 1)[1] + ".json"))
+        jobs.run_daily(con, uk=uk, us=us, fetch=lambda u: pages[u])
+        pages[requirements.WATCH["cfia_sfc"]] = "v2"
+        jobs.run_daily(con, uk=uk, us=us, fetch=lambda u: pages[u])
+        req = requirements.required("pasta", "Canada", set())
+        jobs.apply_source_flags(con, "c", req)
+        sfc = [i for i in req["data"]["items"] if i["id"] == "sfc"][0]
+        self.assertTrue(sfc["source_changed"])
+        self.assertEqual(sfc["source"], requirements.SRC["cfia_sfc"])  # clients still see the CFIA page
