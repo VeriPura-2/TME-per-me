@@ -129,6 +129,9 @@ WATCH = {
     "us_label": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=101",
     "us_cheese": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=133",
     "us_fsvp": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=1&subpart=L",
+    # FDA page answers our server only some of the time: watch the rule itself, 21 CFR 1 subpart H
+    # (food facility registration and biennial renewal, sections 1.225 to 1.245).
+    "fda_ffr": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=1&subpart=H",
     "us_aphis": "https://www.ecfr.gov/api/versioner/v1/versions/title-9.json?part=94",
     # EUR-Lex: the original act never changes; watch the page that lists amendments and consolidated versions.
     "eu_fic": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32011R1169",
