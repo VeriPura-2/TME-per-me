@@ -50,7 +50,7 @@ class RequirementsTest(unittest.TestCase):
 
     def test_new_eu_lanes(self):
         for country, own in (("Spain", ("label_es",)), ("Netherlands", ("label_nl",)),
-                             ("Belgium", ("label_be",)), ("Austria", ("label_de",))):
+                             ("Belgium", ("label_be",)), ("Austria", ("label_at",))):
             got = ids("cheese and dairy", country)
             for x in own + ("vies", "invoice_de", "intrastat", "raw_milk_label"):
                 self.assertIn(x, got, country)
@@ -97,6 +97,22 @@ class RequirementsTest(unittest.TestCase):
         self.assertIn("cola", ids("wine", "USA"))
         self.assertIn("fsvp", ids("pasta", "USA"))
         self.assertIn("ca_zoo", ids("cheese and dairy", "Canada"))
+
+    def test_every_exporter_row_has_an_official_source(self):
+        # every row MioTEM shows can be watched by the daily job, except commercial documents with no single rule
+        for r in rq.ROWS:
+            if rq.importer_only(r) or r["id"] in rq.NO_SOURCE:
+                continue
+            self.assertTrue(r["source"], r["id"])
+        for d in rq.ALL_D:
+            watched = [r for r in rq.ROWS if d in r["dests"] and not rq.importer_only(r) and r["source"]]
+            self.assertGreaterEqual(len(watched), 10, d)
+
+    def test_german_and_austrian_labels(self):
+        self.assertIn("label_de", ids("pasta", "Germany"))
+        self.assertNotIn("label_at", ids("pasta", "Germany"))
+        self.assertIn("label_at", ids("pasta", "Austria"))
+        self.assertNotIn("label_de", ids("pasta", "Austria"))
 
     def test_reference_lanes(self):
         self.assertIn("uk_composite", ids("pasta", "UK"))

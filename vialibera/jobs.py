@@ -18,6 +18,7 @@ import re
 import urllib.error
 import urllib.request
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 
 from . import db, requirements, tariff_watch, vat_check
 from .adapters.base import AdapterError
@@ -31,7 +32,7 @@ def _change(con, kind, ref, summary, detail=None):
     con.commit()
 
 
-def _fetch_text(url, timeout=10):  # 14 sources: worst case well under the Cloud Run request limit
+def _fetch_text(url, timeout=15):  # fetched 8 at a time (_hash_all): 42 sources stay well under the request limit
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html,application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         raw = r.read(3_000_000).decode("utf-8", "replace")
@@ -67,14 +68,25 @@ def source_urls():
     return sorted(urls)
 
 
+def _hash_all(urls, fetch):
+    """{url: sha256 or exception}. Pages are fetched 8 at a time so 40+ sources fit the job's time limit."""
+    def one(url):
+        try:
+            return url, hashlib.sha256(fetch(url).encode()).hexdigest()
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
+            return url, e
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        return dict(pool.map(one, urls))
+
+
 def check_sources(con, fetch=_fetch_text):
     changed = unreachable = 0
+    hashes = _hash_all(source_urls(), fetch)
     for url in source_urls():
-        try:
-            sha = hashlib.sha256(fetch(url).encode()).hexdigest()
-        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
+        sha = hashes[url]
+        if isinstance(sha, Exception):
             unreachable += 1
-            _change(con, "source_unreachable", url, "Checklist source could not be read today", {"error": type(e).__name__})
+            _change(con, "source_unreachable", url, "Checklist source could not be read today", {"error": type(sha).__name__})
             continue
         prev = con.execute("SELECT sha256 FROM source_snapshots WHERE url=?", (url,)).fetchone()
         if prev is None:
