@@ -20,7 +20,7 @@ import urllib.request
 from .base import Adapter, AdapterError
 
 COUNTRY = {"UK": "United Kingdom", "US": "United States", "CA": "Canada", "DE": "Germany", "FR": "France", "ES": "Spain", "NL": "Netherlands",
-           "BE": "Belgium", "AT": "Austria"}
+           "BE": "Belgium", "AT": "Austria", "CH": "Switzerland"}
 HS = {"pasta": "1902", "wine": "2204", "oil": "1509", "cheese": "0406"}
 PRODUCT = {"pasta": "Dried pasta", "wine": "Wine", "oil": "Olive oil", "cheese": "Cheese"}
 # MioTEM document type -> Core docType. Anything else is left out and Core infers it from the file name.

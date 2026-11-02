@@ -8,9 +8,9 @@ def ids(cat, country, have=()):
 
 
 class RequirementsTest(unittest.TestCase):
-    def test_all_36_wave1_lanes_are_covered(self):
+    def test_all_40_wave1_lanes_are_covered(self):
         for cat in ("pasta", "wine", "olive oil", "cheese and dairy"):
-            for country in ("UK", "USA", "Canada", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria"):
+            for country in ("UK", "USA", "Canada", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria", "Switzerland"):
                 out = rq.required(cat, country, set())
                 self.assertIsNotNone(out, (cat, country))
                 self.assertFalse(out["simulated"])
@@ -65,6 +65,22 @@ class RequirementsTest(unittest.TestCase):
             out = rq.required("wine", country, set())["data"]
             self.assertTrue(any("excise" in n["en"] for n in out["not_needed"]), country)
             self.assertIn("ead_de", [i["id"] for i in out["items"]])
+
+    def test_switzerland(self):
+        for cat in ("pasta", "olive oil"):
+            got = ids(cat, "Svizzera")
+            for x in ("label_ch", "origin_stmt", "ch_duty", "export_decl"):
+                self.assertIn(x, got, cat)
+            self.assertNotIn("ch_wine_reg", got)
+        wine = ids("wine", "Switzerland")
+        for x in ("eori", "export_decl", "import_decl", "invoice", "packing", "origin_stmt", "label_ch",
+                  "ch_wine_reg", "ead", "approved_exporter"):
+            self.assertIn(x, wine)
+        for x in ("vies", "invoice_de", "intrastat", "rex", "label_de"):
+            self.assertNotIn(x, wine)
+        out = rq.required("cheese and dairy", "Switzerland", set())["data"]
+        self.assertNotIn("ch_wine_reg", [i["id"] for i in out["items"]])
+        self.assertTrue(any("veterinary" in n["en"] for n in out["not_needed"]))
 
     def test_reference_lanes(self):
         self.assertIn("uk_composite", ids("pasta", "UK"))
