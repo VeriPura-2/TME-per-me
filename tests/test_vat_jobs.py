@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import unittest
+from unittest import mock
 
 os.environ.setdefault("LOCAL_STORE", tempfile.mkdtemp())
 from vialibera import accounts, db, jobs, requirements, tems, vat_check
@@ -60,6 +61,9 @@ class Vat(unittest.TestCase):
 
 class Daily(unittest.TestCase):
     def setUp(self):
+        p = mock.patch("vialibera.tariff_watch.due", return_value=False)  # weekly tariff check: own tests
+        p.start()
+        self.addCleanup(p.stop)
         self.con = db.connect()
         self.uk = UKTradeTariff(http=lambda url: load("uk_1902199090.json"))
         self.us = USITCHts(http=lambda url: load("us_" + url.rsplit("=", 1)[1] + ".json"))

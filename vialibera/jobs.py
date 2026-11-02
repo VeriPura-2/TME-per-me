@@ -6,7 +6,8 @@ or by a superadmin from the staff panel. Each run:
   2. refreshes the duties for each lane with a lookup and compares them with the last run,
   3. checks every checklist source page for changes (checklist rows using a changed page go
      back to "staff to verify" until a TEM or staff confirms them again),
-  4. re-checks VIES for companies whose last check could not run.
+  4. re-checks VIES for companies whose last check could not run,
+  5. once every 7 days, runs the weekly tariff check for every lane with a duty (tariff_watch).
 Findings go to data_changes, shown in the staff panel. Nothing here changes a figure that a
 client sees without staff seeing it first, except fresher official duty values.
 """
@@ -18,7 +19,7 @@ import urllib.error
 import urllib.request
 import uuid
 
-from . import db, duties, requirements, vat_check
+from . import db, duties, requirements, tariff_watch, vat_check
 from .adapters.base import AdapterError
 
 UA = "MioTEM data check (contact: aeoconsultsas@pec.it)"
@@ -137,11 +138,13 @@ def recheck_vies(con, http=None):
     return {"companies_rechecked": n}
 
 
-def run_daily(con, uk=None, us=None, fetch=_fetch_text, vies_http=None):
+def run_daily(con, uk=None, us=None, fetch=_fetch_text, vies_http=None, tariff_readers=None):
     out = {"started": db.now()}
     out["tariffs"] = check_tariffs(con, uk, us)
     out["sources"] = check_sources(con, fetch)
     out["vies"] = recheck_vies(con, vies_http)
+    if tariff_watch.due(con):
+        out["tariff_watch"] = tariff_watch.run(con, tariff_readers)
     out["finished"] = db.now()
     db.log_event(con, None, "job", "daily_job", out)
     return out

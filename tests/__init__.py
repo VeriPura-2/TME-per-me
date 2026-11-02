@@ -19,3 +19,13 @@ def _vies_offline(url, timeout=8):
 
 
 _vat_check._http = _vies_offline
+
+# The weekly tariff check never downloads in tests either.
+from vialibera import tariff_watch as _tariff_watch
+
+
+def _get_offline(url, timeout=60, limit=0):
+    raise OSError("network disabled in tests")
+
+
+_tariff_watch._get = _get_offline

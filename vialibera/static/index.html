@@ -112,6 +112,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <div id="s-core"></div>
   <div id="s-tems"></div>
   <div id="s-changes"></div>
+  <div id="s-tariffs"></div>
   <div id="s-add"></div>
   <div id="s-queue"></div>
   <div id="s-list"></div>
@@ -711,7 +712,7 @@ applyLang();
     addCompanyForm();
     coreSwitch();
     staffTems();
-    staffChanges();
+    staffChanges(); staffTariffs();
     $("s-note").textContent = full ? "Superadmin view. Opening a company and every change is logged." : "Support view (read only). Opening a company is logged.";
     loadQueue();
     await loadCompanies();
@@ -871,6 +872,15 @@ applyLang();
       if (c.detail && Object.keys(c.detail).length) row.title = JSON.stringify(c.detail);
       if (full) { const x = mk("button", "Dismiss"); x.onclick = async () => { await call("/admin/change_dismiss", {id: c.id}); staffChanges(); }; row.appendChild(x); }
       box.appendChild(row); });
+  }
+  async function staffTariffs() {
+    const box = $("s-tariffs"); box.innerHTML = ""; const [r, j] = await call("/admin/tariff_watch", {}); if (!r.ok) return;
+    box.appendChild(mk("h3", "Tariffs, weekly check (" + j.lines.length + " lines)"));
+    if (full) { const b = mk("button", "Run tariff check now"), o = mk("span", "", "muted"); b.onclick = async () => { b.disabled = true; o.textContent = " running…";
+        const [rr, jj] = await call("/admin/tariff_watch_run", {}); b.disabled = false; o.textContent = rr.ok ? " done: read " + jj.read + ", changed " + jj.changed + ", unreadable " + jj.unreadable : " " + (jj.error || rr.status); staffTariffs(); staffChanges(); };
+      box.append(b, o); }
+    j.lines.forEach(l => { const v = l.value ? Object.entries(l.value).map(([k, x]) => k.replace("_", " ") + ": " + x).join(" · ") : "not read yet";
+      box.appendChild(mk("div", l.destination + " · " + l.code + " · " + l.description + " · " + v + (l.checked_at ? " · " + sd(l.checked_at) : ""), "muted")); });
   }
   async function staffTems() {
     const box = $("s-tems"); box.innerHTML = ""; const [r, j] = await call("/admin/tem_firms", {}); if (!r.ok) return;

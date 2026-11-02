@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import admin, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tems, voice
+from . import admin, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -426,6 +426,14 @@ def handle_admin(path, body, who):
         if not permissions.is_superadmin(who):
             return 403, {"error": "forbidden"}
         return 200, jobs.run_daily(c)
+    if path == "/admin/tariff_watch":
+        if not permissions.is_staff(who):
+            return 403, {"error": "forbidden"}
+        return 200, {"lines": tariff_watch.snapshot(c)}
+    if path == "/admin/tariff_watch_run":
+        if not permissions.is_superadmin(who):
+            return 403, {"error": "forbidden"}
+        return 200, tariff_watch.run(c)
     if path == "/admin/vies_recheck":
         if not permissions.is_superadmin(who):
             return 403, {"error": "forbidden"}

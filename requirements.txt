@@ -6,3 +6,4 @@ markdown
 google-cloud-storage
 pypdf
 reportlab
+openpyxl
