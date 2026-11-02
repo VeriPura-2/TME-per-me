@@ -135,10 +135,13 @@ def _get(url, timeout=60, limit=40_000_000):
 
 def ch_file_url(page_html):
     """Address of the current 'Duty rates, chapters 1-30' file on the BAZG free-data page."""
-    for href in re.findall(r'href="([^"]+)"', page_html):
-        if CH_FILE in href and href.endswith(".xlsx"):
-            return href if href.startswith("http") else "https://www.bazg.admin.ch" + href
-    return None
+    # The page is built by JavaScript: in the raw HTML the link sits inside a data block with
+    # escaped quotes (href=\"...\"), so match the address itself, not the attribute around it.
+    m = re.search(r'((?:https?://[a-z0-9.-]+)?/[^"\'\\\s<>]*' + CH_FILE + r'\.xlsx)', page_html)
+    if not m:
+        return None
+    href = m.group(1)
+    return href if href.startswith("http") else "https://www.bazg.admin.ch" + href
 
 
 def ch_rates(xlsx_bytes, codes, on=None):
