@@ -8,9 +8,9 @@ def ids(cat, country, have=()):
 
 
 class RequirementsTest(unittest.TestCase):
-    def test_all_16_wave1_lanes_are_covered(self):
+    def test_all_20_wave1_lanes_are_covered(self):
         for cat in ("pasta", "wine", "olive oil", "cheese and dairy"):
-            for country in ("UK", "USA", "Canada", "Germany"):
+            for country in ("UK", "USA", "Canada", "Germany", "France"):
                 out = rq.required(cat, country, set())
                 self.assertIsNotNone(out, (cat, country))
                 self.assertFalse(out["simulated"])
@@ -27,6 +27,25 @@ class RequirementsTest(unittest.TestCase):
             self.assertNotIn(x, got)
         self.assertIn("invoice_de", got)
         self.assertIn("lucid", got)
+
+    def test_france_is_intra_eu_with_french_rules(self):
+        got = ids("pasta", "France")
+        for x in ("eori", "export_decl", "origin_stmt", "packing", "lucid", "label_de"):
+            self.assertNotIn(x, got)
+        for x in ("invoice_de", "vies", "label_fr", "triman", "fr_epr", "intrastat"):
+            self.assertIn(x, got)
+        self.assertNotIn("fr_excise", got)
+        self.assertTrue(rq.covers("wine", "Francia"))
+
+    def test_france_wine_excise_and_glass_exclusion(self):
+        out = rq.required("wine", "France", set())["data"]["items"]
+        got = [i["id"] for i in out]
+        for x in ("fr_excise", "ead_de", "label_de_wine", "excise_auth"):
+            self.assertIn(x, got)
+        tri = [i for i in out if i["id"] == "triman"]
+        self.assertEqual(len(tri), 1)
+        self.assertIsNotNone(tri[0]["only_if"])
+        self.assertTrue([i for i in out if i["id"] == "fr_excise"][0]["importer_side"])
 
     def test_reference_lanes(self):
         self.assertIn("uk_composite", ids("pasta", "UK"))
