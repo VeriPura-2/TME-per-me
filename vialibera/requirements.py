@@ -69,7 +69,7 @@ SRC = {
     "lucid": "https://www.verpackungsregister.org/en/faq-detail-category/questions-about-registration",
     # France (added 2 Nov 2026)
     "fr_lang": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000005616341",
-    "fr_infotri": "https://www.adelphe.fr/sites/default/files/Documents/2025-10/adelphe_guide_info-tri_fr.pdf",
+    "fr_infotri": "https://www.ecologie.gouv.fr/info-tri",  # ministry page (was an Adelphe PDF, unreadable from cloud)
     "fr_excise": "https://www.douane.gouv.fr/fiche/droits-des-alcools-et-boissons-alcooliques",
     # Spain, Netherlands, Belgium, Austria (added 2 Nov 2026)
     "es_lang": "https://www.aesan.gob.es/en/AECOSAN/web/seguridad_alimentaria/subdetalle/norma_general_etiquetado.htm",
@@ -81,8 +81,8 @@ SRC = {
     "be_pack": "https://www.ucm.be/emballages",
     "at_pack": "https://www.wko.at/noe/up/verpackungsverordnung-auslaendische-haendler-lieferanten",
     # Switzerland (added 2 Nov 2026)
-    "ch_origin": "https://trade.ec.europa.eu/access-to-markets/en/roo-explain-term/origin/CH/destination/IT/term/statementOrigin",
-    "ch_label": "https://www.kmu.admin.ch/kmu/en/home/savoir-pratique/gestion-pme/etiquetage/etiqueter-les-denrees-alimentaires.html",
+    "ch_origin": "https://taxation-customs.ec.europa.eu/customs/international-affairs/pan-euro-mediterranean-cumulation-and-pem-convention_en",
+    "ch_label": "https://www.blv.admin.ch/en/food-labelling",
     "ch_geb": "https://importlicensing.wto.org/content/agricultural-products-general-import-permit-gip",
     "ch_vet": "https://www.blv.admin.ch/blv/en/home/import-und-export/import/importe-aus-der-eu.html",
     "ch_tariff": "https://xtares.admin.ch/tares/login/loginFormFiller.do?l=en",
@@ -101,7 +101,7 @@ SRC = {
     "eu_eori": "https://taxation-customs.ec.europa.eu/customs/customs-procedures-import-and-export/customs-operations/economic-operators-registration-and-identification-number-eori_en",
     "de_label": "https://www.gesetze-im-internet.de/lmidv/__2.html",
     "be_label": "https://www.ejustice.just.fgov.be/cgi_loi/change_lg.pl?language=fr&la=F&cn=1977012431&table_name=loi",
-    "ca_sfcr": "https://laws-lois.justice.gc.ca/eng/regulations/SOR-2018-108/",
+    "ca_label": "https://inspection.canada.ca/en/food-labels/labelling/industry/bilingual-food-labelling",
     "ca_raw_cheese_age": "https://laws-lois.justice.gc.ca/eng/regulations/C.R.C.,_c._870/section-B.08.030.html",
     "uk_oil_label": "https://www.legislation.gov.uk/eur/2012/29",
     "us_label": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-101",
@@ -111,7 +111,7 @@ SRC = {
     "at_wine_tax": "https://www.usp.gv.at/themen/steuern-finanzen/weitere-steuern-und-abgaben/verbrauchsteuern_und_energieabgaben/wein_schaumwein_verbrauchsteuerrechtliche_bestimmungen.html",
     # REX threshold, official EU sources (replaced a courier page on 2 Nov 2026)
     "rex_uk": "https://taxation-customs.ec.europa.eu/system/files/2021-03/compendium_on_rules_of_origin_q_a.pdf",
-    "rex_ca": "https://trade.ec.europa.eu/access-to-markets/en/roo-explain-term/origin/CA/destination/FR/term/statementOrigin",
+    "rex_ca": "https://taxation-customs.ec.europa.eu/customs/international-affairs/third-countries/canada_en",
 }
 
 
@@ -123,6 +123,8 @@ WATCH = {
     "usda_dairy": "https://www.ecfr.gov/api/versioner/v1/versions/title-7.json?part=6",
     # CFIA page answers 404 to cloud servers: watch the Safe Food for Canadians Regulations.
     "cfia_sfc": "https://laws-lois.justice.gc.ca/eng/regulations/SOR-2018-108/",
+    # Legifrance refuses cloud servers: watch the Culture ministry page on the Toubon law (2 Nov 2026).
+    "fr_lang": "https://www.culture.gouv.fr/thematiques/langue-francaise-et-langues-de-france/agir-pour-les-langues/garantir-l-emploi-du-francais",
     # eCFR: watch the official amendment list, not the rendered page.
     "us_label": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=101",
     "us_cheese": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=133",
@@ -373,7 +375,7 @@ ROW_SOURCES = {
     "eori": "eu_eori", "food_reg": "eu_hygiene", "est_number": "eu_animal_origin", "excise_auth": "eu_excise",
     "vies": "eu_vies", "label_de_wine": "eu_wine_label", "label_de_oil": "eu_oil_label",
     "raw_milk_label": "eu_animal_origin", "invoice_de": "eu_vat", "ead": "eu_excise", "ead_de": "eu_excise",
-    "intrastat": "eu_intrastat", "export_decl": "eu_customs_code", "label_be": "be_label", "label_ca": "ca_sfcr",
+    "intrastat": "eu_intrastat", "export_decl": "eu_customs_code", "label_be": "be_label", "label_ca": "ca_label",
     "raw_milk_age_ca": "ca_raw_cheese_age", "label_uk_oil": "uk_oil_label", "label_us": "us_label",
     "raw_milk_age_us": "us_cheese", "fsvp": "us_fsvp", "aphis": "us_aphis",
 }
