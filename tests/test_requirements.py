@@ -8,9 +8,9 @@ def ids(cat, country, have=()):
 
 
 class RequirementsTest(unittest.TestCase):
-    def test_all_20_wave1_lanes_are_covered(self):
+    def test_all_36_wave1_lanes_are_covered(self):
         for cat in ("pasta", "wine", "olive oil", "cheese and dairy"):
-            for country in ("UK", "USA", "Canada", "Germany", "France"):
+            for country in ("UK", "USA", "Canada", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria"):
                 out = rq.required(cat, country, set())
                 self.assertIsNotNone(out, (cat, country))
                 self.assertFalse(out["simulated"])
@@ -46,6 +46,25 @@ class RequirementsTest(unittest.TestCase):
         self.assertEqual(len(tri), 1)
         self.assertIsNotNone(tri[0]["only_if"])
         self.assertTrue([i for i in out if i["id"] == "fr_excise"][0]["importer_side"])
+
+    def test_new_eu_lanes(self):
+        for country, own in (("Spain", ("label_es", "es_pack")), ("Netherlands", ("label_nl", "nl_pack")),
+                             ("Belgium", ("label_be", "be_pack")), ("Austria", ("label_de", "at_pack"))):
+            got = ids("cheese and dairy", country)
+            for x in own + ("vies", "invoice_de", "intrastat", "raw_milk_label"):
+                self.assertIn(x, got, country)
+            for x in ("eori", "export_decl", "lucid", "triman", "label_fr"):
+                self.assertNotIn(x, got, country)
+        self.assertIn("nl_excise", ids("wine", "Netherlands"))
+        self.assertIn("be_excise", ids("wine", "Belgium"))
+        self.assertTrue(rq.covers("pasta", "Paesi Bassi"))
+        self.assertTrue(rq.covers("wine", "Österreich"))
+
+    def test_zero_wine_excise_listed_as_not_needed(self):
+        for country in ("Spain", "Austria"):
+            out = rq.required("wine", country, set())["data"]
+            self.assertTrue(any("excise" in n["en"] for n in out["not_needed"]), country)
+            self.assertIn("ead_de", [i["id"] for i in out["items"]])
 
     def test_reference_lanes(self):
         self.assertIn("uk_composite", ids("pasta", "UK"))
