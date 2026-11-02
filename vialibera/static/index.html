@@ -111,6 +111,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <p class="muted" id="s-note"></p>
   <div id="s-core"></div>
   <div id="s-tems"></div>
+  <div id="s-changes"></div>
   <div id="s-add"></div>
   <div id="s-queue"></div>
   <div id="s-list"></div>
@@ -167,7 +168,7 @@ const TT = {
        en_a3: 'Accetto le <a href="/terms?lang=it" target="_blank">Condizioni e l\'informativa privacy</a> di MioTEM e approvo specificamente le clausole onerose (artt. 1341 e 1342 c.c.)',
        en_btn: "Accetta l'incarico", en_ok: "Incarico accettato. Il consulente può ora lavorare per la tua azienda. Puoi revocarlo in qualsiasi momento dalla sezione Squadra.",
        en_bad: "Link d'incarico non valido o scaduto.", tc_title: "Consulenti export", tc_since: "dal", tc_revoked: "revocato", tc_revoke: "Revoca accesso",
-       tc_log: "Accessi dei consulenti", tem_joined: "Sei entrato nello studio del consulente.", c_notes: "Messaggi del tuo consulente export", du_t: "Dazi e IVA (fonte ufficiale)", du_src: "fonte", du_read: "letto il", du_na: "Servizio dazi non disponibile ora. Lo staff verificherà.", du_none: "n.d."},
+       tc_log: "Accessi dei consulenti", tem_joined: "Sei entrato nello studio del consulente.", c_notes: "Messaggi del tuo consulente export", du_t: "Dazi e IVA (fonte ufficiale)", du_src: "fonte", du_read: "letto il", du_na: "Servizio dazi non disponibile ora. Lo staff verificherà.", du_none: "n.d.", vs_check: "Verifica", vs_valid: "Partita IVA confermata nel VIES (UE). Dati compilati.", vs_not: "Partita IVA non presente nel VIES: va bene per continuare. Lo staff la verificherà.", vs_na: "Servizio VIES non disponibile ora: continua pure, lo ricontrolliamo noi.", vs_ok: "IVA confermata nel VIES", vs_no: "IVA non presente nel VIES", vs_pend: "verifica VIES in sospeso", src_changed: "la fonte è cambiata, da riverificare"},
   en: {tem_btn: "TEM clients", ws_title: "Export consultant workspace", ws_firm: "Firm", ws_lead: "lead", ws_member: "member",
        ws_team: "Firm team", ws_invite: "Invite a colleague", ws_seats: "Seats", ws_unlimited: "not limited",
        ws_clients: "Clients", ws_none: "No clients yet. Create an engagement link and send it to the client.",
@@ -186,7 +187,7 @@ const TT = {
        en_a3: 'I accept the MioTEM <a href="/terms?lang=en" target="_blank">Terms and privacy notice</a> and specifically approve the onerous clauses (arts. 1341 and 1342 Italian Civil Code)',
        en_btn: "Accept the engagement", en_ok: "Engagement accepted. The consultant can now work for your company. You can revoke it at any time in the Team section.",
        en_bad: "The engagement link is not valid or has expired.", tc_title: "Export consultants", tc_since: "since", tc_revoked: "revoked", tc_revoke: "Revoke access",
-       tc_log: "Consultant access log", tem_joined: "You have joined the consultant firm.", c_notes: "Messages from your export consultant", du_t: "Duties and VAT (official source)", du_src: "source", du_read: "read on", du_na: "Duty service unavailable right now. Staff will check.", du_none: "n/a"},
+       tc_log: "Consultant access log", tem_joined: "You have joined the consultant firm.", c_notes: "Messages from your export consultant", du_t: "Duties and VAT (official source)", du_src: "source", du_read: "read on", du_na: "Duty service unavailable right now. Staff will check.", du_none: "n/a", vs_check: "Check", vs_valid: "VAT number confirmed in VIES (EU). Details filled in.", vs_not: "VAT number not in VIES: fine to continue. Staff will check it.", vs_na: "VIES service unavailable right now: carry on, we will check again.", vs_ok: "VAT confirmed in VIES", vs_no: "VAT not in VIES", vs_pend: "VIES check pending", src_changed: "source changed, to re-verify"},
 };
 const T = {
   it: {
@@ -300,7 +301,12 @@ applyLang();
     box.appendChild(mk0("h2", tt.en_title));
     box.appendChild(mk0("p", tt.en_from + " " + ji.firm.name + (ji.firm.vat ? " (" + ji.firm.vat + ")" : "") + " " + tt.en_asks));
     const inp = (ph) => { const i = mk0("input"); i.type = "text"; i.placeholder = ph; i.style.cssText = "width:100%;margin:4px 0"; box.appendChild(i); return i; };
-    const vat = inp(tt.en_vat), nm = inp(tt.en_name), ad = inp(tt.en_addr), sg = inp(tt.en_sig), rl = inp(tt.en_role);
+    const vat = inp(tt.en_vat); vat.style.width = "70%"; const vb = mk0("button", tt.vs_check), vm = mk0("div", null, "muted"); box.append(" ", vb, vm);
+    const nm = inp(tt.en_name), ad = inp(tt.en_addr), sg = inp(tt.en_sig), rl = inp(tt.en_role);
+    vb.onclick = async () => { vm.textContent = ""; const [rv, jv] = await call("/tem/vat_lookup", {vat: vat.value});
+      if (!rv.ok) { vm.textContent = T[lang].err + (jv.detail || jv.error); return; }
+      if (jv.state === "valid") { if (jv.name) nm.value = jv.name; if (jv.address) ad.value = jv.address; vm.textContent = tt.vs_valid; }
+      else vm.textContent = jv.state === "not_in_vies" ? tt.vs_not : tt.vs_na; };
     box.appendChild(mk0("p", tt.en_scope)); const ul = mk0("ul"); ji.scope[lang].forEach(x => ul.appendChild(mk0("li", x))); box.appendChild(ul);
     const cks = [tt.en_a1, tt.en_a2, tt.en_a3].map(txt => { const l = mk0("label"); l.style.display = "block"; const c = mk0("input"); c.type = "checkbox"; const sp = mk0("span"); sp.innerHTML = " " + txt; l.append(c, sp); box.appendChild(l); return c; });
     const btn = mk0("button", tt.en_btn, "primary"), out = mk0("p"); box.append(btn, out);
@@ -502,6 +508,7 @@ applyLang();
           if (i.who) row.appendChild(mk("span", "(" + i.who[lang] + ") ", "muted"));
           row.appendChild(mk("span", i.on_file ? t.j_onfile : (i.importer_side ? t.j_side : t.j_missing), "muted"));
           if (i.confirmed) row.appendChild(mk("span", " ✓ " + TT[lang].ws_confirmed + " " + i.confirmed.by, "tick"));
+          else if (i.source_changed) row.appendChild(mk("span", " " + TT[lang].src_changed, "verify"));
           else if (i.verified === false) row.appendChild(mk("span", " " + t.j_verify, "verify"));
           if (i.source) { const s = mk("a", " " + t.j_src); s.href = i.source; s.target = "_blank"; s.rel = "noopener"; s.style.marginLeft = "6px"; row.appendChild(s); }
           if (i.only_if) row.appendChild(mk("div", t.j_onlyif + ": " + i.only_if[lang], "muted"));
@@ -588,7 +595,10 @@ applyLang();
     const box = $("t-list"), inv = $("t-inv"); if (!r.ok) return;
     box.innerHTML = ""; inv.innerHTML = ""; $("t-consent").innerHTML = "";
     if (!j.company) { $("t-co").textContent = ""; box.textContent = t.t_none; return; }
-    $("t-co").textContent = j.company.name + " (" + j.company.vat + ") · " + t["r_" + j.role] + (j.company.created_by_staff ? " · " + (lang === "it" ? "record creato dallo staff VeriPura" : "record created by VeriPura staff") : "");
+    $("t-co").textContent = j.company.name + " (" + j.company.vat + ") · " + t["r_" + j.role] + (j.company.created_by_staff ? " · " + (lang === "it" ? "record creato dallo staff VeriPura" : "record created by VeriPura staff") : "")
+      + " · " + (j.company.vies === "valid" ? TT[lang].vs_ok : j.company.vies === "not_in_vies" ? TT[lang].vs_no : TT[lang].vs_pend);
+    if (j.company.vies_enrol) { const en = mk("div", null, "card"); j.company.vies_enrol.steps[lang].forEach(x => en.appendChild(mk("p", x)));
+      const a = mk("a", "Agenzia delle Entrate"); a.href = j.company.vies_enrol.link; a.target = "_blank"; a.rel = "noopener"; en.appendChild(a); box.appendChild(en); }
     j.members.forEach(m => {
       const row = mk("div"); row.style.cssText = "margin:8px 0";
       row.appendChild(mk("strong", (m.label || m.user.slice(-8)) + (m.me ? " (" + t.t_you + ")" : "")));
@@ -701,6 +711,7 @@ applyLang();
     addCompanyForm();
     coreSwitch();
     staffTems();
+    staffChanges();
     $("s-note").textContent = full ? "Superadmin view. Opening a company and every change is logged." : "Support view (read only). Opening a company is logged.";
     loadQueue();
     await loadCompanies();
@@ -712,11 +723,11 @@ applyLang();
     const [r, j] = await call("/admin/companies", {}); const box = $("s-list"); box.innerHTML = ""; $("s-detail").innerHTML = "";
     if (!r.ok) { box.textContent = "Not allowed."; return; }
     const tb = mk("table"); tb.style.cssText = "width:100%;border-collapse:collapse";
-    const head = mk("tr"); ["Company", "VAT", "Plan", "People", "Pending", "Cases", "Last activity", "Terms", "Status"].forEach(h => head.appendChild(mk("th", h)));
+    const head = mk("tr"); ["Company", "VAT", "VIES", "Plan", "People", "Pending", "Cases", "Last activity", "Terms", "Status"].forEach(h => head.appendChild(mk("th", h)));
     tb.appendChild(head);
     j.companies.forEach(c => {
       const tr = mk("tr"); tr.style.cursor = "pointer";
-      [(c.name || "(no name)") + (c.by_staff ? " (staff)" : ""), c.vat, c.plan || "-", c.members, c.pending ? "⚠ " + c.pending : "0", c.cases, sd(c.last_activity), c.terms_accepted ? "yes" : "no", c.status].forEach(v => tr.appendChild(mk("td", String(v))));
+      [(c.name || "(no name)") + (c.by_staff ? " (staff)" : ""), c.vat, c.vies || "-", c.plan || "-", c.members, c.pending ? "⚠ " + c.pending : "0", c.cases, sd(c.last_activity), c.terms_accepted ? "yes" : "no", c.status].forEach(v => tr.appendChild(mk("td", String(v))));
       tr.onclick = () => openStaffCompany(c.id, j.plans); tb.appendChild(tr);
     });
     box.appendChild(tb); if (!j.companies.length) box.textContent = "No companies yet.";
@@ -724,6 +735,9 @@ applyLang();
   async function openStaffCompany(id, plans) {
     const [r, j] = await call("/admin/company", {company: id}); const d = $("s-detail"); d.innerHTML = ""; if (!r.ok) return;
     const co = j.company; d.appendChild(mk("h3", (co.legal_name || "(no name)") + " · " + co.vat + " · " + co.status));
+    const vr = mk("div", "VIES: " + (co.vies_state || "not checked") + (co.vies_name ? " · " + co.vies_name : "") + (co.vies_address ? " · " + co.vies_address : "") + (co.vies_checked_at ? " · " + sd(co.vies_checked_at) : "") + " ", "muted");
+    if (full) { const vb = mk("button", "Re-check VIES"); vb.onclick = async () => { await call("/admin/vies_recheck", {company: id}); openStaffCompany(id, plans); }; vr.appendChild(vb); }
+    d.appendChild(vr);
     const bar = mk("div"); const v = mk("button", co.status === "verified" ? "Mark unverified" : "Mark VAT verified");
     v.onclick = async () => { await call("/admin/verify", {company: id, verified: co.status !== "verified"}); loadStaff().then(() => openStaffCompany(id, plans)); };
     const ps = mk("select"); plans.forEach(p => { const o = mk("option", p); o.value = p; if (p === co.plan) o.selected = true; ps.appendChild(o); });
@@ -806,6 +820,7 @@ applyLang();
       rows.forEach(i => { const row = mk("div"); row.appendChild(mk("span", i.on_file ? "✓ " : "○ ", i.on_file ? "tick" : "todo")); row.appendChild(document.createTextNode(i[lang] + " "));
         row.appendChild(mk("span", "(" + i.who[lang] + ") ", "muted"));
         if (i.confirmed) row.appendChild(mk("span", tt.ws_confirmed + " " + i.confirmed.by + (i.confirmed.note ? ": " + i.confirmed.note : "") + " ", "tick"));
+        else if (i.source_changed) row.appendChild(mk("span", tt.src_changed + " ", "verify"));
         else if (!i.verified) row.appendChild(mk("span", t.j_verify + " ", "verify"));
         if (i.source) { const a = mk("a", t.j_src); a.href = i.source; a.target = "_blank"; a.rel = "noopener"; row.appendChild(a); row.appendChild(document.createTextNode(" ")); }
         if (i.confirmed || !i.verified) { const b = mk("button", i.confirmed ? tt.ws_unconfirm : tt.ws_confirm); b.onclick = async () => {
@@ -845,6 +860,17 @@ applyLang();
       if (f.status === "active" && j.can_revoke) { const b = mk("button", tt.tc_revoke); b.onclick = async () => { if (!confirm(tt.tc_revoke + ": " + f.name + "?")) return; await call("/tem/revoke", {firm: f.id}); loadTeamTem(); }; row.appendChild(b); }
       box.appendChild(row); });
     if (j.log.length) { const det = mk("details"); det.appendChild(mk("summary", tt.tc_log)); j.log.forEach(e => det.appendChild(mk("div", sd(e.at) + " · " + (e.firm || "") + " · " + e.action, "muted"))); box.appendChild(det); }
+  }
+  async function staffChanges() {
+    const box = $("s-changes"); box.innerHTML = ""; const [r, j] = await call("/admin/changes", {}); if (!r.ok) return;
+    box.appendChild(mk("h3", "Data changes (" + j.changes.length + " open)"));
+    if (full) { const b = mk("button", "Run daily job now"), o = mk("span", "", "muted"); b.onclick = async () => { b.disabled = true; o.textContent = " running…";
+        const [rr, jj] = await call("/admin/run_daily", {}); b.disabled = false; o.textContent = rr.ok ? " done: known answers " + jj.tariffs.known_answers + ", duties changed " + jj.tariffs.duties_changed + ", sources changed " + jj.sources.changed + ", unreachable " + jj.sources.unreachable + ", VIES rechecked " + jj.vies.companies_rechecked : " " + (jj.error || rr.status); staffChanges(); };
+      box.append(b, o); }
+    j.changes.forEach(c => { const row = mk("div", sd(c.at) + " · " + c.kind + " · " + c.summary + " · " + c.ref + " ", "muted");
+      if (c.detail && Object.keys(c.detail).length) row.title = JSON.stringify(c.detail);
+      if (full) { const x = mk("button", "Dismiss"); x.onclick = async () => { await call("/admin/change_dismiss", {id: c.id}); staffChanges(); }; row.appendChild(x); }
+      box.appendChild(row); });
   }
   async function staffTems() {
     const box = $("s-tems"); box.innerHTML = ""; const [r, j] = await call("/admin/tem_firms", {}); if (!r.ok) return;

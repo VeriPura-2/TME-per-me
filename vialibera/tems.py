@@ -240,7 +240,8 @@ def engage_accept(con, who, token, body, terms_version):
         return 400, {"error": "link_invalid"}
     if not (body.get("accept_scope") and body.get("accept_core") and body.get("accept_terms")):
         return 400, {"error": "all acceptances required"}
-    vat, err = accounts.normalise_vat(body.get("vat"))
+    from . import vat_check
+    vat, err = vat_check.italian(body.get("vat"))
     if err:
         return 400, {"error": "invalid_vat", "detail": err}
     name = str(body.get("legal_name") or "").strip()[:200]
@@ -282,6 +283,7 @@ def engage_accept(con, who, token, body, terms_version):
     con.execute("UPDATE engagement_links SET used_by=?, company_id=? WHERE token=?", (who["user"], cid, token))
     con.commit()
     db.log_event(con, None, who["user"], "tem_engaged", {"firm": r["firm_id"], "company": cid})
+    vat_check.check_company(con, cid)
     return 200, {"ok": True, "company": cid, "firm": f["name"]}
 
 
@@ -382,7 +384,10 @@ def project(con, who, case_id):
     have = {d["doc_type"] for d in con.execute("SELECT doc_type FROM documents WHERE company_id=?", (row["company_id"],)).fetchall()}
     req = requirements.required(case["product"].get("category"), case["market"].get("country"), have)
     if req:
+        from . import jobs, vat_check
         apply_confirmations(con, case_id, req)
+        jobs.apply_source_flags(con, case_id, req)
+        vat_check.apply_to_checklist(con, row["company_id"], req)
     pdocs = [dict(r) for r in con.execute(
         "SELECT d.id, d.filename, d.doc_type, d.status, d.created_at FROM project_docs p JOIN documents d ON d.id=p.document_id "
         "WHERE p.case_id=? ORDER BY d.created_at", (case_id,)).fetchall()]

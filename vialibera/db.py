@@ -25,7 +25,11 @@ CREATE TABLE IF NOT EXISTS companies (
   status TEXT NOT NULL DEFAULT 'unverified',
   plan TEXT,                           -- the company pays: esplora, parti or cresci
   created_by TEXT,                     -- set when VeriPura staff created the record on the client's behalf
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  vies_state TEXT,                     -- valid, not_in_vies, unavailable (see vat_check.py)
+  vies_name TEXT,
+  vies_address TEXT,
+  vies_checked_at TEXT
 );
 CREATE TABLE IF NOT EXISTS memberships (
   company_id TEXT NOT NULL,
@@ -286,6 +290,28 @@ CREATE TABLE IF NOT EXISTS tariff_cache (
   at TEXT NOT NULL,
   data TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS data_changes (
+  id TEXT PRIMARY KEY,
+  at TEXT NOT NULL,
+  kind TEXT NOT NULL,                  -- duty_changed, known_answer_failed, source_changed, source_unreachable, vies_rechecked
+  ref TEXT NOT NULL,                   -- what changed: lane code, source url, company id
+  summary TEXT NOT NULL,
+  detail TEXT,                         -- JSON
+  status TEXT NOT NULL DEFAULT 'open', -- open or dismissed
+  dismissed_by TEXT,
+  dismissed_at TEXT
+);
+CREATE TABLE IF NOT EXISTS source_snapshots (
+  url TEXT PRIMARY KEY,
+  sha256 TEXT NOT NULL,
+  checked_at TEXT NOT NULL,
+  changed_at TEXT                      -- last time the text changed; checklist rows using it need re-verifying
+);
+CREATE TABLE IF NOT EXISTS duty_snapshots (
+  ref TEXT PRIMARY KEY,
+  value TEXT NOT NULL,                 -- JSON of the duty lines
+  checked_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS raw_responses (
   ref TEXT PRIMARY KEY,
   at TEXT NOT NULL,
@@ -330,10 +356,18 @@ class PG:
         self.raw.rollback()
 
 
+ADDED_COLUMNS = [("companies", c) for c in ("vies_state", "vies_name", "vies_address", "vies_checked_at")]
+
+
 def connect(path=":memory:"):
     con = sqlite3.connect(path, check_same_thread=False)
     con.row_factory = sqlite3.Row
     con.executescript(SCHEMA)
+    for table, col in ADDED_COLUMNS:  # existing SQLite files created before these columns
+        try:
+            con.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT")
+        except sqlite3.OperationalError:
+            pass
     return con
 
 
@@ -348,6 +382,8 @@ def connect_pg(host, dbname, user, password):
     con.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan TEXT")
     con.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_by TEXT")
     con.execute("ALTER TABLE memberships ADD COLUMN IF NOT EXISTS label TEXT")
+    for table, col in ADDED_COLUMNS:
+        con.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} TEXT")
     con.commit()
     return con
 

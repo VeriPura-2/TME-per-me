@@ -12,22 +12,32 @@ from .adapters.tariff import UKTradeTariff, USITCHts, pct, uk_duties, us_general
 from .known_answers import KNOWN_ANSWERS
 
 
-def run():
+def results(uk=None, us=None):
+    """[(id, matches, got, expected)] for every implemented known answer. Raises AdapterError when a service is down."""
     con = db.connect()
-    ok = True
+    uk, us = uk or UKTradeTariff(), us or USITCHts()
+    out = []
     for ka in KNOWN_ANSWERS:
         if ka["adapter"] == "uk_trade_tariff":
-            d = uk_duties(UKTradeTariff().call(con, "fetch", commodity_code=ka["commodity_code"])["data"]["document"])
+            d = uk_duties(uk.call(con, "fetch", commodity_code=ka["commodity_code"])["data"]["document"])
             got = {"duty_pct": pct(d["preferential_eu"]), "import_vat_pct": pct(d["vat"])}
         elif ka["adapter"] == "usitc_hts":
-            d = us_general(USITCHts().call(con, "fetch", code=ka["code"])["data"]["results"], ka["code"])
+            d = us_general(us.call(con, "fetch", code=ka["code"])["data"]["results"], ka["code"])
             got = {"duty": d["normalised"] if d else None}
         else:
-            print(f"SKIP {ka['id']}: adapter {ka['adapter']} not built ({ka['note']})")
             continue
-        match = all(got.get(k) == v for k, v in ka["expect"].items())
+        out.append((ka["id"], all(got.get(k) == v for k, v in ka["expect"].items()), got, ka["expect"]))
+    return out
+
+
+def run():
+    ok = True
+    for ka_id, match, got, expect in results():
         ok = ok and match
-        print(("PASS " if match else "FAIL ") + ka["id"], got, "expected", ka["expect"])
+        print(("PASS " if match else "FAIL ") + ka_id, got, "expected", expect)
+    for ka in KNOWN_ANSWERS:
+        if ka["adapter"] not in ("uk_trade_tariff", "usitc_hts"):
+            print(f"SKIP {ka['id']}: adapter {ka['adapter']} not built ({ka['note']})")
     return ok
 
 

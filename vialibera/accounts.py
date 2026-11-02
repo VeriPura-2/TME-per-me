@@ -87,7 +87,8 @@ def attach_company(con, case_id, who):
     raw = case["company"].get("vat_number")
     if not who or not raw or str(raw).lower() == "unknown" or case.get("company_id"):
         return None
-    vat, err = normalise_vat(raw)
+    from . import vat_check
+    vat, err = vat_check.italian(raw)
     if err:
         return {"status": "invalid_vat", "detail": err}
     name = case["company"].get("legal_name")
@@ -102,7 +103,8 @@ def attach_company(con, case_id, who):
         con.execute("UPDATE cases SET company_id=? WHERE id=?", (cid, case_id))
         con.execute("UPDATE documents SET company_id=? WHERE owner_sub=? AND company_id IS NULL", (cid, who["user"]))
         db.log_event(con, case_id, "system", "company_created", {"vat": vat})
-        return {"status": "created", "vat": vat}
+        res = vat_check.check_company(con, cid)
+        return {"status": "created", "vat": vat, "vies": res["state"] if res else None}
     cid = row["id"]
     if is_member(con, cid, who["user"], active_only=False):
         status = "joined" if is_member(con, cid, who["user"]) else "access_requested"
