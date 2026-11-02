@@ -126,12 +126,30 @@ class Daily(unittest.TestCase):
 
 
 class Watch(unittest.TestCase):
+    def test_sources_are_fetched_in_parallel_and_failures_reported(self):
+        con = db.connect()
+        seen = []
+
+        def fetch(u):
+            seen.append(u)
+            if "eur-lex" in u:
+                raise OSError("down")
+            return "page " + u
+        out = jobs.check_sources(con, fetch)
+        self.assertEqual(sorted(seen), jobs.source_urls())
+        n = len([u for u in jobs.source_urls() if "eur-lex" in u])
+        self.assertEqual(out["unreachable"], n)
+        self.assertEqual(len([c for c in jobs.changes(con) if c["kind"] == "source_unreachable"]), n)
+
     def test_importer_only_sources_are_not_watched(self):
         # importer-only rows are never shown to the exporter, so their sources are not checked either
         urls = jobs.source_urls()
-        for k in ("usda_dairy", "cfia_sfc", "gac_cheese", "lucid"):
+        for k in ("usda_dairy", "gac_cheese", "lucid"):
             self.assertNotIn(requirements.SRC[k], urls, k)
             self.assertNotIn(requirements.WATCH.get(k, "-"), urls, k)
         self.assertIn(requirements.SRC["ca_rawcheese"], urls)
         self.assertIn(requirements.SRC["fda_ffr"], urls)
         self.assertIn(requirements.SRC["ttb"], urls)  # shared with COLA, which the exporter acts on
+        self.assertIn(requirements.SRC["ca_sfcr"], urls)  # Canadian label rules (exporter)
+        self.assertIn(requirements.WATCH["eu_fic"], urls)  # EUR-Lex: the amendments page, not the original act
+        self.assertNotIn(requirements.SRC["eu_fic"], urls)

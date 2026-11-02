@@ -87,6 +87,27 @@ SRC = {
     "ch_vet": "https://www.blv.admin.ch/blv/en/home/import-und-export/import/importe-aus-der-eu.html",
     "ch_tariff": "https://xtares.admin.ch/tares/login/loginFormFiller.do?l=en",
     "ch_wine_tax": "https://www.bazg.admin.ch/de/besteuerung-alkoholische-getraenke-schweiz",
+    # Official sources for the remaining rows (added 2 Nov 2026, each opened and checked that day)
+    "eu_fic": "https://eur-lex.europa.eu/eli/reg/2011/1169/oj",
+    "eu_hygiene": "https://eur-lex.europa.eu/eli/reg/2004/852/oj",
+    "eu_animal_origin": "https://eur-lex.europa.eu/eli/reg/2004/853/oj",
+    "eu_excise": "https://eur-lex.europa.eu/eli/dir/2020/262/oj",
+    "eu_vat": "https://eur-lex.europa.eu/eli/dir/2006/112/oj",
+    "eu_vies": "https://eur-lex.europa.eu/eli/reg/2010/904/oj",
+    "eu_intrastat": "https://eur-lex.europa.eu/eli/reg/2019/2152/oj",
+    "eu_wine_label": "https://eur-lex.europa.eu/eli/reg/2021/2117/oj",
+    "eu_oil_label": "https://eur-lex.europa.eu/eli/reg_del/2022/2104/oj",
+    "eu_customs_code": "https://eur-lex.europa.eu/eli/reg/2013/952/oj",
+    "eu_eori": "https://taxation-customs.ec.europa.eu/customs/customs-procedures-import-and-export/customs-operations/economic-operators-registration-and-identification-number-eori_en",
+    "de_label": "https://www.gesetze-im-internet.de/lmidv/__2.html",
+    "be_label": "https://www.ejustice.just.fgov.be/cgi_loi/change_lg.pl?language=fr&la=F&cn=1977012431&table_name=loi",
+    "ca_sfcr": "https://laws-lois.justice.gc.ca/eng/regulations/SOR-2018-108/",
+    "ca_raw_cheese_age": "https://laws-lois.justice.gc.ca/eng/regulations/C.R.C.,_c._870/section-B.08.030.html",
+    "uk_oil_label": "https://www.legislation.gov.uk/eur/2012/29",
+    "us_label": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-101",
+    "us_cheese": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-B/part-133",
+    "us_fsvp": "https://www.ecfr.gov/current/title-21/chapter-I/subchapter-A/part-1/subpart-L",
+    "us_aphis": "https://www.ecfr.gov/current/title-9/part-94",
     "at_wine_tax": "https://www.usp.gv.at/themen/steuern-finanzen/weitere-steuern-und-abgaben/verbrauchsteuern_und_energieabgaben/wein_schaumwein_verbrauchsteuerrechtliche_bestimmungen.html",
     # REX threshold, official EU sources (replaced a courier page on 2 Nov 2026)
     "rex_uk": "https://taxation-customs.ec.europa.eu/system/files/2021-03/compendium_on_rules_of_origin_q_a.pdf",
@@ -102,6 +123,22 @@ WATCH = {
     "usda_dairy": "https://www.ecfr.gov/api/versioner/v1/versions/title-7.json?part=6",
     # CFIA page answers 404 to cloud servers: watch the Safe Food for Canadians Regulations.
     "cfia_sfc": "https://laws-lois.justice.gc.ca/eng/regulations/SOR-2018-108/",
+    # eCFR: watch the official amendment list, not the rendered page.
+    "us_label": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=101",
+    "us_cheese": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=133",
+    "us_fsvp": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=1&subpart=L",
+    "us_aphis": "https://www.ecfr.gov/api/versioner/v1/versions/title-9.json?part=94",
+    # EUR-Lex: the original act never changes; watch the page that lists amendments and consolidated versions.
+    "eu_fic": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32011R1169",
+    "eu_hygiene": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32004R0852",
+    "eu_animal_origin": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32004R0853",
+    "eu_excise": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32020L0262",
+    "eu_vat": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32006L0112",
+    "eu_vies": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32010R0904",
+    "eu_intrastat": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32019R2152",
+    "eu_wine_label": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32021R2117",
+    "eu_oil_label": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32022R2104",
+    "eu_customs_code": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32013R0952",
 }
 
 
@@ -163,8 +200,12 @@ ROWS = [
        "Bilingual label (English and French) with Canadian Nutrition Facts and importer", "exporter", "C",
        dests={"CA"}, doc="label", note_it="Verificare il simbolo nutrizionale sul fronte",
        note_en="Check the front-of-package nutrition symbol rules"),
-    _r("label_de", 2, "Etichetta con le informazioni obbligatorie in tedesco (Reg. UE 1169/2011)",
-       "Label with mandatory information in German (EU Reg. 1169/2011)", "exporter", "C", dests={"DE", "AT"}, doc="label"),
+    _r("label_de", 2, "Etichetta con le informazioni obbligatorie in tedesco (LMIDV, Reg. UE 1169/2011)",
+       "Label with mandatory information in German (LMIDV, EU Reg. 1169/2011)", "exporter", "A", dests={"DE"},
+       src="de_label", doc="label"),
+    _r("label_at", 2, "Etichetta con le informazioni obbligatorie in tedesco (Reg. UE 1169/2011, art. 15)",
+       "Label with mandatory information in German (EU Reg. 1169/2011, art. 15)", "exporter", "B", dests={"AT"},
+       src="eu_fic", doc="label"),
     _r("label_fr", 2, "Etichetta con le informazioni obbligatorie in francese (legge Toubon, Reg. UE 1169/2011)",
        "Label with mandatory information in French (Toubon law, EU Reg. 1169/2011)", "exporter", "B", dests={"FR"},
        src="fr_lang", doc="label", note_it="Altre lingue ammesse in aggiunta al francese",
@@ -182,7 +223,7 @@ ROWS = [
        note_it="Nel 2025 il Parlamento ha chiesto di abolire l'obbligo: verificare che sia ancora in vigore",
        note_en="Parliament asked in 2025 to drop this rule: check it still applies"),
     _r("label_be", 2, "Etichetta nella lingua della regione linguistica di vendita (olandese, francese, tedesco)",
-       "Label in the language of the linguistic region where sold (Dutch, French, German)", "exporter", "C",
+       "Label in the language of the linguistic region where sold (Dutch, French, German)", "exporter", "B",
        dests={"BE"}, doc="label", note_it="Vendita in tutto il Belgio: olandese, francese e tedesco",
        note_en="Sold across Belgium: Dutch, French and German"),
     _r("triman", 2, "Logo Triman e Info-tri sull'imballaggio", "Triman logo and Info-tri sorting label on the packaging",
@@ -325,6 +366,21 @@ ROWS = [
     _r("intrastat", 4, "Intrastat, se sopra la soglia", "Intrastat return, if over the threshold", "exporter", "C",
        dests=EU_D),
 ]
+
+# Official source for rows written without one (2 Nov 2026). Commercial documents (invoice outside the EU,
+# packing list, transport document) and the provincial liquor boards have no single official rule to watch.
+ROW_SOURCES = {
+    "eori": "eu_eori", "food_reg": "eu_hygiene", "est_number": "eu_animal_origin", "excise_auth": "eu_excise",
+    "vies": "eu_vies", "label_de_wine": "eu_wine_label", "label_de_oil": "eu_oil_label",
+    "raw_milk_label": "eu_animal_origin", "invoice_de": "eu_vat", "ead": "eu_excise", "ead_de": "eu_excise",
+    "intrastat": "eu_intrastat", "export_decl": "eu_customs_code", "label_be": "be_label", "label_ca": "ca_sfcr",
+    "raw_milk_age_ca": "ca_raw_cheese_age", "label_uk_oil": "uk_oil_label", "label_us": "us_label",
+    "raw_milk_age_us": "us_cheese", "fsvp": "us_fsvp", "aphis": "us_aphis",
+}
+for _row in ROWS:
+    if not _row["source"] and _row["id"] in ROW_SOURCES:
+        _row["source"] = SRC[ROW_SOURCES[_row["id"]]]
+NO_SOURCE = {"invoice", "packing", "transport", "ca_liquor"}
 
 NOT_NEEDED = [
     {"products": {"wine"}, "dests": {"UK"}, "it": "Certificato VI-1: non serve (abolito dal 1 gennaio 2022)",
