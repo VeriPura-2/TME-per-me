@@ -26,37 +26,38 @@ class RequirementsTest(unittest.TestCase):
         for x in ("eori", "export_decl", "origin_stmt", "packing"):
             self.assertNotIn(x, got)
         self.assertIn("invoice_de", got)
-        self.assertIn("lucid", got)
+        self.assertNotIn("lucid", got)  # the German buyer's job
 
     def test_france_is_intra_eu_with_french_rules(self):
         got = ids("pasta", "France")
         for x in ("eori", "export_decl", "origin_stmt", "packing", "lucid", "label_de"):
             self.assertNotIn(x, got)
-        for x in ("invoice_de", "vies", "label_fr", "triman", "fr_epr", "intrastat"):
+        for x in ("invoice_de", "vies", "label_fr", "triman", "intrastat"):
             self.assertIn(x, got)
+        self.assertNotIn("fr_epr", got)  # the French buyer's job
         self.assertNotIn("fr_excise", got)
         self.assertTrue(rq.covers("wine", "Francia"))
 
     def test_france_wine_excise_and_glass_exclusion(self):
         out = rq.required("wine", "France", set())["data"]["items"]
         got = [i["id"] for i in out]
-        for x in ("fr_excise", "ead_de", "label_de_wine", "excise_auth"):
+        for x in ("ead_de", "label_de_wine", "excise_auth"):
             self.assertIn(x, got)
+        self.assertNotIn("fr_excise", got)  # paid by the French consignee
         tri = [i for i in out if i["id"] == "triman"]
         self.assertEqual(len(tri), 1)
         self.assertIsNotNone(tri[0]["only_if"])
-        self.assertTrue([i for i in out if i["id"] == "fr_excise"][0]["importer_side"])
 
     def test_new_eu_lanes(self):
-        for country, own in (("Spain", ("label_es", "es_pack")), ("Netherlands", ("label_nl", "nl_pack")),
-                             ("Belgium", ("label_be", "be_pack")), ("Austria", ("label_de", "at_pack"))):
+        for country, own in (("Spain", ("label_es",)), ("Netherlands", ("label_nl",)),
+                             ("Belgium", ("label_be",)), ("Austria", ("label_de",))):
             got = ids("cheese and dairy", country)
             for x in own + ("vies", "invoice_de", "intrastat", "raw_milk_label"):
                 self.assertIn(x, got, country)
-            for x in ("eori", "export_decl", "lucid", "triman", "label_fr"):
+            for x in ("eori", "export_decl", "lucid", "triman", "label_fr", "es_pack", "nl_pack", "be_pack", "at_pack"):
                 self.assertNotIn(x, got, country)
-        self.assertIn("nl_excise", ids("wine", "Netherlands"))
-        self.assertIn("be_excise", ids("wine", "Belgium"))
+        self.assertNotIn("nl_excise", ids("wine", "Netherlands"))
+        self.assertNotIn("be_excise", ids("wine", "Belgium"))
         self.assertTrue(rq.covers("pasta", "Paesi Bassi"))
         self.assertTrue(rq.covers("wine", "Österreich"))
 
@@ -73,20 +74,35 @@ class RequirementsTest(unittest.TestCase):
                 self.assertIn(x, got, cat)
             self.assertNotIn("ch_wine_reg", got)
         wine = ids("wine", "Switzerland")
-        for x in ("eori", "export_decl", "import_decl", "invoice", "packing", "origin_stmt", "label_ch",
-                  "ch_wine_reg", "ead", "approved_exporter"):
+        for x in ("eori", "export_decl", "invoice", "packing", "origin_stmt", "label_ch", "ead", "approved_exporter"):
             self.assertIn(x, wine)
-        for x in ("vies", "invoice_de", "intrastat", "rex", "label_de"):
+        for x in ("vies", "invoice_de", "intrastat", "rex", "label_de", "import_decl", "ch_wine_reg"):
             self.assertNotIn(x, wine)
         out = rq.required("cheese and dairy", "Switzerland", set())["data"]
         self.assertNotIn("ch_wine_reg", [i["id"] for i in out["items"]])
         self.assertTrue(any("veterinary" in n["en"] for n in out["not_needed"]))
 
+    def test_no_importer_only_items(self):
+        # MioTEM serves the exporter: importer-only rows are never shown (2 Nov 2026)
+        for cat in ("pasta", "wine", "olive oil", "cheese and dairy"):
+            for country in ("UK", "USA", "Canada", "Germany", "France", "Netherlands", "Switzerland"):
+                for i in rq.required(cat, country, set())["data"]["items"]:
+                    self.assertTrue(not i["importer_side"] or i["id"] in rq.EXPORTER_ACTS, (cat, country, i["id"]))
+        for x in ("gac_permit", "sfc", "import_decl"):
+            self.assertNotIn(x, ids("cheese and dairy", "Canada"))
+        self.assertNotIn("lucid", ids("pasta", "Germany"))
+        self.assertNotIn("ch_wine_reg", ids("wine", "Switzerland"))
+        self.assertNotIn("ttb_permit", ids("wine", "USA"))
+        # the exporter acts on these, so they stay
+        self.assertIn("cola", ids("wine", "USA"))
+        self.assertIn("fsvp", ids("pasta", "USA"))
+        self.assertIn("ca_zoo", ids("cheese and dairy", "Canada"))
+
     def test_reference_lanes(self):
         self.assertIn("uk_composite", ids("pasta", "UK"))
         self.assertIn("fda_ffr", ids("olive oil", "USA"))
         ca = ids("cheese and dairy", "Canada")
-        for x in ("gac_permit", "ca_zoo", "sfc", "origin_stmt"):
+        for x in ("ca_zoo", "origin_stmt"):
             self.assertIn(x, ca)
 
     def test_uk_wine_lists_vi1_as_not_needed(self):

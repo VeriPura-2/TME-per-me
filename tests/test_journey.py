@@ -39,7 +39,7 @@ class JourneyTest(unittest.TestCase):
         _, out = app.handle_journey({"case_id": cid}, who("j3"))
         ids = [i["id"] for i in out["required_docs"]["data"]["items"]]
         self.assertIn("cola", ids)
-        self.assertIn("ttb_permit", ids)
+        self.assertNotIn("ttb_permit", ids)
 
     def test_lane_outside_wave1_stays_simulated(self):
         c = app.con()

@@ -112,6 +112,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <div id="s-core"></div>
   <div id="s-tems"></div>
   <div id="s-changes"></div>
+  <div id="s-tariffs"></div>
   <div id="s-add"></div>
   <div id="s-queue"></div>
   <div id="s-list"></div>
@@ -286,10 +287,10 @@ applyLang();
   const mk0 = (tag, text, cls) => { const e = document.createElement(tag); if (text) e.textContent = text; if (cls) e.className = cls; return e; };
   function dutiesBox(parent, du) {
     if (!du) return; const tt = TT[lang]; parent.appendChild(mk0("h3", tt.du_t));
-    if (du.unavailable) { parent.appendChild(mk0("div", tt.du_na, "muted")); return; }
-    if (du.staff) { parent.appendChild(mk0("div", du.staff[lang], "verify")); return; }
-    parent.appendChild(mk0("div", du.description + " · " + du.code, "muted"));
-    du.lines.forEach(l => parent.appendChild(mk0("div", l.label[lang] + ": " + (l.value || tt.du_none))));
+    if (du.eu) { parent.appendChild(mk0("div", du.note[lang], "muted")); return; }
+    if (du.pending || du.unavailable) { parent.appendChild(mk0("div", tt.du_na, "muted")); return; }
+    du.groups.forEach(g => { parent.appendChild(mk0("strong", g.description[lang] + " · " + g.code));
+      g.lines.forEach(l => parent.appendChild(mk0("div", l.label[lang] + ": " + (l.value || tt.du_none)))); });
     parent.appendChild(mk0("div", du.limit[lang], "verify"));
     const src = mk0("div", null, "muted"); const a = mk0("a", tt.du_src); a.href = du.source; a.target = "_blank"; a.rel = "noopener";
     src.append(a, " · " + tt.du_read + " " + (du.retrieved_at || "").slice(0, 10)); parent.appendChild(src);
@@ -711,7 +712,7 @@ applyLang();
     addCompanyForm();
     coreSwitch();
     staffTems();
-    staffChanges();
+    staffChanges(); staffTariffs();
     $("s-note").textContent = full ? "Superadmin view. Opening a company and every change is logged." : "Support view (read only). Opening a company is logged.";
     loadQueue();
     await loadCompanies();
@@ -865,12 +866,21 @@ applyLang();
     const box = $("s-changes"); box.innerHTML = ""; const [r, j] = await call("/admin/changes", {}); if (!r.ok) return;
     box.appendChild(mk("h3", "Data changes (" + j.changes.length + " open)"));
     if (full) { const b = mk("button", "Run daily job now"), o = mk("span", "", "muted"); b.onclick = async () => { b.disabled = true; o.textContent = " running…";
-        const [rr, jj] = await call("/admin/run_daily", {}); b.disabled = false; o.textContent = rr.ok ? " done: known answers " + jj.tariffs.known_answers + ", duties changed " + jj.tariffs.duties_changed + ", sources changed " + jj.sources.changed + ", unreachable " + jj.sources.unreachable + ", VIES rechecked " + jj.vies.companies_rechecked : " " + (jj.error || rr.status); staffChanges(); };
+        const [rr, jj] = await call("/admin/run_daily", {}); b.disabled = false; o.textContent = rr.ok ? " done: known answers " + jj.tariffs.known_answers + ", sources changed " + jj.sources.changed + ", unreachable " + jj.sources.unreachable + ", VIES rechecked " + jj.vies.companies_rechecked : " " + (jj.error || rr.status); staffChanges(); };
       box.append(b, o); }
     j.changes.forEach(c => { const row = mk("div", sd(c.at) + " · " + c.kind + " · " + c.summary + " · " + c.ref + " ", "muted");
       if (c.detail && Object.keys(c.detail).length) row.title = JSON.stringify(c.detail);
       if (full) { const x = mk("button", "Dismiss"); x.onclick = async () => { await call("/admin/change_dismiss", {id: c.id}); staffChanges(); }; row.appendChild(x); }
       box.appendChild(row); });
+  }
+  async function staffTariffs() {
+    const box = $("s-tariffs"); box.innerHTML = ""; const [r, j] = await call("/admin/tariff_watch", {}); if (!r.ok) return;
+    box.appendChild(mk("h3", "Tariffs, weekly check (" + j.lines.length + " lines)"));
+    if (full) { const b = mk("button", "Run tariff check now"), o = mk("span", "", "muted"); b.onclick = async () => { b.disabled = true; o.textContent = " running…";
+        const [rr, jj] = await call("/admin/tariff_watch_run", {}); b.disabled = false; o.textContent = rr.ok ? " done: read " + jj.read + ", changed " + jj.changed + ", unreadable " + jj.unreadable : " " + (jj.error || rr.status); staffTariffs(); staffChanges(); };
+      box.append(b, o); }
+    j.lines.forEach(l => { const v = l.value ? Object.entries(l.value).map(([k, x]) => k.replace("_", " ") + ": " + x).join(" · ") : "not read yet";
+      box.appendChild(mk("div", l.destination + " · " + l.code + " · " + l.description + " · " + v + (l.checked_at ? " · " + sd(l.checked_at) : ""), "muted")); });
   }
   async function staffTems() {
     const box = $("s-tems"); box.innerHTML = ""; const [r, j] = await call("/admin/tem_firms", {}); if (!r.ok) return;
