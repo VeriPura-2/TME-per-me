@@ -305,7 +305,7 @@ CREATE TABLE IF NOT EXISTS source_snapshots (
   url TEXT PRIMARY KEY,
   sha256 TEXT NOT NULL,
   checked_at TEXT NOT NULL,
-  changed_at TEXT                      -- last time the text changed; checklist rows using it need re-verifying
+  changed_at TEXT                      -- last time the text changed: checklist rows using it need re-verifying
 );
 CREATE TABLE IF NOT EXISTS duty_snapshots (
   ref TEXT PRIMARY KEY,
@@ -344,6 +344,7 @@ class PG:
         return cur
 
     def executescript(self, script):
+        script = "\n".join(line.split("--", 1)[0] for line in script.splitlines())  # comments may contain ";"
         for stmt in script.split(";"):
             if stmt.strip():
                 self.execute(stmt)
