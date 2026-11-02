@@ -1,7 +1,7 @@
 """Required documents checklist, Wave 1 (prepared by MioTEM, verified by staff).
 
 Origin Italy. Products: dried pasta, wine, olive oil, cheese. Destinations: UK, USA, Canada, Germany, France, Spain, Netherlands, Belgium, Austria
-(France and the last four added 2 Nov 2026).
+(France and the last four added 2 Nov 2026), Switzerland (2 Nov 2026).
 Source review: MioTEM_Wave1_Required_Documents_DRAFT.md (1 Nov 2026), approved for coding.
 
 Confidence: A = confirmed in an official source. B = secondary source, official link to attach.
@@ -23,10 +23,11 @@ DESTINATIONS = {"uk": "UK", "united kingdom": "UK", "gb": "UK", "great britain":
                 "netherlands": "NL", "the netherlands": "NL", "paesi bassi": "NL", "olanda": "NL", "holland": "NL",
                 "nederland": "NL",
                 "belgium": "BE", "belgio": "BE", "belgique": "BE", "belgië": "BE", "belgie": "BE",
-                "austria": "AT", "österreich": "AT", "osterreich": "AT", "oesterreich": "AT"}
+                "austria": "AT", "österreich": "AT", "osterreich": "AT", "oesterreich": "AT",
+                "switzerland": "CH", "svizzera": "CH", "schweiz": "CH", "suisse": "CH"}
 
 ALL_P = {"pasta", "wine", "oil", "cheese"}
-NON_EU = {"UK", "US", "CA"}
+NON_EU = {"UK", "US", "CA", "CH"}
 EU_D = {"DE", "FR", "ES", "NL", "BE", "AT"}  # other EU countries: no customs, intra-EU VAT and excise rules
 ALL_D = NON_EU | EU_D
 
@@ -76,6 +77,13 @@ SRC = {
     "nl_excise": "https://download.belastingdienst.nl/douane/docs/tarievenlijst-accijns-acc0552z95fd.pdf",
     "be_pack": "https://www.ucm.be/emballages",
     "at_pack": "https://www.wko.at/noe/up/verpackungsverordnung-auslaendische-haendler-lieferanten",
+    # Switzerland (added 2 Nov 2026)
+    "ch_origin": "https://trade.ec.europa.eu/access-to-markets/en/roo-explain-term/origin/CH/destination/IT/term/statementOrigin",
+    "ch_label": "https://www.kmu.admin.ch/kmu/en/home/savoir-pratique/gestion-pme/etiquetage/etiqueter-les-denrees-alimentaires.html",
+    "ch_geb": "https://importlicensing.wto.org/content/agricultural-products-general-import-permit-gip",
+    "ch_vet": "https://www.blv.admin.ch/blv/en/home/import-und-export/import/importe-aus-der-eu.html",
+    "ch_tariff": "https://xtares.admin.ch/tares/login/loginFormFiller.do?l=en",
+    "ch_wine_tax": "https://www.bazg.admin.ch/de/besteuerung-alkoholische-getraenke-schweiz",
     "at_wine_tax": "https://www.usp.gv.at/themen/steuern-finanzen/weitere-steuern-und-abgaben/verbrauchsteuern_und_energieabgaben/wein_schaumwein_verbrauchsteuerrechtliche_bestimmungen.html",
     # REX threshold, official EU sources (replaced a courier page on 2 Nov 2026)
     "rex_uk": "https://taxation-customs.ec.europa.eu/system/files/2021-03/compendium_on_rules_of_origin_q_a.pdf",
@@ -121,6 +129,10 @@ ROWS = [
     _r("rex", 1, "Registrazione REX (esportatore registrato)", "REX registration (registered exporter)", "customs", "A",
        dests={"CA"}, src="rex_ca", only_it="spedizioni oltre 6.000 euro, per il dazio zero",
        only_en="consignments over EUR 6,000, for 0% duty"),
+    _r("approved_exporter", 1, "Esportatore autorizzato (dichiarazione di origine oltre 6.000 euro)",
+       "Approved exporter status (origin declaration over EUR 6,000)", "customs", "B", dests={"CH"}, src="ch_origin",
+       only_it="spedizioni oltre 6.000 euro, per il dazio preferenziale", only_en="consignments over EUR 6,000, for preferential duty",
+       note_it="In alternativa: certificato EUR.1 dalla dogana", note_en="Alternative: EUR.1 certificate from customs"),
     _r("est_number", 1, "Numero di riconoscimento CE dello stabilimento (bollo sanitario)",
        "EU-approved establishment number (oval health mark)", "asl", "C", products={"cheese"}, doc="facility_approval"),
     _r("vies", 1, "Iscrizione al VIES (operazioni intracomunitarie)", "VIES enrolment (intra-EU trade)", "exporter", "B",
@@ -154,6 +166,11 @@ ROWS = [
        "Label with mandatory information in French (Toubon law, EU Reg. 1169/2011)", "exporter", "B", dests={"FR"},
        src="fr_lang", doc="label", note_it="Altre lingue ammesse in aggiunta al francese",
        note_en="Other languages allowed in addition to French"),
+    _r("label_ch", 2, "Etichetta in almeno una lingua ufficiale svizzera (italiano ammesso) con paese di produzione",
+       "Label in at least one Swiss official language (Italian allowed) with country of production", "exporter", "B",
+       dests={"CH"}, src="ch_label", doc="label",
+       note_it="La Svizzera chiede il paese di produzione e l'origine degli ingredienti più spesso dell'UE",
+       note_en="Switzerland asks for country of production and ingredient origin more often than the EU"),
     _r("label_es", 2, "Etichetta con le informazioni obbligatorie almeno in spagnolo (RD 1334/1999, art. 18)",
        "Label with mandatory information at least in Spanish (RD 1334/1999, art. 18)", "exporter", "A", dests={"ES"},
        src="es_lang", doc="label", note_it="Ammessi adesivi in spagnolo", note_en="Spanish stickers are allowed"),
@@ -247,6 +264,15 @@ ROWS = [
        "French wine excise (consignee: authorised warehousekeeper or registered consignee)", "buyer_fr", "B",
        products={"wine"}, dests={"FR"}, src="fr_excise"),
 
+    _r("ch_wine_reg", 3, "Iscrizione al Controllo svizzero del commercio dei vini e permesso generale d'importazione (PGI) dell'importatore",
+       "Importer registered with Swiss Wine Trade Control and holding a general import permit (GIP)", "importer", "B",
+       products={"wine"}, dests={"CH"}, src="ch_geb",
+       note_it="Senza PGI il vino entra fuori contingente, con dazio molto più alto",
+       note_en="Without a GIP the wine enters outside the tariff quota, at a much higher duty"),
+    _r("ch_duty", 3, "Dazio svizzero all'importazione: verifica aliquota su Tares",
+       "Swiss import duty: check the rate in Tares", "staff", "C", products={"pasta", "oil"}, dests={"CH"},
+       src="ch_tariff", note_it="Pasta: prodotto agricolo trasformato, possibile componente agricola del dazio",
+       note_en="Pasta: processed agricultural product, the duty may have an agricultural component"),
     _r("es_pack", 3, "Registro dei produttori di prodotto (imballaggi) e adesione a un sistema EPR spagnolo",
        "Spanish Producer Register (packaging) and membership of a Spanish packaging scheme", "buyer_eu", "B",
        dests={"ES"}, src="es_pack",
@@ -276,6 +302,8 @@ ROWS = [
        "Invoice with both VAT numbers (buyer checked in VIES)", "exporter", "C", dests=EU_D, doc="invoice"),
     _r("origin_stmt", 4, "Dichiarazione di origine in fattura", "Origin statement on the invoice", "exporter", "A",
        dests={"UK"}, src="rex_uk", note_it="Accordo UE-UK: dazio zero", note_en="EU-UK TCA: 0% duty"),
+    _r("origin_stmt", 4, "Dichiarazione di origine in fattura (regole PEM)", "Origin declaration on the invoice (PEM rules)",
+       "exporter", "B", dests={"CH"}, src="ch_origin", note_it="Accordo UE-Svizzera", note_en="EU-Switzerland agreement"),
     _r("origin_stmt", 4, "Dichiarazione di origine in fattura", "Origin statement on the invoice", "exporter", "A",
        dests={"CA"}, src="rex_ca", note_it="CETA: dazio zero", note_en="CETA: 0% duty"),
     _r("packing", 4, "Packing list", "Packing list", "exporter", "A", dests=NON_EU, doc="packing_list"),
@@ -300,6 +328,10 @@ NOT_NEEDED = [
      "en": "VI-1 certificate: not needed (removed from 1 January 2022)", "source": SRC["uk_wine"]},
     {"products": {"wine"}, "dests": {"ES"}, "it": "Accisa spagnola sul vino: aliquota zero (restano le regole di circolazione, e-AD)",
      "en": "Spanish wine excise: zero rate (movement rules still apply, e-AD)", "source": SRC["es_wine_tax"]},
+    {"products": {"cheese"}, "dests": {"CH"}, "it": "Certificato sanitario veterinario: di norma non serve (area veterinaria comune UE-Svizzera, nessun controllo alla frontiera)",
+     "en": "Veterinary health certificate: normally not needed (EU-Swiss common veterinary area, no border checks)", "source": SRC["ch_vet"]},
+    {"products": {"wine"}, "dests": {"CH"}, "it": "Accisa svizzera sul vino: nessuna (il vino fino a 18% vol non è tassato)",
+     "en": "Swiss wine excise: none (wine up to 18% vol is not taxed)", "source": SRC["ch_wine_tax"]},
     {"products": {"wine"}, "dests": {"AT"}, "it": "Accisa austriaca sul vino: nessuna (restano le regole di circolazione, e-AD)",
      "en": "Austrian wine excise: none (movement rules still apply, e-AD)", "source": SRC["at_wine_tax"]},
 ]
