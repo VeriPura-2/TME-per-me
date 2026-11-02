@@ -75,6 +75,9 @@ ROWS = [
        only_en="consignments over EUR 6,000, for 0% duty"),
     _r("est_number", 1, "Numero di riconoscimento CE dello stabilimento (bollo sanitario)",
        "EU-approved establishment number (oval health mark)", "asl", "C", products={"cheese"}, doc="facility_approval"),
+    _r("vies", 1, "Iscrizione al VIES (operazioni intracomunitarie)", "VIES enrolment (intra-EU trade)", "exporter", "B",
+       dests={"DE"}, note_it="Gratuita, tramite l'Agenzia delle Entrate. MioTEM la controlla in automatico",
+       note_en="Free, through the Agenzia delle Entrate. MioTEM checks it automatically"),
     _r("excise_auth", 1, "Deposito fiscale o rappresentante fiscale accise", "Excise tax warehouse or excise representative",
        "customs", "C", products={"wine"}),
 

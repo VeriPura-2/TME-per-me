@@ -30,20 +30,22 @@ def companies(con, who):
         return 403, {"error": "forbidden"}
     from .app import TERMS_VERSION
     rows = []
-    for co in con.execute("SELECT id, vat, legal_name, status, plan, created_by, created_at FROM companies ORDER BY created_at DESC").fetchall():
+    for co in con.execute("SELECT id, vat, legal_name, status, plan, created_by, created_at, vies_state FROM companies ORDER BY created_at DESC").fetchall():
         m = con.execute("SELECT COALESCE(SUM(CASE WHEN status='active' THEN 1 ELSE 0 END),0) AS a, COALESCE(SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END),0) AS p FROM memberships WHERE company_id=?", (co["id"],)).fetchone()
         n = con.execute("SELECT COUNT(*) AS n, MAX(updated_at) AS last FROM cases WHERE company_id=?", (co["id"],)).fetchone()
         cc = con.execute("SELECT 1 FROM company_consents WHERE company_id=? AND terms_version=?", (co["id"], TERMS_VERSION)).fetchone()
         rows.append({"id": co["id"], "name": co["legal_name"], "vat": co["vat"], "status": co["status"], "plan": co["plan"],
                      "members": m["a"] or 0, "pending": m["p"] or 0, "cases": n["n"], "last_activity": n["last"],
-                     "terms_accepted": bool(cc), "created_at": co["created_at"], "by_staff": bool(co["created_by"])})
+                     "terms_accepted": bool(cc), "created_at": co["created_at"], "by_staff": bool(co["created_by"]),
+                     "vies": co["vies_state"]})
     return 200, {"companies": rows, "plans": list(plans.PLANS)}
 
 
 def company(con, who, cid):
     if not _guard(who):
         return 403, {"error": "forbidden"}
-    co = con.execute("SELECT id, vat, legal_name, status, plan, created_by, created_at FROM companies WHERE id=?", (cid,)).fetchone()
+    co = con.execute("SELECT id, vat, legal_name, status, plan, created_by, created_at, vies_state, vies_name, vies_address, "
+                     "vies_checked_at FROM companies WHERE id=?", (cid,)).fetchone()
     if co is None:
         return 404, {"error": "no such company"}
     members = [dict(r) for r in con.execute(
@@ -149,8 +151,8 @@ def add_company(con, who, vat, name):
     """
     if not _full(who):
         return 403, {"error": "forbidden"}
-    from . import accounts
-    v, err = accounts.normalise_vat(vat)
+    from . import vat_check
+    v, err = vat_check.italian(vat)
     if err:
         return 400, {"error": "invalid_vat", "detail": err}
     name = (name or "").strip()[:200]
@@ -163,6 +165,7 @@ def add_company(con, who, vat, name):
                 (cid, v, name, who["user"], db.now()))
     con.commit()
     _log(con, who, "staff_change", cid, action="add_company", vat=v)
+    vat_check.check_company(con, cid)
     return 200, {"ok": True, "company": cid, **owner_invite(con, who, cid)[1]}
 
 

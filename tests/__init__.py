@@ -9,3 +9,13 @@ def _offline(url, timeout=20):
 
 
 _tariff.http_get = _offline
+
+# The VIES service is never called from tests either.
+from vialibera import vat_check as _vat_check
+
+
+def _vies_offline(url, timeout=8):
+    raise OSError("network disabled in tests")
+
+
+_vat_check._http = _vies_offline

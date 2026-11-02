@@ -22,7 +22,7 @@ def overview(con, who, label=None):
         return 200, {"company": None, "role": None, "members": [], "roles": list(permissions.ROLES)}
     _label(con, who, label)
     role = permissions.role_in(con, cid, who["user"])
-    co = con.execute("SELECT legal_name, vat, plan, created_by FROM companies WHERE id=?", (cid,)).fetchone()
+    co = con.execute("SELECT legal_name, vat, plan, created_by, vies_state, vies_checked_at FROM companies WHERE id=?", (cid,)).fetchone()
     rows = con.execute("SELECT user_sub, role, status, label FROM memberships WHERE company_id=? ORDER BY created_at", (cid,)).fetchall()
     members = [{"user": r["user_sub"], "label": r["label"] or "", "role": r["role"], "status": r["status"],
                 "me": r["user_sub"] == who["user"]} for r in rows
@@ -30,7 +30,10 @@ def overview(con, who, label=None):
     from . import accounts
     from .app import TERMS_VERSION
     cc = con.execute("SELECT at FROM company_consents WHERE company_id=? AND terms_version=?", (cid, TERMS_VERSION)).fetchone()
-    out = {"company": {"name": co["legal_name"], "vat": co["vat"], "plan": co["plan"],
+    from . import vat_check
+    out = {"company": {"name": co["legal_name"], "vat": co["vat"], "plan": co["plan"], "vies": co["vies_state"],
+                       "vies_checked_at": co["vies_checked_at"],
+                       "vies_enrol": {"steps": vat_check.ENROL, "link": vat_check.ENROL_LINK} if co["vies_state"] == "not_in_vies" else None,
                        "terms_accepted_at": cc["at"] if cc else None, "created_by_staff": bool(co["created_by"])}, "role": role,
            "members": members, "roles": list(permissions.ROLES), "can_manage": permissions.allowed(role, "team")}
     return 200, out

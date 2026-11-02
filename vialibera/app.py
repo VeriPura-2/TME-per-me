@@ -11,7 +11,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import admin, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, invites, personas, plans, requirements, storage, stripe_pay, tems, voice
+from . import admin, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tems, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -174,6 +174,8 @@ def handle_tem(path, body, who):
         return tems.join(c, who, str(body.get("token") or ""), body.get("label"))
     if path == "/tem/engage_info":
         return tems.engage_info(c, who, str(body.get("token") or ""))
+    if path == "/tem/vat_lookup":  # pre-fills the engagement form from VIES
+        return vat_check.lookup(body.get("vat"))
     if path == "/tem/engage_accept":
         return tems.engage_accept(c, who, str(body.get("token") or ""), body, TERMS_VERSION)
     if path == "/tem/client":
@@ -199,6 +201,18 @@ def handle_tem(path, body, who):
     if path == "/tem/project":
         return tems.project(c, who, case_id)
     return 404, {}
+
+
+def handle_job(headers):
+    """Daily job, called by Cloud Scheduler with the X-Job-Secret header. No user sign-in."""
+    import hmac
+    try:
+        secret = get_secret("JOB_SECRET")
+    except Exception:
+        return 503, {"error": "job not configured"}
+    if not hmac.compare_digest(str(headers.get("X-Job-Secret") or ""), secret):
+        return 401, {"error": "unauthorized"}
+    return 200, jobs.run_daily(con())
 
 
 def handle_docs(query, who):
@@ -342,6 +356,8 @@ def handle_journey(body, who):
         out["required_docs"] = required_docs.required(case["product"].get("category"), have)
     if out.get("required_docs") and not out["required_docs"].get("simulated"):
         tems.apply_confirmations(c, row["id"], out["required_docs"])
+        jobs.apply_source_flags(c, row["id"], out["required_docs"])
+        vat_check.apply_to_checklist(c, row["company_id"], out["required_docs"])
     out["core"] = core_checks.summary(c, row["id"])
     out["notes"] = tems.notes(c, row["id"], internal=False)
     out["duties"] = duties.for_case(c, case)
@@ -398,6 +414,23 @@ def handle_admin(path, body, who):
         return admin.owner_invite(c, who, cid)
     if path == "/admin/queue":
         return admin.queue(c, who)
+    if path == "/admin/changes":
+        if not permissions.is_staff(who):
+            return 403, {"error": "forbidden"}
+        return 200, {"changes": jobs.changes(c)}
+    if path == "/admin/change_dismiss":
+        if not permissions.is_superadmin(who):
+            return 403, {"error": "forbidden"}
+        return jobs.dismiss(c, who, str(body.get("id") or ""))
+    if path == "/admin/run_daily":
+        if not permissions.is_superadmin(who):
+            return 403, {"error": "forbidden"}
+        return 200, jobs.run_daily(c)
+    if path == "/admin/vies_recheck":
+        if not permissions.is_superadmin(who):
+            return 403, {"error": "forbidden"}
+        res = vat_check.check_company(c, cid)
+        return (200, res) if res else (404, {"error": "no Italian company"})
     if path == "/admin/tem_firms":
         return tems.list_firms(c, who)
     if path == "/admin/tem_firm":
@@ -672,6 +705,11 @@ class Handler(BaseHTTPRequestHandler):
         return auth.verify(self.headers.get("Authorization")) if auth.enabled() else None
 
     def do_POST(self):
+        if self.path == "/jobs/daily":
+            try:
+                return self._send(*handle_job(self.headers))
+            except Exception as e:
+                return self._send(500, {"error": type(e).__name__})
         if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
                 or self.path.startswith("/core/") or self.path.startswith("/tem/")):
