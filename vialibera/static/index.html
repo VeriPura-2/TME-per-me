@@ -646,7 +646,10 @@ applyLang();
     }
   }
   // ---- staff (superadmin only; the server refuses everyone else)
-  const sd = (n) => (n || "").slice(0, 16).replace("T", " ");
+  // Server times are UTC (ISO). Show them in Italian time (Europe/Rome, CET/CEST), same format as before.
+  const sd = (n) => { const d = /T\d\d:\d\d/.test(n || "") ? new Date(/[Zz]|[+-]\d\d:?\d\d$/.test(n) ? n : n + "Z") : null;
+    if (!d || isNaN(d)) return (n || "").slice(0, 16).replace("T", " ");
+    return d.toLocaleString("sv-SE", {timeZone: "Europe/Rome", hour12: false}).slice(0, 16); };
   const full = me.staff_level === "superadmin";
   async function loadQueue() {
     const [r, j] = await call("/admin/queue", {}); const q = $("s-queue"); q.innerHTML = ""; if (!r.ok) return;

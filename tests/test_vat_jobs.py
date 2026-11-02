@@ -150,6 +150,6 @@ class Watch(unittest.TestCase):
         self.assertIn(requirements.SRC["ca_rawcheese"], urls)
         self.assertIn(requirements.SRC["fda_ffr"], urls)
         self.assertIn(requirements.SRC["ttb"], urls)  # shared with COLA, which the exporter acts on
-        self.assertIn(requirements.SRC["ca_sfcr"], urls)  # Canadian label rules (exporter)
+        self.assertIn(requirements.SRC["ca_label"], urls)  # Canadian label rules (exporter)
         self.assertIn(requirements.WATCH["eu_fic"], urls)  # EUR-Lex: the amendments page, not the original act
         self.assertNotIn(requirements.SRC["eu_fic"], urls)
