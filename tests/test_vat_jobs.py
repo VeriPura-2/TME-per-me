@@ -78,15 +78,14 @@ class Daily(unittest.TestCase):
         self.assertEqual(out["sources"]["changed"], 0)
         self.assertEqual(jobs.changes(self.con), [])
 
-    def test_duty_change_is_reported(self):
+    def test_known_answer_change_is_reported(self):
         self.run_job()
         changed = json.loads(load("us_1509.20.20.json")); changed[0]["general"] = "7¢/kg on contents and container"
         self.us = USITCHts(http=lambda url: json.dumps(changed) if "20.20" in url else load("us_1509.20.90.json"))
         out = self.run_job()
         self.assertEqual(out["tariffs"]["known_answers"], "fail")
-        self.assertEqual(out["tariffs"]["duties_changed"], 1)
         kinds = {c["kind"] for c in jobs.changes(self.con)}
-        self.assertEqual(kinds, {"known_answer_failed", "duty_changed"})
+        self.assertEqual(kinds, {"known_answer_failed"})  # lane duty changes: weekly check, see test_tariff_watch
 
     def test_source_change_sends_items_back_to_staff_until_reconfirmed(self):
         self.run_job()

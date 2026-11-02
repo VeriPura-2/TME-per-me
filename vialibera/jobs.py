@@ -3,7 +3,7 @@
 Called once a day by Google Cloud Scheduler (POST /jobs/daily with the X-Job-Secret header),
 or by a superadmin from the staff panel. Each run:
   1. runs the live known-answer tariff checks,
-  2. refreshes the duties for each lane with a lookup and compares them with the last run,
+  2. (lane duties are refreshed by the weekly tariff check, step 5),
   3. checks every checklist source page for changes (checklist rows using a changed page go
      back to "staff to verify" until a TEM or staff confirms them again),
   4. re-checks VIES for companies whose last check could not run,
@@ -19,7 +19,7 @@ import urllib.error
 import urllib.request
 import uuid
 
-from . import db, duties, requirements, tariff_watch, vat_check
+from . import db, requirements, tariff_watch, vat_check
 from .adapters.base import AdapterError
 
 UA = "MioTEM data check (contact: aeoconsultsas@pec.it)"
@@ -44,7 +44,7 @@ def _fetch_text(url, timeout=10):  # 14 sources: worst case well under the Cloud
 # 1 + 2: tariffs ---------------------------------------------------------------------
 
 def check_tariffs(con, uk=None, us=None):
-    out = {"known_answers": "pass", "duties_changed": 0}
+    out = {"known_answers": "pass"}  # lane duties: weekly check (tariff_watch)
     try:
         from .check_tariffs import results
         for ka_id, ok, got, expect in results(uk=uk, us=us):
@@ -55,21 +55,6 @@ def check_tariffs(con, uk=None, us=None):
     except AdapterError as e:
         out["known_answers"] = "unavailable"
         _change(con, "known_answer_failed", "tariff_service", "Tariff service unavailable during the daily check", {"error": str(e)[:200]})
-    con.execute("DELETE FROM tariff_cache")  # force fresh official values for the lanes
-    con.commit()
-    for ref, case in (("pasta-UK", {"product": {"category": "pasta"}, "market": {"country": "UK"}}),
-                      ("oil-US", {"product": {"category": "olive oil"}, "market": {"country": "USA"}})):
-        d = duties.for_case(con, {"id": None, **case}, uk=uk, us=us)
-        if not d or d.get("unavailable"):
-            continue
-        value = json.dumps([[l["label"]["en"], l["value"]] for l in d["lines"]])
-        prev = con.execute("SELECT value FROM duty_snapshots WHERE ref=?", (ref,)).fetchone()
-        if prev and prev["value"] != value:
-            out["duties_changed"] += 1
-            _change(con, "duty_changed", ref, f"Duty for {ref} changed", {"before": json.loads(prev["value"]), "after": json.loads(value)})
-        con.execute("DELETE FROM duty_snapshots WHERE ref=?", (ref,))
-        con.execute("INSERT INTO duty_snapshots(ref, value, checked_at) VALUES (?,?,?)", (ref, value, db.now()))
-        con.commit()
     return out
 
 

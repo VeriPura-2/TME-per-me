@@ -66,6 +66,38 @@ LINES = [
 ]
 
 
+DESC_IT = {
+    "UK:1902199090": "Pasta secca, senza uova",
+    "UK:1902110090": "Pasta secca all'uovo",
+    "UK:1509200010": "Olio extravergine di oliva, fino a 5 litri",
+    "UK:2204210600": "Vino fermo DOP, fino a 2 litri",
+    "UK:0406906100": "Grana Padano, Parmigiano Reggiano",
+    "US:1902.19.20": "Pasta secca, senza uova",
+    "US:1902.11.20": "Pasta secca all'uovo",
+    "US:1509.20.20": "Olio extravergine di oliva, sotto i 18 kg",
+    "US:1509.20.90": "Olio extravergine di oliva, altre confezioni",
+    "US:2204.21.50": "Vino fermo, fino a 2 litri, fino a 14% vol",
+    "US:0406.90.61.00": "Romano, Reggiano, Parmesan e simili",
+    "CA:1902.19.21": "Pasta di sola farina e acqua, entro il contingente",
+    "CA:1902.19.22": "Pasta di sola farina e acqua, confezioni fino a 2,3 kg, oltre il contingente",
+    "CA:1902.11.10": "Pasta all'uovo, entro il contingente",
+    "CA:1902.11.21": "Pasta all'uovo, confezioni fino a 2,3 kg, oltre il contingente",
+    "CA:1509.20.00": "Olio extravergine di oliva",
+    "CA:2204.21.10": "Vino, fino a 2 litri, fino a 13,7% vol",
+    "CA:2204.21.21": "Vino, fino a 2 litri, oltre 13,7% e fino a 14,9% vol",
+    "CA:0406.90.93": "Parmesan e tipi Parmesan, entro il contingente (quota CETA)",
+    "CA:0406.90.94": "Parmesan e tipi Parmesan, oltre il contingente",
+    "CH:1902.1910": "Pasta secca di grano duro, senza uova",
+    "CH:1902.1110": "Pasta secca di grano duro all'uovo",
+    "CH:1509.2091": "Olio extravergine di oliva, vetro, fino a 2 litri",
+    "CH:2204.2141": "Vino rosso in bottiglia, entro il contingente",
+    "CH:2204.2149": "Vino rosso in bottiglia, fuori contingente",
+    "CH:2204.2121": "Vino bianco in bottiglia, entro il contingente",
+    "CH:2204.2129": "Vino bianco in bottiglia, fuori contingente",
+    "CH:0406.9039": "Parmigiano Reggiano, Grana Padano (duri)",
+}
+
+
 # readers: each returns {ref: value-dict} and {ref: error} ------------------------------
 
 def read_uk(con, lines, uk=None):
