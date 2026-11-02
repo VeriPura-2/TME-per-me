@@ -53,7 +53,9 @@ SRC = {
     "gac_cheese": "https://www.international.gc.ca/controls-controles/prod/agri/dairy-laitiers/notices-avis/909.aspx?lang=eng",
     "ca_rawcheese": "https://cscb.ca/en/article/new-requirements-aged-unpasteurized-cheese-italy",
     "lucid": "https://www.verpackungsregister.org/en/faq-detail-category/questions-about-registration",
-    "rex": "https://www.fedex.com/en-it/customs-tools/free-trade-agreements/eu-and-uk.html",
+    # REX threshold, official EU sources (replaced a courier page on 2 Nov 2026)
+    "rex_uk": "https://taxation-customs.ec.europa.eu/system/files/2021-03/compendium_on_rules_of_origin_q_a.pdf",
+    "rex_ca": "https://trade.ec.europa.eu/access-to-markets/en/roo-explain-term/origin/CA/destination/FR/term/statementOrigin",
 }
 
 
@@ -89,8 +91,11 @@ ROWS = [
     _r("eori", 1, "Numero EORI italiano", "Italian EORI number", "customs", "A", dests=NON_EU, doc="tax_ids"),
     _r("food_reg", 1, "Registrazione impresa alimentare (SCIA all'ASL)", "Food business registration (SCIA to ASL)",
        "asl", "C", doc="facility_approval"),
-    _r("rex", 1, "Registrazione REX (esportatore registrato)", "REX registration (registered exporter)", "customs", "B",
-       dests={"UK", "CA"}, src="rex", only_it="spedizioni oltre 6.000 euro, per il dazio zero",
+    _r("rex", 1, "Registrazione REX (esportatore registrato)", "REX registration (registered exporter)", "customs", "A",
+       dests={"UK"}, src="rex_uk", only_it="spedizioni oltre 6.000 euro, per il dazio zero",
+       only_en="consignments over EUR 6,000, for 0% duty"),
+    _r("rex", 1, "Registrazione REX (esportatore registrato)", "REX registration (registered exporter)", "customs", "A",
+       dests={"CA"}, src="rex_ca", only_it="spedizioni oltre 6.000 euro, per il dazio zero",
        only_en="consignments over EUR 6,000, for 0% duty"),
     _r("est_number", 1, "Numero di riconoscimento CE dello stabilimento (bollo sanitario)",
        "EU-approved establishment number (oval health mark)", "asl", "C", products={"cheese"}, doc="facility_approval"),
@@ -191,8 +196,10 @@ ROWS = [
     _r("invoice", 4, "Fattura commerciale", "Commercial invoice", "exporter", "A", dests=NON_EU, doc="invoice"),
     _r("invoice_de", 4, "Fattura con partite IVA di venditore e acquirente (verifica VIES)",
        "Invoice with both VAT numbers (buyer checked in VIES)", "exporter", "C", dests={"DE"}, doc="invoice"),
-    _r("origin_stmt", 4, "Dichiarazione di origine in fattura", "Origin statement on the invoice", "exporter", "B",
-       dests={"UK", "CA"}, src="rex", note_it="Accordo UE-UK o CETA: dazio zero", note_en="EU-UK TCA or CETA: 0% duty"),
+    _r("origin_stmt", 4, "Dichiarazione di origine in fattura", "Origin statement on the invoice", "exporter", "A",
+       dests={"UK"}, src="rex_uk", note_it="Accordo UE-UK: dazio zero", note_en="EU-UK TCA: 0% duty"),
+    _r("origin_stmt", 4, "Dichiarazione di origine in fattura", "Origin statement on the invoice", "exporter", "A",
+       dests={"CA"}, src="rex_ca", note_it="CETA: dazio zero", note_en="CETA: 0% duty"),
     _r("packing", 4, "Packing list", "Packing list", "exporter", "A", dests=NON_EU, doc="packing_list"),
     _r("transport", 4, "Documento di trasporto (CMR, lettera di vettura aerea, polizza di carico)",
        "Transport document (CMR, air waybill, bill of lading)", "carrier", "A", doc="transport"),
