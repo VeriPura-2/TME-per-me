@@ -328,6 +328,11 @@ def now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def pg_sql(sql):
+    """Our SQL uses ? placeholders (sqlite style). For psycopg2: double literal %, then ? becomes %s."""
+    return sql.replace("%", "%%").replace("?", "%s")
+
+
 class PG:
     """Thin wrapper giving a psycopg2 connection the sqlite3 calls the code uses."""
 
@@ -340,7 +345,8 @@ class PG:
 
     def execute(self, sql, params=()):
         cur = self._cur()
-        cur.execute(sql.replace("?", "%s"), params)
+        # psycopg2 reads every % as a placeholder marker, so a literal % (LIKE 'IT%') must be doubled.
+        cur.execute(pg_sql(sql), params)
         return cur
 
     def executescript(self, script):
