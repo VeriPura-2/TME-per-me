@@ -237,3 +237,45 @@ class SchemaSetup(unittest.TestCase):
         db.setup_pg(pg)
         self.assertEqual([s for s in pg.sql if "ALTER" in s],
                          ["ALTER TABLE source_snapshots ADD COLUMN IF NOT EXISTS page_text TEXT"])
+
+
+class HoldDiagnostics(unittest.TestCase):
+    def setUp(self):
+        self.pool = FakePool()
+        for p in (mock.patch.dict(os.environ, {"CLOUDSQL_INSTANCE": "test:eu:db"}),
+                  mock.patch.object(app, "_pool", self.pool),
+                  mock.patch.object(app, "_get_pool", lambda: self.pool),
+                  mock.patch.object(app, "HOLD_LOG_S", 0.05)):
+            p.start()
+            self.addCleanup(p.stop)
+        self.logs = []
+        p = mock.patch.object(app, "_log", self.logs.append)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def test_long_hold_is_logged_with_path_and_place(self):
+        app._local.path = "POST /chat"
+        app.con().raw
+        time.sleep(0.1)
+        app.release_con()
+        self.assertEqual(len(self.logs), 1)
+        self.assertIn("DB_HOLD path=POST /chat", self.logs[0])
+
+    def test_short_hold_is_not_logged(self):
+        app.con().raw
+        app.release_con()
+        self.assertEqual(self.logs, [])
+
+    def test_busy_lists_the_holders(self):
+        slots = threading.BoundedSemaphore(1)
+        slots.acquire()  # the only connection is taken
+        with mock.patch.object(app, "_slots", slots), mock.patch.object(slots, "acquire", lambda timeout: False):
+            app._holders[1] = ("POST /chat", time.time() - 12, "agent.py:95 turn")
+            self.addCleanup(app._holders.pop, 1, None)
+            app._local.path = "POST /me"
+            with self.assertRaises(RuntimeError):
+                app.con().raw
+        self.assertIn("DB_BUSY path=POST /me", self.logs[0])
+        self.assertIn("POST /chat held 12", self.logs[0])
+        self.assertIn("agent.py:95 turn", self.logs[0])
+        app._local.con = None
