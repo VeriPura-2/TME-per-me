@@ -881,7 +881,15 @@ applyLang();
       box.append(b, o); }
     j.changes.forEach(c => { const row = mk("div", sd(c.at) + " · " + c.kind + " · " + c.summary + " · " + c.ref + " ", "muted");
       if (c.detail && Object.keys(c.detail).length) row.title = JSON.stringify(c.detail);
+      const d = c.detail || {}; let pre = null;
+      if ((d.removed && d.removed.length) || (d.added && d.added.length)) {  // what changed on the page: old (-) and new (+) lines
+        pre = mk("pre", (d.removed || []).map(l => "- " + l).concat((d.added || []).map(l => "+ " + l)).join("\n"));
+        pre.style.cssText = "display:none;white-space:pre-wrap;font-size:12px;margin:4px 0 8px";
+        const show = mk("button", "What changed"); show.onclick = () => { pre.style.display = pre.style.display === "none" ? "block" : "none"; };
+        row.appendChild(show);
+      }
       if (full) { const x = mk("button", "Dismiss"); x.onclick = async () => { await call("/admin/change_dismiss", {id: c.id}); staffChanges(); }; row.appendChild(x); }
+      if (pre) row.appendChild(pre);
       box.appendChild(row); });
   }
   async function staffTariffs() {

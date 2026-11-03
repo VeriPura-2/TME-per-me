@@ -159,6 +159,38 @@ class Watch(unittest.TestCase):
         self.assertEqual(out["unreachable"], n)
         self.assertEqual(len([c for c in jobs.changes(con) if c["kind"] == "source_unreachable"]), n)
 
+    def test_change_shows_the_lines_that_changed_and_keeps_only_the_latest_text(self):
+        con = db.connect()
+        url = jobs.source_urls()[0]
+        pages = {u: "Title\nRule: 60 days\nFooter" for u in jobs.source_urls()}
+        jobs.check_sources(con, lambda u: pages[u])
+        pages[url] = "Title\nRule: 90 days\nFooter"
+        out = jobs.check_sources(con, lambda u: pages[u])
+        self.assertEqual(out["changed"], 1)
+        d = [c for c in jobs.changes(con) if c["kind"] == "source_changed"][0]["detail"]
+        self.assertEqual(d["removed"], ["Rule: 60 days"])
+        self.assertEqual(d["added"], ["Rule: 90 days"])
+        row = con.execute("SELECT page_text FROM source_snapshots WHERE url=?", (url,)).fetchone()
+        self.assertEqual(row["page_text"], "Title\nRule: 90 days\nFooter")  # yesterday's text is gone
+        self.assertEqual(con.execute("SELECT COUNT(*) AS n FROM source_snapshots").fetchone()["n"], len(jobs.source_urls()))
+
+    def test_sources_stored_before_text_was_kept_start_quietly(self):
+        con = db.connect()
+        url = jobs.source_urls()[0]
+        con.execute("INSERT INTO source_snapshots(url, sha256, checked_at) VALUES (?,?,?)", (url, "old-format-hash", db.now()))
+        jobs.check_sources(con, lambda u: "text " + u)
+        self.assertEqual([c for c in jobs.changes(con) if c["kind"] == "source_changed"], [])
+        self.assertIsNotNone(con.execute("SELECT page_text FROM source_snapshots WHERE url=?", (url,)).fetchone()["page_text"])
+
+    def test_diff_is_capped(self):
+        d = jobs.text_diff("\n".join(f"a{i}" for i in range(100)), "\n".join(f"b{i}" for i in range(100)))
+        self.assertEqual(len(d["removed"]) + len(d["added"]), jobs.DIFF_LINES)
+
+    def test_page_text_keeps_one_line_per_block(self):
+        t = jobs.page_text("<html><nav>menu</nav><h1>Rule</h1><p>Aged <b>60</b> days</p><li>one</li>"
+                           "<p>Current to 2026-10-19</p><script>x()</script></html>")
+        self.assertEqual(t.splitlines(), ["Rule", "Aged 60 days", "one", "Current to"])
+
     def test_importer_only_sources_are_not_watched(self):
         # importer-only rows are never shown to the exporter, so their sources are not checked either
         urls = jobs.source_urls()

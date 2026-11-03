@@ -305,7 +305,8 @@ CREATE TABLE IF NOT EXISTS source_snapshots (
   url TEXT PRIMARY KEY,
   sha256 TEXT NOT NULL,
   checked_at TEXT NOT NULL,
-  changed_at TEXT                      -- last time the text changed: checklist rows using it need re-verifying
+  changed_at TEXT,                     -- last time the text changed: checklist rows using it need re-verifying
+  page_text TEXT                       -- latest page text only, for showing what changed next time
 );
 CREATE TABLE IF NOT EXISTS duty_snapshots (
   ref TEXT PRIMARY KEY,
@@ -363,7 +364,8 @@ class PG:
         self.raw.rollback()
 
 
-ADDED_COLUMNS = [("companies", c) for c in ("vies_state", "vies_name", "vies_address", "vies_checked_at")]
+ADDED_COLUMNS = [("companies", c) for c in ("vies_state", "vies_name", "vies_address", "vies_checked_at")] + [
+    ("source_snapshots", "page_text")]
 
 
 def connect(path=":memory:"):

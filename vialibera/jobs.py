@@ -11,6 +11,7 @@ or by a superadmin from the staff panel. Each run:
 Findings go to data_changes, shown in the staff panel. Nothing here changes a figure that a
 client sees without staff seeing it first, except fresher official duty values.
 """
+import difflib
 import hashlib
 import html
 import json
@@ -32,14 +33,39 @@ def _change(con, kind, ref, summary, detail=None):
     con.commit()
 
 
-def _fetch_text(url, timeout=15):  # fetched 8 at a time (_hash_all): 42 sources stay well under the request limit
+def _fetch_text(url, timeout=15):  # fetched 8 at a time (_fetch_all): 42 sources stay well under the request limit
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html,application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         raw = r.read(3_000_000).decode("utf-8", "replace")
+    return page_text(raw)
+
+
+BLOCK_END = re.compile(r"(?i)<br\s*/?>|</(p|div|li|tr|h[1-6]|dd|dt|section|article|table|ul|ol)>")
+
+
+def page_text(raw):
+    """Readable text of a page, one line per block (paragraph, list item, table row), so changes can be shown by line."""
     raw = re.sub(r"(?is)<(script|style|noscript|svg|header|footer|nav)[^>]*>.*?</\1>", " ", raw)
+    raw = BLOCK_END.sub("\n", raw)
     text = html.unescape(re.sub(r"(?s)<[^>]+>", " ", raw))
     text = re.sub(r"\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b|\b\d{4}-\d{2}-\d{2}(T[\d:.Z+-]+)?\b", " ", text)  # dates change daily
-    return " ".join(text.split())
+    return "\n".join(l for l in (" ".join(line.split()) for line in text.splitlines()) if l)
+
+
+TEXT_KEEP = 500_000  # characters of a page kept for tomorrow's comparison (only the latest version is stored)
+DIFF_LINES = 40  # changed lines saved with a Data changes alert
+
+
+def text_diff(old, new, limit=DIFF_LINES):
+    """{"removed": [...], "added": [...]} lines that differ, at most `limit` in total, each cut to 300 characters."""
+    removed, added = [], []
+    for line in difflib.unified_diff((old or "").splitlines(), (new or "").splitlines(), lineterm="", n=0):
+        if line.startswith(("---", "+++", "@@")):
+            continue
+        if len(removed) + len(added) >= limit:
+            break
+        (removed if line.startswith("-") else added).append(line[1:][:300])
+    return {"removed": removed, "added": added}
 
 
 # 1 + 2: tariffs ---------------------------------------------------------------------
@@ -68,11 +94,11 @@ def source_urls():
     return sorted(urls)
 
 
-def _hash_all(urls, fetch):
-    """{url: sha256 or exception}. Pages are fetched 8 at a time so 40+ sources fit the job's time limit."""
+def _fetch_all(urls, fetch):
+    """{url: page text or exception}. Pages are fetched 8 at a time so 40+ sources fit the job's time limit."""
     def one(url):
         try:
-            return url, hashlib.sha256(fetch(url).encode()).hexdigest()
+            return url, fetch(url)
         except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
             return url, e
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -81,22 +107,30 @@ def _hash_all(urls, fetch):
 
 def check_sources(con, fetch=_fetch_text):
     changed = unreachable = 0
-    hashes = _hash_all(source_urls(), fetch)
+    pages = _fetch_all(source_urls(), fetch)
     for url in source_urls():
-        sha = hashes[url]
-        if isinstance(sha, Exception):
+        text = pages[url]
+        if isinstance(text, Exception):
             unreachable += 1
-            _change(con, "source_unreachable", url, "Checklist source could not be read today", {"error": type(sha).__name__})
+            _change(con, "source_unreachable", url, "Checklist source could not be read today", {"error": type(text).__name__})
             continue
-        prev = con.execute("SELECT sha256 FROM source_snapshots WHERE url=?", (url,)).fetchone()
+        text = text[:TEXT_KEEP]
+        sha = hashlib.sha256(text.encode()).hexdigest()
+        prev = con.execute("SELECT sha256, page_text FROM source_snapshots WHERE url=?", (url,)).fetchone()
         if prev is None:
-            con.execute("INSERT INTO source_snapshots(url, sha256, checked_at) VALUES (?,?,?)", (url, sha, db.now()))
+            con.execute("INSERT INTO source_snapshots(url, sha256, checked_at, page_text) VALUES (?,?,?,?)", (url, sha, db.now(), text))
+        elif prev["page_text"] is None:
+            # first run that keeps text: take it as the starting point, no alert (the fingerprint format changed too)
+            con.execute("UPDATE source_snapshots SET sha256=?, page_text=?, checked_at=? WHERE url=?", (sha, text, db.now(), url))
         elif prev["sha256"] != sha:
             changed += 1
             rows = [r["id"] for r in requirements.ROWS if r["source"] and requirements.watch_url(r["source"]) == url
                     and not requirements.importer_only(r)]
-            _change(con, "source_changed", url, f"Checklist source changed: {len(rows)} item(s) to re-verify", {"items": rows})
-            con.execute("UPDATE source_snapshots SET sha256=?, checked_at=?, changed_at=? WHERE url=?", (sha, db.now(), db.now(), url))
+            _change(con, "source_changed", url, f"Checklist source changed: {len(rows)} item(s) to re-verify",
+                    {"items": rows, **text_diff(prev["page_text"], text)})
+            # only the newest text is kept: yesterday's is replaced, the changed lines stay with the alert
+            con.execute("UPDATE source_snapshots SET sha256=?, page_text=?, checked_at=?, changed_at=? WHERE url=?",
+                        (sha, text, db.now(), db.now(), url))
         else:
             con.execute("UPDATE source_snapshots SET checked_at=? WHERE url=?", (db.now(), url))
         con.commit()
