@@ -207,3 +207,33 @@ class ThreadedServer(unittest.TestCase):
             srv.shutdown()
         self.assertGreaterEqual(peak[0], 5)
         self.assertLess(took, 2.0)  # one at a time would take 3 s
+
+
+class SchemaSetup(unittest.TestCase):
+    """Instance start must not lock tables when the schema is already up to date (3 Nov 2026)."""
+
+    class FakePG:
+        def __init__(self, existing):
+            self.existing, self.sql = existing, []
+
+        def executescript(self, script):
+            self.sql.append("SCRIPT")
+
+        def execute(self, sql, params=()):
+            self.sql.append(sql)
+            rows = [{"table_name": t, "column_name": c} for t, c in self.existing]
+            return mock.Mock(fetchall=lambda: rows)
+
+        def commit(self):
+            pass
+
+    def test_no_alter_when_every_column_exists(self):
+        pg = self.FakePG(db.PG_ADDED_COLUMNS)
+        db.setup_pg(pg)
+        self.assertEqual([s for s in pg.sql if "ALTER" in s], [])
+
+    def test_only_missing_columns_are_added(self):
+        pg = self.FakePG([c for c in db.PG_ADDED_COLUMNS if c != ("source_snapshots", "page_text")])
+        db.setup_pg(pg)
+        self.assertEqual([s for s in pg.sql if "ALTER" in s],
+                         ["ALTER TABLE source_snapshots ADD COLUMN IF NOT EXISTS page_text TEXT"])
