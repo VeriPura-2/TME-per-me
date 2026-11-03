@@ -211,10 +211,37 @@ STATIC_ASSETS = {"/logo-mark.png": "image/png", "/favicon.png": "image/png",
                  "/favicon.ico": "image/x-icon", "/apple-touch-icon.png": "image/png"}
 
 
+LOAD_TEST_PREFIX = "Load test"  # first words of every load-test message: lets staff find and remove them
+
+
+class LoadTestAI:
+    """Stand-in for the AI in load tests (superadmin only): waits like a real reply, answers a fixed sentence,
+    spends no AI credit. Everything else in the request (sign-in, database, saving the conversation) is real."""
+
+    def __init__(self, delay):
+        self.delay, self.messages = delay, self
+
+    def create(self, **kw):
+        from types import SimpleNamespace as NS
+        time.sleep(self.delay)  # already inside db.outside_call in agent.turn, like a real AI call
+        text = "Load test reply (stand-in, no AI used)."
+        return NS(content=[NS(type="text", text=text, model_dump=lambda: {"type": "text", "text": text})])
+
+
 def handle_chat(body, llm=None, who=None):
     msg = (body.get("message") or "").strip()
     if not msg:
         return 400, {"error": "message required"}
+    if body.get("load_test"):
+        if not permissions.is_superadmin(who):
+            return 403, {"error": "forbidden"}  # never fall back to the real AI: that would spend credit
+        try:
+            delay = min(max(float(body.get("delay", 7)), 0.0), 30.0)
+        except (TypeError, ValueError):
+            delay = 7.0
+        llm = LoadTestAI(delay)
+        if not msg.startswith(LOAD_TEST_PREFIX):
+            msg = f"{LOAD_TEST_PREFIX}: {msg}"
     c = con()
     if who and not accounts.has_consent(c, who["user"], TERMS_VERSION):
         return 403, {"error": "consent_required", "terms_version": TERMS_VERSION}
