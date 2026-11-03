@@ -5,7 +5,9 @@ Storage: Cloud SQL Postgres when CLOUDSQL_INSTANCE is set, otherwise local SQLit
 """
 import json
 import os
+import sys
 import threading
+import time
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -39,6 +41,22 @@ _pool_lock = threading.Lock()
 _slots = threading.BoundedSemaphore(POOL_SIZE)
 _sqlite_lock = threading.Lock()
 
+# Diagnostics (3 Nov 2026): who holds the pooled connections. One log line when a request holds a connection
+# for more than HOLD_LOG_S, and the list of current holders when a request gives up with "database busy".
+HOLD_LOG_S = float(os.environ.get("DB_HOLD_LOG_S", "5"))
+_holders = {}  # id(RequestCon) -> (request path, borrowed at, where in our code)
+_holders_lock = threading.Lock()
+
+
+def _where():
+    """The last few places in our own code that led to this borrow (not the pool code itself)."""
+    frames = [f for f in traceback.extract_stack()[:-3] if "/vialibera/" in f.filename and f.name not in ("_get", "raw", "execute")]
+    return " < ".join(f"{f.filename.rsplit('/vialibera/', 1)[1]}:{f.lineno} {f.name}" for f in reversed(frames[-4:]))
+
+
+def _log(msg):
+    print(msg, file=sys.stderr, flush=True)
+
 
 def postgres():
     return bool(os.environ.get("CLOUDSQL_INSTANCE"))
@@ -66,13 +84,20 @@ class RequestCon:
             self.give_back()
         if self._pg is None:
             pool = _get_pool()
+            t = time.time()
             if not _slots.acquire(timeout=30):
+                now = time.time()
+                with _holders_lock:
+                    held = "; ".join(f"{p} held {now - t0:.1f}s from {w}" for p, t0, w in _holders.values())
+                _log(f"DB_BUSY path={getattr(_local, 'path', '?')} waited={now - t:.1f}s holders: {held}")
                 raise RuntimeError("database busy: no free connection within 30 s")
             try:
                 self._pg = pool.get()
             except Exception:
                 _slots.release()
                 raise
+            with _holders_lock:
+                _holders[id(self)] = (getattr(_local, "path", "?"), time.time(), _where())
         return self._pg
 
     @property
@@ -101,6 +126,10 @@ class RequestCon:
         pg, self._pg = self._pg, None
         if pg is None:
             return
+        with _holders_lock:
+            info = _holders.pop(id(self), None)
+        if info and time.time() - info[1] > HOLD_LOG_S:
+            _log(f"DB_HOLD path={info[0]} held={time.time() - info[1]:.1f}s from {info[2]}")
         try:
             ok = db.finish(pg)
             _pool.put(pg, close=not ok)
@@ -765,6 +794,7 @@ class Handler(BaseHTTPRequestHandler):
         if not postgres():  # SQLite: one shared connection, so one request at a time
             with _sqlite_lock:
                 return fn()
+        _local.path = self.command + " " + self.path.split("?")[0]
         try:
             return fn()
         finally:
