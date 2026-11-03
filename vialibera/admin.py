@@ -182,3 +182,41 @@ def owner_invite(con, who, cid):
     con.commit()
     _log(con, who, "staff_change", cid, action="owner_invite")
     return 200, {"token": token, "expires_at": exp}
+
+
+# Load-test cleanup ---------------------------------------------------------------------------------------------
+
+LOAD_TEST_PREFIX = "Load test"
+CASE_TABLES = ("items", "confirmations", "checklist_confirmations", "case_notes", "core_checks", "core_consignments",
+               "usage_events", "histories", "events")  # rows that belong to a case; the case itself is removed last
+
+
+def load_test_cases(con, who):
+    """The caller's own conversations whose first client message starts with 'Load test' and that hold no documents."""
+    ids = []
+    for r in con.execute("SELECT id FROM cases WHERE owner_sub=? ORDER BY created_at", (who["user"],)).fetchall():
+        first = con.execute("SELECT data FROM events WHERE case_id=? AND kind='message' AND actor='client' ORDER BY id LIMIT 1",
+                            (r["id"],)).fetchone()
+        text = (json.loads(first["data"]).get("text") or "") if first else ""
+        if text.startswith(LOAD_TEST_PREFIX) and not con.execute(
+                "SELECT 1 FROM project_docs WHERE case_id=? LIMIT 1", (r["id"],)).fetchone():
+            ids.append(r["id"])
+    return ids
+
+
+def load_test_cleanup(con, who, confirm=False, expected=None):
+    """Superadmin only. Without confirm: how many would be removed. With confirm and the same count: remove them."""
+    if not _full(who):
+        return 403, {"error": "forbidden"}
+    ids = load_test_cases(con, who)
+    if not confirm:
+        return 200, {"count": len(ids)}
+    if expected is None or int(expected) != len(ids):
+        return 409, {"error": "count changed", "count": len(ids)}  # something changed since the preview: look again
+    for cid in ids:
+        for table in CASE_TABLES:
+            con.execute(f"DELETE FROM {table} WHERE case_id=?", (cid,))
+        con.execute("DELETE FROM cases WHERE id=?", (cid,))
+    con.commit()
+    _log(con, who, "staff_change", None, action="load_test_cleanup", removed=len(ids))
+    return 200, {"removed": len(ids)}

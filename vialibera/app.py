@@ -604,6 +604,8 @@ def handle_admin(path, body, who):
         return admin.company(c, who, cid)
     if path == "/admin/audit":
         return admin.audit(c, who)
+    if path == "/admin/load_test_cleanup":
+        return admin.load_test_cleanup(c, who, bool(body.get("confirm")), body.get("expected"))
     if path == "/admin/verify":
         return admin.verify(c, who, cid, bool(body.get("verified", True)))
     if path == "/admin/plan":
