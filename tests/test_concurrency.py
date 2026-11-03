@@ -347,3 +347,34 @@ class ColdStart(unittest.TestCase):
             for _ in range(10):
                 voice.api_key()
         self.assertEqual(len(calls), 1)
+
+
+class SingleAppModule(unittest.TestCase):
+    """3 Nov 2026: team.py and admin.py imported vialibera.app while the server ran it as __main__, creating
+    a second copy that re-registered the outside-call hook with empty bookkeeping, so step A did nothing."""
+
+    def test_no_module_imports_app(self):
+        import pathlib
+        import re
+        root = pathlib.Path(app.__file__).parent
+        offenders = [str(p.relative_to(root)) for p in root.rglob("*.py") if p.name != "app.py"
+                     and re.search(r"from \.+app import|from \.+ import[^\n]*\bapp\b|import vialibera\.app|from vialibera import app",
+                                   p.read_text())]
+        self.assertEqual(offenders, [])
+
+    def test_running_as_main_does_not_create_a_second_copy(self):
+        import subprocess
+        import sys
+        code = "\n".join([
+            "import os, runpy, sys, http.server",
+            "http.server.ThreadingHTTPServer.serve_forever = lambda self: None  # start, do not serve",
+            "os.environ['PORT'] = '0'",
+            "g = runpy.run_module('vialibera.app', run_name='__main__', alter_sys=True)",
+            "from vialibera import db, team, admin",
+            "import vialibera.app as again",
+            "print(again.lend_back is g['lend_back'] and db._outside_hook is g['lend_back'])",
+        ])
+        root = str(__import__("pathlib").Path(app.__file__).parent.parent)
+        env = {k: v for k, v in os.environ.items() if k not in ("CLOUDSQL_INSTANCE", "GCP_PROJECT")}
+        out = subprocess.run([sys.executable, "-c", code], cwd=root, capture_output=True, text=True, timeout=60, env=env)
+        self.assertEqual(out.stdout.strip().splitlines()[-1:], ["True"], out.stderr[-800:])

@@ -28,7 +28,7 @@ def companies(con, who):
     """One row per company with the things staff look for first."""
     if not _guard(who):
         return 403, {"error": "forbidden"}
-    from .app import TERMS_VERSION
+    from .terms import TERMS_VERSION
     rows = []
     for co in con.execute("SELECT id, vat, legal_name, status, plan, created_by, created_at, vies_state FROM companies ORDER BY created_at DESC").fetchall():
         m = con.execute("SELECT COALESCE(SUM(CASE WHEN status='active' THEN 1 ELSE 0 END),0) AS a, COALESCE(SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END),0) AS p FROM memberships WHERE company_id=?", (co["id"],)).fetchone()

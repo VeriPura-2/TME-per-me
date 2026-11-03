@@ -6,6 +6,11 @@ Storage: Cloud SQL Postgres when CLOUDSQL_INSTANCE is set, otherwise local SQLit
 import json
 import os
 import sys
+
+if __name__ == "__main__":
+    # Started as `python -m vialibera.app`: this module is __main__. Register it as vialibera.app as well, so an
+    # import of vialibera.app gets this same copy, not a second one with its own connection bookkeeping (3 Nov 2026).
+    sys.modules.setdefault("vialibera.app", sys.modules[__name__])
 import threading
 import time
 import traceback
@@ -19,7 +24,7 @@ from . import admin, permissions, team, accounts, agent, auth, core_checks, db, 
 from .menu import MENU
 from .secrets import get_secret
 
-TERMS_VERSION = "2026-10-v0.3"
+from .terms import TERMS_VERSION  # noqa: E402 (kept here: app.TERMS_VERSION is used across the code and tests)
 CON = None
 _client = None
 

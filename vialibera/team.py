@@ -28,7 +28,7 @@ def overview(con, who, label=None):
                 "me": r["user_sub"] == who["user"]} for r in rows
                if r["status"] == "active" or role == "owner"]  # only owners see pending requests
     from . import accounts
-    from .app import TERMS_VERSION
+    from .terms import TERMS_VERSION
     cc = con.execute("SELECT at FROM company_consents WHERE company_id=? AND terms_version=?", (cid, TERMS_VERSION)).fetchone()
     from . import vat_check
     out = {"company": {"name": co["legal_name"], "vat": co["vat"], "plan": co["plan"], "vies": co["vies_state"],
