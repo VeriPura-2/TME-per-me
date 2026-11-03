@@ -878,7 +878,19 @@ applyLang();
             : part === "vies" ? jj.vies.companies_rechecked + " rechecked"
             : (typeof jj.tariff_watch === "string" ? jj.tariff_watch : jj.tariff_watch.read + " read, " + jj.tariff_watch.unreadable + " unreadable"))); }
         jobMsg = " " + say.join(" · "); b.disabled = false; staffChanges(); };  // kept across the redraw
-      box.append(b, o); }
+      box.append(b, o);
+      // load-test cleanup: preview the count, then confirm (removes only your own conversations starting "Load test")
+      const lt = mk("div"), lb = mk("button", "Remove load-test conversations"), lo = mk("span", "", "muted");
+      lb.onclick = async () => { lb.disabled = true; lo.textContent = " counting…";
+        const [r, j] = await call("/admin/load_test_cleanup", {}); lb.disabled = false;
+        if (!r.ok) { lo.textContent = " " + (j.error || r.status); return; }
+        if (!j.count) { lo.textContent = " none found."; return; }
+        lo.textContent = " " + j.count + " of your conversations start with \"Load test\" and will be deleted. ";
+        const ok = mk("button", "Delete " + j.count); ok.onclick = async () => { ok.disabled = true;
+          const [r2, j2] = await call("/admin/load_test_cleanup", {confirm: true, expected: j.count});
+          lo.textContent = r2.ok ? " removed " + j2.removed + "." : " " + (j2.error || r2.status) + (j2.count != null ? " (now " + j2.count + "), count again." : ""); };
+        lo.appendChild(ok); };
+      lt.append(lb, lo); box.appendChild(lt); }
     j.changes.forEach(c => { const row = mk("div", sd(c.at) + " · " + c.kind + " · " + c.summary + " · " + c.ref + " ", "muted");
       if (c.detail && Object.keys(c.detail).length) row.title = JSON.stringify(c.detail);
       const d = c.detail || {}; let pre = null;
