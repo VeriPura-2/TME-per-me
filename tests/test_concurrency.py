@@ -261,6 +261,18 @@ class HoldDiagnostics(unittest.TestCase):
         self.assertEqual(len(self.logs), 1)
         self.assertIn("DB_HOLD path=POST /chat", self.logs[0])
 
+    def test_hold_line_says_how_much_time_was_in_queries(self):
+        app._local.path = "POST /chat"
+        c = app.con()
+        pg = c._get()
+        pg.execute = lambda sql, params=(): time.sleep(0.04 if "consents" in sql else 0.01)
+        c.execute("SELECT 1 FROM consents WHERE user_sub=?", ("u",))
+        c.execute("SELECT 2")
+        time.sleep(0.05)
+        app.release_con()
+        self.assertIn("queries=2", self.logs[0])
+        self.assertIn("[SELECT 1 FROM consents WHERE user_sub=?]", self.logs[0])
+
     def test_short_hold_is_not_logged(self):
         app.con().raw
         app.release_con()

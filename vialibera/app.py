@@ -84,6 +84,7 @@ class RequestCon:
 
     def __init__(self):
         self._pg = None
+        self._stats = [0, 0.0, 0.0, ""]  # queries, time in them, slowest, slowest query (since the last borrow)
 
     def _get(self):
         if self._pg is not None and self._pg.raw.closed:  # lost: hand it back closed and borrow a fresh one
@@ -104,6 +105,7 @@ class RequestCon:
                 raise
             with _holders_lock:
                 _holders[id(self)] = (getattr(_local, "path", "?"), time.time(), _where())
+            self._stats = [0, 0.0, 0.0, ""]
         return self._pg
 
     @property
@@ -114,7 +116,17 @@ class RequestCon:
         return self._pg is not None
 
     def execute(self, sql, params=()):
-        return self._get().execute(sql, params)
+        pg = self._get()
+        t = time.time()
+        try:
+            return pg.execute(sql, params)
+        finally:
+            d = time.time() - t
+            st = self._stats
+            st[0] += 1
+            st[1] += d
+            if d > st[2]:
+                st[2], st[3] = d, " ".join(sql.split())[:60]
 
     def executescript(self, script):
         return self._get().executescript(script)
@@ -135,7 +147,9 @@ class RequestCon:
         with _holders_lock:
             info = _holders.pop(id(self), None)
         if info and time.time() - info[1] > HOLD_LOG_S:
-            _log(f"DB_HOLD path={info[0]} held={time.time() - info[1]:.1f}s from {info[2]}")
+            n, total, worst, q = self._stats
+            _log(f"DB_HOLD path={info[0]} held={time.time() - info[1]:.1f}s queries={n} in_queries={total:.1f}s "
+                 f"slowest={worst:.2f}s [{q}] from {info[2]}")
         try:
             ok = db.finish(pg)
             _pool.put(pg, close=not ok)
