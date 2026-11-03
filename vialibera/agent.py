@@ -90,8 +90,9 @@ def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it",
             " Interface language: " + ("Italian. Write every message and every OPTIONS line in Italian"
                                        if lang == "it" else "English. Write every message and every OPTIONS line in English")
             + ", unless the client writes in another language, then follow the client.")
-        resp = client.messages.create(model=MODEL, max_tokens=1024, system=personas.system_prompt(persona_id or persona_for(db.case_read(con, case_id)["path_type"])) + "\n\n" + SYSTEM + "\n\n" + note,
-                                      tools=TOOLS, messages=history)
+        system = personas.system_prompt(persona_id or persona_for(db.case_read(con, case_id)["path_type"])) + "\n\n" + SYSTEM + "\n\n" + note
+        with db.outside_call():  # 5 to 30 s: the database connection is lent back meanwhile
+            resp = client.messages.create(model=MODEL, max_tokens=1024, system=system, tools=TOOLS, messages=history)
         history.append({"role": "assistant", "content": [b.model_dump() for b in resp.content]})
         uses = [b for b in resp.content if b.type == "tool_use"]
         if not uses:

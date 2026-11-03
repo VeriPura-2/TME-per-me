@@ -43,7 +43,7 @@ def italian(raw):
 
 def _http(url, timeout=8):
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with db.outside_call(), urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read().decode("utf-8")
 
 

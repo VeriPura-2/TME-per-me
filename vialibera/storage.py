@@ -4,6 +4,8 @@ Files are streamed through the app after an access check, so there are no public
 """
 import os
 
+from . import db
+
 
 class LocalStore:
     def __init__(self, root):
@@ -26,10 +28,12 @@ class GcsStore:
         self.bucket = storage.Client().bucket(bucket)
 
     def put(self, key, data):
-        self.bucket.blob(key).upload_from_string(data)
+        with db.outside_call():
+            self.bucket.blob(key).upload_from_string(data)
 
     def get(self, key):
-        return self.bucket.blob(key).download_as_bytes()
+        with db.outside_call():
+            return self.bucket.blob(key).download_as_bytes()
 
 
 _store = None

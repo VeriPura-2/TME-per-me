@@ -151,7 +151,8 @@ def speak(con, user, text, persona_id, lang="it", intro_name=None, post=None, us
                                  headers={"xi-api-key": key, "Content-Type": "application/json",
                                           "Accept": "audio/mpeg"})
     try:
-        audio = (post or (lambda r: urllib.request.urlopen(r, timeout=30).read()))(req)
+        with db.outside_call():
+            audio = (post or (lambda r: urllib.request.urlopen(r, timeout=30).read()))(req)
     except urllib.error.HTTPError as e:
         try:
             detail = e.read().decode("utf-8", "replace")[:200]

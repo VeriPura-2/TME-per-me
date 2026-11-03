@@ -53,6 +53,67 @@ def _get_pool():
     return _pool
 
 
+class RequestCon:
+    """A request's database handle on Postgres. Borrows a pooled connection on first use and can lend it
+    back mid-request (outside calls) and borrow again later, so a handle kept in a local variable stays valid."""
+    postgres = True
+
+    def __init__(self):
+        self._pg = None
+
+    def _get(self):
+        if self._pg is not None and self._pg.raw.closed:  # lost: hand it back closed and borrow a fresh one
+            self.give_back()
+        if self._pg is None:
+            pool = _get_pool()
+            if not _slots.acquire(timeout=30):
+                raise RuntimeError("database busy: no free connection within 30 s")
+            try:
+                self._pg = pool.get()
+            except Exception:
+                _slots.release()
+                raise
+        return self._pg
+
+    @property
+    def raw(self):
+        return self._get().raw
+
+    def held(self):
+        return self._pg is not None
+
+    def execute(self, sql, params=()):
+        return self._get().execute(sql, params)
+
+    def executescript(self, script):
+        return self._get().executescript(script)
+
+    def commit(self):
+        if self._pg is not None:
+            self._pg.commit()
+
+    def rollback(self):
+        if self._pg is not None:
+            self._pg.rollback()
+
+    def give_back(self):
+        """Commit or roll back, then return the connection to the pool. The handle stays usable."""
+        pg, self._pg = self._pg, None
+        if pg is None:
+            return
+        try:
+            ok = db.finish(pg)
+            _pool.put(pg, close=not ok)
+        except Exception:
+            traceback.print_exc()
+            try:
+                _pool.put(pg, close=True)
+            except Exception:
+                pass
+        finally:
+            _slots.release()
+
+
 def con():
     global CON
     if not postgres():
@@ -60,42 +121,30 @@ def con():
             CON = db.connect(os.environ.get("DB_PATH", "/tmp/vialibera.db"))
         return CON
     c = getattr(_local, "con", None)
-    if c is not None:
-        if c.raw.closed:  # lost mid-request: hand it back closed and borrow a fresh one
-            release_con()
-            return con()
-        if c.raw.get_transaction_status() == 3:  # a failed statement left the transaction aborted
-            c.raw.rollback()
-        return c
-    pool = _get_pool()
-    if not _slots.acquire(timeout=30):
-        raise RuntimeError("database busy: no free connection within 30 s")
-    try:
-        c = pool.get()
-    except Exception:
-        _slots.release()
-        raise
-    _local.con = c
+    if c is None:
+        c = _local.con = RequestCon()
+    elif c.held() and c._pg.raw.get_transaction_status() == 3:  # a failed statement left the transaction aborted
+        c._pg.raw.rollback()
     return c
 
 
+def lend_back():
+    """Before a slow outside call: save this request's writes and return its connection to the pool."""
+    c = getattr(_local, "con", None)
+    if c is not None:
+        c.give_back()
+
+
+db.set_outside_hook(lend_back)
+
+
 def release_con():
-    """End of a request: commit or roll back, then give the connection back to the pool."""
+    """End of a request: commit or roll back, give the connection back, forget the handle."""
     c = getattr(_local, "con", None)
     if c is None:
         return
     _local.con = None
-    try:
-        ok = db.finish(c)
-        _pool.put(c, close=not ok)
-    except Exception:
-        traceback.print_exc()
-        try:
-            _pool.put(c, close=True)
-        except Exception:
-            pass
-    finally:
-        _slots.release()
+    c.give_back()
 
 
 def rollback_current():

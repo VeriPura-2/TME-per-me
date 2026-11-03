@@ -82,8 +82,9 @@ class Pool(unittest.TestCase):
         def work():
             try:
                 c = app.con()
-                self.assertIs(app.con(), c)  # same connection for the whole request
-                seen.append(id(c))
+                self.assertIs(app.con(), c)  # same handle for the whole request
+                c.raw  # first database use borrows a connection
+                seen.append(id(c._pg))
                 barrier.wait(timeout=5)  # the whole pool is in use at the same time
             finally:
                 app.release_con()
@@ -99,7 +100,7 @@ class Pool(unittest.TestCase):
         held, got = [], threading.Event()
 
         def hold():
-            held.append(app.con())
+            held.append(app.con().raw)
             time.sleep(0.5)
             app.release_con()
 
@@ -108,7 +109,7 @@ class Pool(unittest.TestCase):
         time.sleep(0.1)  # the pool is now fully in use
 
         def extra():
-            app.con()
+            app.con().raw
             got.set()
             app.release_con()
 
@@ -121,9 +122,63 @@ class Pool(unittest.TestCase):
 
     def test_slots_are_released(self):
         for _ in range(app.POOL_SIZE * 3):  # more than the pool size, one after another
-            app.con()
+            app.con().raw
             app.release_con()
         self.assertEqual(self.pool.out, set())
+
+
+class OutsideCalls(unittest.TestCase):
+    """Step A: a request lends its connection back during slow outside calls (AI, VIES, Core...)."""
+
+    def setUp(self):
+        self.pool = FakePool()
+        for p in (mock.patch.dict(os.environ, {"CLOUDSQL_INSTANCE": "test:eu:db"}),
+                  mock.patch.object(app, "_pool", self.pool),
+                  mock.patch.object(app, "_get_pool", lambda: self.pool)):
+            p.start()
+            self.addCleanup(p.stop)
+        self.addCleanup(app.release_con)
+
+    def test_connection_is_lent_back_during_an_outside_call_and_borrowed_again_after(self):
+        c = app.con()
+        first = c.raw
+        first.status = 2  # unsaved writes
+        with db.outside_call():
+            self.assertEqual(self.pool.out, set())  # nothing held while waiting
+            self.assertEqual(first.calls, ["commit"])  # writes saved before lending it back
+        self.assertIsNotNone(c.raw)  # the same handle works again: borrows a connection
+        self.assertEqual(len(self.pool.out), 1)
+        app.release_con()
+        self.assertEqual(self.pool.out, set())
+
+    def test_many_slow_requests_share_few_connections(self):
+        # 3 x the pool size, each "waiting for the AI" for 0.3 s: none should wait for a connection
+        n, waited = app.POOL_SIZE * 3, []
+
+        def request():
+            try:
+                c = app.con()
+                c.raw  # read the case
+                with db.outside_call():
+                    time.sleep(0.3)  # the AI is thinking
+                t = time.time()
+                c.raw  # save the reply
+                waited.append(time.time() - t)
+            finally:
+                app.release_con()
+
+        ts = [threading.Thread(target=request) for _ in range(n)]
+        t0 = time.time()
+        [t.start() for t in ts]
+        [t.join(10) for t in ts]
+        self.assertEqual(len(waited), n)
+        self.assertLess(time.time() - t0, 0.8)  # holding connections through the wait: 3 batches x 0.3 s, over 0.9 s
+        self.assertEqual(self.pool.out, set())
+
+    def test_no_effect_without_a_request(self):
+        with db.outside_call():
+            pass
+        self.assertEqual(self.pool.returned, [])
 
 
 class ThreadedServer(unittest.TestCase):

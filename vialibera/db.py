@@ -2,6 +2,7 @@
 import json
 import sqlite3
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 
 SCHEMA = """
@@ -327,6 +328,25 @@ CASE_STATES = ["draft", "interviewing", "options ready", "items selected", "quot
 
 def now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+_outside_hook = None  # set by app: saves the request's writes and lends its connection back to the pool
+
+
+def set_outside_hook(fn):
+    global _outside_hook
+    _outside_hook = fn
+
+
+@contextmanager
+def outside_call():
+    """Wrap any slow call to an outside service (AI, VIES, Core, Stripe, voice, storage, official sites).
+    Before it starts, the request's database connection is committed and lent back to the pool, so a
+    request waiting 30 s for the AI does not hold one of the few connections. The next database use
+    borrows a connection again. No effect on SQLite (local dev, tests) or outside a request."""
+    if _outside_hook:
+        _outside_hook()
+    yield
 
 
 def pg_sql(sql):

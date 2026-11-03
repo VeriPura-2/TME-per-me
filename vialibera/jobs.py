@@ -107,7 +107,8 @@ def _fetch_all(urls, fetch):
 
 def check_sources(con, fetch=_fetch_text):
     changed = unreachable = 0
-    pages = _fetch_all(source_urls(), fetch)
+    with db.outside_call():  # 20 to 40 s of downloads: no connection held meanwhile
+        pages = _fetch_all(source_urls(), fetch)
     for url in source_urls():
         text = pages[url]
         if isinstance(text, Exception):
