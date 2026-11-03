@@ -191,6 +191,12 @@ class Watch(unittest.TestCase):
                            "<p>Current to 2026-10-19</p><script>x()</script></html>")
         self.assertEqual(t.splitlines(), ["Rule", "Aged 60 days", "one", "Current to"])
 
+    def test_pdf_bytes_leave_no_control_characters(self):
+        # 3 Nov 2026: PDF sources put NUL characters in the stored text; Postgres refused them (ValueError)
+        t = jobs.page_text(b"%PDF-1.4\x00\x01binary\x00 stream\x1f end".decode("utf-8", "replace"))
+        self.assertFalse(any(ord(ch) < 32 and ch not in "\n" for ch in t))
+        self.assertIn("binary", t)
+
     def test_importer_only_sources_are_not_watched(self):
         # importer-only rows are never shown to the exporter, so their sources are not checked either
         urls = jobs.source_urls()
