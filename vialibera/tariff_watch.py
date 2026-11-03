@@ -129,7 +129,7 @@ def read_us(con, lines, us=None):
 
 def _get(url, timeout=60, limit=40_000_000):
     req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with db.outside_call(), urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read(limit)
 
 

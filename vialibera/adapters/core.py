@@ -17,6 +17,7 @@ import os
 import urllib.error
 import urllib.request
 
+from .. import db
 from .base import Adapter, AdapterError
 
 COUNTRY = {"UK": "United Kingdom", "US": "United States", "CA": "Canada", "DE": "Germany", "FR": "France", "ES": "Spain", "NL": "Netherlands",
@@ -50,7 +51,7 @@ def _http(method, url, key, body=None, timeout=60):
     req = urllib.request.Request(url, data=data, method=method,
                                  headers={"x-api-key": key, "Content-Type": "application/json", "Accept": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with db.outside_call(), urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, r.read().decode("utf-8")
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode("utf-8", "replace")

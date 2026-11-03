@@ -14,13 +14,14 @@ import json
 import urllib.error
 import urllib.request
 
+from .. import db
 from .base import Adapter, AdapterError
 
 
 def http_get(url, timeout=20):
     try:
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with db.outside_call(), urllib.request.urlopen(req, timeout=timeout) as r:
             return r.read().decode("utf-8")
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         raise AdapterError("unavailable", f"{url}: {e}")

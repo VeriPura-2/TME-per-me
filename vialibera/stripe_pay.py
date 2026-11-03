@@ -106,7 +106,7 @@ def _call(method, path, data=None, idem=None):
     if idem:
         req.add_header("Idempotency-Key", idem)
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
+        with db.outside_call(), urllib.request.urlopen(req, timeout=20) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
         try:
