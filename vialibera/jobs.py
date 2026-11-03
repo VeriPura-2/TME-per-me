@@ -50,6 +50,8 @@ def page_text(raw):
     raw = BLOCK_END.sub("\n", raw)
     text = html.unescape(re.sub(r"(?s)<[^>]+>", " ", raw))
     text = re.sub(r"\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b|\b\d{4}-\d{2}-\d{2}(T[\d:.Z+-]+)?\b", " ", text)  # dates change daily
+    # control characters (PDF sources give binary bytes): Postgres refuses NUL in text, and none are readable anyway
+    text = re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", " ", text)
     return "\n".join(l for l in (" ".join(line.split()) for line in text.splitlines()) if l)
 
 
