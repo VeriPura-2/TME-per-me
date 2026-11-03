@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import re
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -33,14 +34,19 @@ _KEY_AT = 0.0
 KEY_TTL = 300  # seconds; a changed key is picked up without a restart
 
 
+_KEY_LOCK = threading.Lock()
+
+
 def api_key():
     global _KEY, _KEY_AT
-    if _KEY is None or time.time() - _KEY_AT > KEY_TTL:
-        try:
-            _KEY = get_secret("ELEVENLABS_API_KEY")
-            _KEY_AT = time.time()
-        except Exception:
-            return _KEY  # keep the last good key if Secret Manager is briefly unreachable
+    if time.time() - _KEY_AT > KEY_TTL:  # first call (_KEY_AT 0) or older than 5 min, found or not
+        with _KEY_LOCK:  # one thread refreshes; the others wait and reuse its answer
+            if time.time() - _KEY_AT > KEY_TTL:
+                try:
+                    _KEY = get_secret("ELEVENLABS_API_KEY")
+                except Exception:
+                    pass  # keep the last good key if Secret Manager is briefly unreachable
+                _KEY_AT = time.time()  # also after a failure: do not ask again on every request
     return _KEY
 
 
