@@ -19,6 +19,7 @@ import re
 import urllib.error
 import urllib.request
 import uuid
+from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
 
 from . import db, requirements, tariff_watch, vat_check
@@ -171,6 +172,20 @@ def recheck_vies(con, http=None):
 
 
 PARTS = ("sources", "vies", "tariffs")  # Cloud Scheduler calls each part on its own, so one failure does not stop the others
+
+
+AI_ALERT_EVERY = timedelta(hours=1)
+
+
+def ai_unavailable(con, err):
+    """Staff alert when the AI service fails (for example: credit balance too low). At most one an hour."""
+    since = (datetime.now(timezone.utc) - AI_ALERT_EVERY).isoformat(timespec="seconds")
+    if con.execute("SELECT 1 FROM data_changes WHERE kind='ai_unavailable' AND at > ?", (since,)).fetchone():
+        return False
+    detail = " ".join(str(getattr(err, "message", None) or err).split())[:300]
+    _change(con, "ai_unavailable", type(err).__name__, f"AI service unavailable: {detail}"[:300],
+            {"error": type(err).__name__, "status": getattr(err, "status_code", None), "message": detail})
+    return True
 
 
 def run_part(con, part, uk=None, us=None, fetch=_fetch_text, vies_http=None, tariff_readers=None):
