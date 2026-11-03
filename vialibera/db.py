@@ -440,17 +440,22 @@ def finish(con):
     return True
 
 
+PG_ADDED_COLUMNS = [("cases", "org_id"), ("cases", "owner_sub"), ("cases", "company_id"), ("profiles", "plan"),
+                    ("companies", "plan"), ("companies", "created_by"), ("memberships", "label")] + ADDED_COLUMNS
+
+
 def setup_pg(con):
+    """Schema setup, run once when an instance starts. ALTER TABLE locks the whole table in Postgres even when
+    the column already exists (ADD COLUMN IF NOT EXISTS), and every query on that table queues behind the lock.
+    New instances start under load, so only missing columns are added (3 Nov 2026: 30 replies at once timed out)."""
     con.executescript(SCHEMA.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "BIGSERIAL PRIMARY KEY"))
-    for col in ("org_id", "owner_sub", "company_id"):
-        con.execute(f"ALTER TABLE cases ADD COLUMN IF NOT EXISTS {col} TEXT")
-    con.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan TEXT")
-    con.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan TEXT")
-    con.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_by TEXT")
-    con.execute("ALTER TABLE memberships ADD COLUMN IF NOT EXISTS label TEXT")
-    for table, col in ADDED_COLUMNS:
-        con.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} TEXT")
+    have = {(r["table_name"], r["column_name"]) for r in con.execute(
+        "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = current_schema()").fetchall()}
     con.commit()
+    for table, col in PG_ADDED_COLUMNS:
+        if (table, col) not in have:
+            con.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} TEXT")
+            con.commit()  # hold the table lock as briefly as possible
     return con
 
 
