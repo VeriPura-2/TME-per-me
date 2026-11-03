@@ -69,7 +69,9 @@ SRC = {
     "lucid": "https://www.verpackungsregister.org/en/faq-detail-category/questions-about-registration",
     # France (added 2 Nov 2026)
     "fr_lang": "https://www.legifrance.gouv.fr/loda/id/LEGITEXT000005616341",
-    "fr_infotri": "https://www.ecologie.gouv.fr/info-tri",  # ministry page (was an Adelphe PDF, unreadable from cloud)
+    # The legal text: decree 2021-835 (Triman and Info-tri, code de l'environnement R. 541-12-17 and following), on AIDA,
+    # the environment ministry's regulatory database run by INERIS. Legifrance and ecologie.gouv.fr refuse cloud servers.
+    "fr_infotri": "https://aida.ineris.fr/reglementation/decret-ndeg-2021-835-290621-relatif-a-linformation-consommateurs-regle-tri-dechets",
     "fr_excise": "https://www.douane.gouv.fr/fiche/droits-des-alcools-et-boissons-alcooliques",
     # Spain, Netherlands, Belgium, Austria (added 2 Nov 2026)
     "es_lang": "https://www.aesan.gob.es/en/AECOSAN/web/seguridad_alimentaria/subdetalle/norma_general_etiquetado.htm",
