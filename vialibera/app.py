@@ -24,10 +24,16 @@ CON = None
 _client = None
 
 
+_client_lock = threading.Lock()
+
+
 def client():
+    """The AI client, created once per instance (by one thread: the others wait for it). Made at start-up by warm_up."""
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=get_secret("ANTHROPIC_API_KEY"))
+        with _client_lock:
+            if _client is None:
+                _client = anthropic.Anthropic(api_key=get_secret("ANTHROPIC_API_KEY"))
     return _client
 
 
@@ -996,5 +1002,19 @@ class Server(ThreadingHTTPServer):
     request_queue_size = 128  # connections waiting to be accepted (the default of 5 is too small)
 
 
+def warm_up():
+    """Before the instance listens (Cloud Run sends traffic only then): AI client, database pool, voice key.
+    On 3 Nov 2026, 20 requests on a new instance each fetched the AI key while holding a database connection."""
+    for name, step in (("ai client", client), ("database pool", lambda: postgres() and _get_pool()),
+                       ("voice key", voice.api_key)):
+        t = time.time()
+        try:
+            step()
+            _log(f"WARM_UP {name} ready in {time.time() - t:.1f}s")
+        except Exception as e:  # start anyway: the first request will try again
+            _log(f"WARM_UP {name} failed: {type(e).__name__}: {str(e)[:200]}")
+
+
 if __name__ == "__main__":
+    warm_up()
     Server(("0.0.0.0", int(os.environ.get("PORT", 8080))), Handler).serve_forever()

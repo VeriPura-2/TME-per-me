@@ -279,3 +279,59 @@ class HoldDiagnostics(unittest.TestCase):
         self.assertIn("POST /chat held 12", self.logs[0])
         self.assertIn("agent.py:95 turn", self.logs[0])
         app._local.con = None
+
+
+class ColdStart(unittest.TestCase):
+    """3 Nov 2026: on a new instance, 20 requests each fetched the AI key while holding a database connection."""
+
+    def test_ai_client_is_created_once_under_parallel_requests(self):
+        made = []
+
+        def slow_secret(name):
+            time.sleep(0.2)
+            return "key"
+        with mock.patch.object(app, "_client", None), mock.patch.object(app, "get_secret", slow_secret), \
+                mock.patch.object(app.anthropic, "Anthropic", lambda api_key: made.append(api_key) or object()):
+            ts = [threading.Thread(target=app.client) for _ in range(20)]
+            [t.start() for t in ts]
+            [t.join(5) for t in ts]
+        self.assertEqual(len(made), 1)
+
+    def test_secret_fetch_does_not_hold_a_database_connection(self):
+        from vialibera import secrets
+        pool, seen = FakePool(), []
+
+        class SM:
+            def access_secret_version(self, request):
+                seen.append(set(pool.out))  # what is held while the network call runs
+                return mock.Mock(payload=mock.Mock(data=b"value"))
+        with mock.patch.dict(os.environ, {"CLOUDSQL_INSTANCE": "test:eu:db", "GCP_PROJECT": "p"}), \
+                mock.patch.object(app, "_pool", pool), mock.patch.object(app, "_get_pool", lambda: pool), \
+                mock.patch.object(secrets, "_client", lambda: SM()):
+            os.environ.pop("SOME_SECRET", None)
+            app.con().raw  # the request holds a connection
+            self.assertEqual(secrets.get_secret("SOME_SECRET"), "value")
+            app.release_con()
+        self.assertEqual(seen, [set()])
+
+    def test_warm_up_prepares_and_survives_failures(self):
+        logs = []
+        with mock.patch.object(app, "_log", logs.append), mock.patch.object(app, "client", lambda: None), \
+                mock.patch.object(app.voice, "api_key", mock.Mock(side_effect=RuntimeError("no key"))):
+            app.warm_up()
+        self.assertTrue(any("ai client ready" in l for l in logs))
+        self.assertTrue(any("voice key failed" in l for l in logs))
+
+    def test_missing_voice_key_is_not_fetched_on_every_request(self):
+        from vialibera import voice
+        calls = []
+
+        def missing(name):
+            calls.append(name)
+            raise RuntimeError("not found")
+        with mock.patch.object(voice, "_KEY", None), mock.patch.object(voice, "_KEY_AT", 0.0), \
+                mock.patch.object(voice, "get_secret", missing), mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("ELEVENLABS_API_KEY", None)
+            for _ in range(10):
+                voice.api_key()
+        self.assertEqual(len(calls), 1)
