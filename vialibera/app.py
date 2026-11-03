@@ -243,7 +243,13 @@ def handle_chat(body, llm=None, who=None):
             path = c.execute("SELECT path_type FROM cases WHERE id=?", (cid,)).fetchone()["path_type"]
             pid = personas.pick(who["user"], prof["style"], path)["id"]
             accounts.save_profile(c, who["user"], persona_id=pid)
-    reply = agent.turn(llm or client(), c, cid, MENU, history, msg, lang=lang, persona_id=pid)
+    try:
+        reply = agent.turn(llm or client(), c, cid, MENU, history, msg, lang=lang, persona_id=pid)
+    except anthropic.APIError as e:  # credit used up, overloaded, timeout, connection: not the client's fault
+        traceback.print_exc()
+        jobs.ai_unavailable(c, e)
+        # history is not saved: the message counts as not sent, so resending it starts clean
+        return 503, {"error": "ai_unavailable", "case_id": cid}
     db.save_history(c, cid, history)
     out = {"case_id": cid, "reply": reply,
            "persona": {"id": pid, "name": personas.BY_ID[pid]["name"]} if pid else None}
