@@ -289,11 +289,15 @@ applyLang();
     domain: cfg.domain, clientId: cfg.client_id,
     authorizationParams: {audience: cfg.audience, redirect_uri: location.origin, ui_locales: lang}});
   const q = new URLSearchParams(location.search);
-  if (q.has("error")) {  // Auth0 refused the login, for example an email not yet confirmed (post-login Action)
-    const desc = q.get("error_description") || q.get("error"), le = $("landing-err");
-    le.textContent = /confirm|verif/i.test(desc) ? T[lang].verify_email : T[lang].login_refused + desc; le.hidden = false;
-    history.replaceState({}, "", "/");
-  } else if (q.has("code") && q.has("state")) {
+  if (q.has("error")) {  // Auth0 refused the login (for example an email not yet confirmed, post-login Action).
+    // Auth0 still remembers that login: sign out of Auth0 too, or the next "Sign in" would loop without showing the form.
+    try { localStorage.setItem("vl_refused", (q.get("error_description") || q.get("error")).slice(0, 300)); } catch (e) {}
+    await client.logout({logoutParams: {returnTo: location.origin}});
+    return;
+  }
+  let refused = null; try { refused = localStorage.getItem("vl_refused"); localStorage.removeItem("vl_refused"); } catch (e) {}
+  if (refused) { const le = $("landing-err"); le.textContent = /confirm|verif/i.test(refused) ? T[lang].verify_email : T[lang].login_refused + refused; le.hidden = false; }
+  if (q.has("code") && q.has("state")) {
     await client.handleRedirectCallback();
     history.replaceState({}, "", "/");
   }
