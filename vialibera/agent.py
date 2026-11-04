@@ -5,7 +5,7 @@ and every write goes through db.py and gates.py, which enforce the rules.
 """
 import json
 
-from . import db, docs, fields, gates, personas
+from . import ai_usage, db, docs, fields, gates, personas
 
 MODEL = "claude-sonnet-5-5"
 
@@ -80,8 +80,9 @@ def persona_for(path_type):
     return "chiara" if int(path_type or 1) in (3, 4) else "cosimo"
 
 
-def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it", persona_id=None):
-    """One client message in, one agent reply out. history is a list of API messages (mutated)."""
+def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it", persona_id=None, usage=None):
+    """One client message in, one agent reply out. history is a list of API messages (mutated).
+    usage, when given, is a dict that collects the tokens of every AI call made for this message (ai_usage.add)."""
     history.append({"role": "user", "content": user_text})
     db.log_event(con, case_id, "client", "message", {"text": user_text})
     for _ in range(max_steps):
@@ -93,6 +94,8 @@ def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it",
         system = personas.system_prompt(persona_id or persona_for(db.case_read(con, case_id)["path_type"])) + "\n\n" + SYSTEM + "\n\n" + note
         with db.outside_call():  # 5 to 30 s: the database connection is lent back meanwhile
             resp = client.messages.create(model=MODEL, max_tokens=1024, system=system, tools=TOOLS, messages=history)
+        if usage is not None:
+            ai_usage.add(usage, getattr(resp, "usage", None))
         history.append({"role": "assistant", "content": [b.model_dump() for b in resp.content]})
         uses = [b for b in resp.content if b.type == "tool_use"]
         if not uses:

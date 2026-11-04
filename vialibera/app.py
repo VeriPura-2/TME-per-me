@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import admin, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
+from . import admin, ai_usage, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -270,14 +270,17 @@ def handle_chat(body, llm=None, who=None):
             path = c.execute("SELECT path_type FROM cases WHERE id=?", (cid,)).fetchone()["path_type"]
             pid = personas.pick(who["user"], prof["style"], path)["id"]
             accounts.save_profile(c, who["user"], persona_id=pid)
+    usage = {}
     try:
-        reply = agent.turn(llm or client(), c, cid, MENU, history, msg, lang=lang, persona_id=pid)
+        reply = agent.turn(llm or client(), c, cid, MENU, history, msg, lang=lang, persona_id=pid, usage=usage)
     except anthropic.APIError as e:  # credit used up, overloaded, timeout, connection: not the client's fault
         traceback.print_exc()
+        ai_usage.record(c, cid, who["user"] if who else "client", usage, agent.MODEL, load_test=bool(body.get("load_test")))
         jobs.ai_unavailable(c, e)
         # history is not saved: the message counts as not sent, so resending it starts clean
         return 503, {"error": "ai_unavailable", "case_id": cid}
     db.save_history(c, cid, history)
+    ai_usage.record(c, cid, who["user"] if who else "client", usage, agent.MODEL, load_test=bool(body.get("load_test")))
     out = {"case_id": cid, "reply": reply,
            "persona": {"id": pid, "name": personas.BY_ID[pid]["name"]} if pid else None}
     notice = accounts.attach_company(c, cid, who)
@@ -616,6 +619,14 @@ def handle_admin(path, body, who):
         return admin.owner_invite(c, who, cid)
     if path == "/admin/queue":
         return admin.queue(c, who)
+    if path == "/admin/ai_usage":
+        if not permissions.is_staff(who):
+            return 403, {"error": "forbidden"}
+        try:
+            days = min(max(int(body.get("days") or 14), 1), 90)
+        except (TypeError, ValueError):
+            days = 14
+        return 200, ai_usage.summary(c, days)
     if path == "/admin/changes":
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
