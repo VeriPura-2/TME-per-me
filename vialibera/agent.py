@@ -40,6 +40,19 @@ a first shipment; any importer or buyer name and contact; existing certification
 and product lab analysis if available. Say they can answer now and come back later, since answers are saved.
 Say all of this is optional now. Then ask the first question, which is about the product they want to export.
 
+What MioTEM covers today, with a verified document checklist and duties: dried pasta, wine, olive oil and cheese,
+from Italy to the United Kingdom, the USA, Canada, Switzerland, Germany, France, Spain, the Netherlands, Belgium and
+Austria. When the client wants another product or another country:
+- Say it plainly and warmly, without internal words (never "wave", "lane", "phase", "roadmap", "not built"). For example:
+  "MioTEM does not yet have a checked document list for [product] to [country]. We add new countries and products
+  based on what exporters ask for, so your request counts. May I note a few details? You can skip any of them."
+- Record it at once with lane_request (product and country), then ask, one at a time and each skippable: when they
+  plan to ship, a rough volume, and whether they already have a buyer there. Record each answer with lane_request.
+- Close with: their request is recorded and our team reviews these requests to decide what to add next. Never
+  promise a date or that it will be added. Offer to help with general export questions meanwhile, and point out
+  that for any covered country you can prepare the full document checklist and duties right away.
+- Record the destination in case_write as "other" only if no covered country applies.
+
 You never state prices yourself, never promise outcomes, and never mark anything delivered or confirmed.
 The page has a Documents button (top right). Clients upload their commonly used trade documents there
 (labels, lab analyses, certificates, company papers, invoices, packing lists), and the page files them in a company
@@ -57,6 +70,15 @@ TOOLS = [
      "input_schema": {"type": "object", "properties": {
          "section": {"type": "string", "enum": ["company", "product", "market"]},
          "fields": {"type": "object"}}, "required": ["section", "fields"]}},
+    {"name": "lane_request",
+     "description": "Record a request for a product or destination country MioTEM does not cover yet. Call it again as "
+                    "details come in; later calls update the same request.",
+     "input_schema": {"type": "object", "properties": {
+         "product": {"type": "string"}, "country": {"type": "string"},
+         "timing": {"type": "string", "description": "when they want to ship, in their words"},
+         "volume": {"type": "string", "description": "rough first-shipment or yearly volume, in their words"},
+         "buyer": {"type": "string", "description": "yes, no, or the buyer's situation, in their words"},
+         "notes": {"type": "string"}}}},
     {"name": "propose_item", "description": "Propose a menu item for the client by code. Price comes from the menu.",
      "input_schema": {"type": "object", "properties": {"code": {"type": "string"}},
                       "required": ["code"]}},
@@ -69,6 +91,9 @@ def run_tool(con, case_id, menu, name, args):
             return db.case_read(con, case_id)
         if name == "case_write":
             return db.case_write(con, case_id, args["section"], args["fields"])
+        if name == "lane_request":
+            from . import lane_requests
+            return lane_requests.record(con, case_id, None, args, source="chat")
         if name == "propose_item":
             iid = gates.add_item(con, case_id, args["code"], menu)
             return {"item_id": iid, "state": "proposed"}
@@ -82,7 +107,7 @@ def persona_for(path_type):
     return "chiara" if int(path_type or 1) in (3, 4) else "cosimo"
 
 
-QUIET_TOOLS = {"case_write"}  # saves whose result the agent does not need to see before replying
+QUIET_TOOLS = {"case_write", "lane_request"}  # saves whose result the agent does not need to see before replying
 
 
 def system_blocks(fixed, note):

@@ -237,6 +237,21 @@ CREATE TABLE IF NOT EXISTS engagement_links (
   company_id TEXT,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS lane_requests (
+  id TEXT PRIMARY KEY,
+  case_id TEXT,
+  company_id TEXT,
+  user_sub TEXT,
+  product TEXT,
+  country TEXT,
+  timing TEXT,
+  volume TEXT,
+  buyer TEXT,
+  notes TEXT,
+  source TEXT NOT NULL,                -- chat (the AI asked) or start_form
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS case_notes (
   id TEXT PRIMARY KEY,
   case_id TEXT NOT NULL,
