@@ -14,6 +14,8 @@ You work in the client's language and in plain words.
 
 How you interview:
 - Ask exactly ONE question per message, never two. Record each answer at once with case_write.
+- Save calls: when you record answers with case_write, write your reply (next question included) in the SAME
+  response as the case_write call, not in a separate step. Put all fields you learned in one case_write per section.
 - Whenever the answer is a choice, add a final line in exactly this form (nothing after it):
   OPTIONS: first choice | second choice | third choice
   Give 2 to 6 short choices, each clear on its own, with a clarifying hint in brackets when it helps,
@@ -80,6 +82,9 @@ def persona_for(path_type):
     return "chiara" if int(path_type or 1) in (3, 4) else "cosimo"
 
 
+QUIET_TOOLS = {"case_write"}  # saves whose result the agent does not need to see before replying
+
+
 def system_blocks(fixed, note):
     """Prompt caching: tools and the fixed instructions (persona and rules) form a prefix that is the same on every
     call of a conversation, so it is marked for the cache and billed at the cache-read price on repeat calls.
@@ -109,7 +114,13 @@ def cached_messages(history):
 def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it", persona_id=None, usage=None):
     """One client message in, one agent reply out. history is a list of API messages (mutated).
     usage, when given, is a dict that collects the tokens of every AI call made for this message (ai_usage.add)."""
-    history.append({"role": "user", "content": user_text})
+    last = history[-1] if history else None
+    if last and last["role"] == "user" and isinstance(last["content"], list):
+        # the previous reply ended without a follow-up call: its tool results are still the last user message,
+        # so the new message joins it (the API needs user and assistant turns to alternate)
+        last["content"].append({"type": "text", "text": user_text})
+    else:
+        history.append({"role": "user", "content": user_text})
     db.log_event(con, case_id, "client", "message", {"text": user_text})
     for _ in range(max_steps):
         have = docs.summary_for_case(con, case_id)
@@ -129,8 +140,13 @@ def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it",
             text = "".join(b.text for b in resp.content if b.type == "text")
             db.log_event(con, case_id, "agent", "message", {"text": text})
             return text
-        results = [{"type": "tool_result", "tool_use_id": u.id,
-                    "content": json.dumps(run_tool(con, case_id, menu, u.name, u.input), default=str)}
-                   for u in uses]
+        outcomes = [run_tool(con, case_id, menu, u.name, u.input) for u in uses]
+        results = [{"type": "tool_result", "tool_use_id": u.id, "content": json.dumps(o, default=str)}
+                   for u, o in zip(uses, outcomes)]
         history.append({"role": "user", "content": results})
+        text = "".join(b.text for b in resp.content if b.type == "text").strip()
+        if text and all(u.name in QUIET_TOOLS for u in uses) and not any(isinstance(o, dict) and o.get("error") for o in outcomes):
+            # one call per message: the reply came with the saves and every save worked, so no second call is needed
+            db.log_event(con, case_id, "agent", "message", {"text": text})
+            return text
     return "I need a VeriPura team member to continue this one."
