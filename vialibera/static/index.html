@@ -113,6 +113,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <div id="s-tems"></div>
   <div id="s-changes"></div>
   <div id="s-tariffs"></div>
+  <div id="s-ai"></div>
   <div id="s-add"></div>
   <div id="s-queue"></div>
   <div id="s-list"></div>
@@ -715,7 +716,7 @@ applyLang();
     addCompanyForm();
     coreSwitch();
     staffTems();
-    staffChanges(); staffTariffs();
+    staffChanges(); staffTariffs(); staffAI();
     $("s-note").textContent = full ? "Superadmin view. Opening a company and every change is logged." : "Support view (read only). Opening a company is logged.";
     loadQueue();
     await loadCompanies();
@@ -912,6 +913,19 @@ applyLang();
       box.append(b, o); }
     j.lines.forEach(l => { const v = l.value ? Object.entries(l.value).map(([k, x]) => k.replace("_", " ") + ": " + x).join(" · ") : "not read yet";
       box.appendChild(mk("div", l.destination + " · " + l.code + " · " + l.description + " · " + v + (l.checked_at ? " · " + sd(l.checked_at) : ""), "muted")); });
+  }
+  async function staffAI() {
+    const box = $("s-ai"); box.innerHTML = ""; const [r, j] = await call("/admin/ai_usage", {days: 14}); if (!r.ok) return;
+    const usd = x => "$" + Number(x).toFixed(x < 1 ? 4 : 2), t = j.total;
+    const line = b => b.messages + " messages · " + b.calls + " AI calls · " + (b.messages ? (b.calls / b.messages).toFixed(1) : "0") + " calls per message · "
+      + "tokens in " + b.input + ", out " + b.output + ", cache written " + b.cache_write + ", cache read " + b.cache_read + " · " + usd(b.cost_usd)
+      + (b.messages ? " (" + usd(b.cost_usd / b.messages) + " per message)" : "");
+    box.appendChild(mk("h3", "AI usage, last " + j.days + " days (load tests excluded)"));
+    box.appendChild(mk("div", "Total: " + line(t)));
+    box.appendChild(mk("div", "List prices per million tokens: in $" + j.prices.input + ", out $" + j.prices.output + ", cache write $" + j.prices.cache_write + ", cache read $" + j.prices.cache_read + ". Estimate, not the invoice.", "muted"));
+    j.per_day.forEach(d => box.appendChild(mk("div", d.day + " · " + line(d), "muted")));
+    if (j.top_cases.length) { box.appendChild(mk("div", "Most expensive conversations:"));
+      j.top_cases.forEach(c => box.appendChild(mk("div", (c.company || "(no company)") + " · " + c.case_id.slice(0, 8) + " · " + line(c) + " · last " + sd(c.last), "muted"))); }
   }
   async function staffTems() {
     const box = $("s-tems"); box.innerHTML = ""; const [r, j] = await call("/admin/tem_firms", {}); if (!r.ok) return;
