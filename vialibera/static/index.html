@@ -114,6 +114,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <div id="s-changes"></div>
   <div id="s-tariffs"></div>
   <div id="s-ai"></div>
+  <div id="s-lanes"></div>
   <div id="s-add"></div>
   <div id="s-queue"></div>
   <div id="s-list"></div>
@@ -209,6 +210,8 @@ const T = {
     q_other: "altro", q_pick: "Scegli prodotto o paese, oppure inserisci la partita IVA.", q_ready: "Pronto. La lista dei documenti e i dazi sono in Servizi. Scrivimi qui per continuare o fare una domanda.",
     q_ready_sim: "Pronto. Per questo prodotto o paese la lista è ancora indicativa (vedi Servizi). Scrivimi qui per continuare o fare una domanda.",
     q_vat_bad: "Partita IVA non valida: ",
+    q_which_p: "Quale prodotto?", q_which_c: "Quale paese?",
+    q_req: "Grazie. MioTEM non ha ancora una lista di documenti verificata per {what}. Abbiamo registrato la tua richiesta: il nostro team le esamina per decidere quali paesi e prodotti aggiungere. Se vuoi, scrivimi qui quando pensi di spedire, i volumi indicativi e se hai già un acquirente. Posso anche aiutarti con domande generali sull'export, o preparare subito la lista completa per uno dei paesi che copriamo.",
     q_cats: {"pasta": "pasta", "wine": "vino", "olive oil": "olio d'oliva", "cheese and dairy": "formaggi e latticini", "spirits": "distillati", "cured meat": "salumi", "preserves": "conserve", "bakery": "prodotti da forno", "other": "altro"},
     q_countries: {"UK": "Regno Unito", "USA": "Stati Uniti", "Canada": "Canada", "Germany": "Germania", "France": "Francia", "Spain": "Spagna", "Netherlands": "Paesi Bassi", "Belgium": "Belgio", "Austria": "Austria", "Switzerland": "Svizzera", "other": "altro"},
     w_first: "Esportare per la prima volta", w_market: "Un nuovo mercato per un prodotto che ho già", w_product: "Un nuovo prodotto per un mercato che già servo",
@@ -233,6 +236,8 @@ const T = {
     q_other: "other", q_pick: "Choose a product or a country, or enter the VAT number.", q_ready: "Ready. The document checklist and duties are in Services. Write here to continue or to ask a question.",
     q_ready_sim: "Ready. For this product or country the checklist is still indicative (see Services). Write here to continue or to ask a question.",
     q_vat_bad: "VAT number not valid: ",
+    q_which_p: "Which product?", q_which_c: "Which country?",
+    q_req: "Thank you. MioTEM does not yet have a checked document list for {what}. We have recorded your request: our team reviews these requests to decide which countries and products to add next. If you like, write here when you plan to ship, rough volumes and whether you already have a buyer. I can also help with general export questions, or prepare the full checklist right away for any of the countries we cover.",
     q_cats: {"pasta": "pasta", "wine": "wine", "olive oil": "olive oil", "cheese and dairy": "cheese and dairy", "spirits": "spirits", "cured meat": "cured meat", "preserves": "preserves", "bakery": "bakery", "other": "other"},
     q_countries: {"UK": "United Kingdom", "USA": "United States", "Canada": "Canada", "Germany": "Germany", "France": "France", "Spain": "Spain", "Netherlands": "Netherlands", "Belgium": "Belgium", "Austria": "Austria", "Switzerland": "Switzerland", "other": "other"},
     w_first: "Exporting for the first time", w_market: "A new market for a product I already have", w_product: "A new product for a market I already serve",
@@ -731,7 +736,7 @@ applyLang();
     addCompanyForm();
     coreSwitch();
     staffTems();
-    staffChanges(); staffTariffs(); staffAI();
+    staffChanges(); staffTariffs(); staffAI(); staffLanes();
     $("s-note").textContent = full ? "Superadmin view. Opening a company and every change is logged." : "Support view (read only). Opening a company is logged.";
     loadQueue();
     await loadCompanies();
@@ -929,6 +934,16 @@ applyLang();
     j.lines.forEach(l => { const v = l.value ? Object.entries(l.value).map(([k, x]) => k.replace("_", " ") + ": " + x).join(" · ") : "not read yet";
       box.appendChild(mk("div", l.destination + " · " + l.code + " · " + l.description + " · " + v + (l.checked_at ? " · " + sd(l.checked_at) : ""), "muted")); });
   }
+  async function staffLanes() {
+    const box = $("s-lanes"); box.innerHTML = ""; const [r, j] = await call("/admin/lane_requests", {}); if (!r.ok) return;
+    box.appendChild(mk("h3", "Lane requests (" + j.total + "): countries and products not covered yet"));
+    if (!j.total) { box.appendChild(mk("div", "No requests yet.", "muted")); return; }
+    box.appendChild(mk("div", "By country: " + j.by_country.map(x => x.name + " " + x.n).join(" · ")));
+    box.appendChild(mk("div", "By product: " + j.by_product.map(x => x.name + " " + x.n).join(" · ")));
+    j.requests.forEach(q => box.appendChild(mk("div", sd(q.updated_at) + " · " + (q.company || "(no company)") + " · " + (q.product || "?") + " → " + (q.country || "?")
+      + (q.timing ? " · when: " + q.timing : "") + (q.volume ? " · volume: " + q.volume : "") + (q.buyer ? " · buyer: " + q.buyer : "")
+      + (q.notes ? " · " + q.notes : "") + " · via " + (q.source === "start_form" ? "start form" : "chat"), "muted")));
+  }
   async function staffAI() {
     const box = $("s-ai"); box.innerHTML = ""; const [r, j] = await call("/admin/ai_usage", {days: 14}); if (!r.ok) return;
     const usd = x => "$" + Number(x).toFixed(x < 1 ? 4 : 2), t = j.total;
@@ -1021,7 +1036,11 @@ applyLang();
     const sel = (label, opts, names) => { const s = mk("select"); s.setAttribute("aria-label", label); const e0 = mk("option", label + "…"); e0.value = ""; s.appendChild(e0);
       opts.forEach(o => { const e = mk("option", names[o] || o); e.value = o; s.appendChild(e); }); s.style.margin = "6px 6px 0 0"; return s; };
     const cat = sel(t.q_prod, CATS, t.q_cats), ctry = sel(t.q_country, COUNTRIES, t.q_countries);
+    const op = mk("input"), oc = mk("input"); op.placeholder = t.q_which_p; oc.placeholder = t.q_which_c;
+    [op, oc].forEach(x => { x.hidden = true; x.style.margin = "6px 6px 0 0"; });
+    cat.onchange = () => { op.hidden = cat.value !== "other"; }; ctry.onchange = () => { oc.hidden = ctry.value !== "other"; };
     const row = mk("div"); row.append(cat, ctry); box.appendChild(row);
+    const row1 = mk("div"); row1.append(op, oc); box.appendChild(row1);
     let legal = "";
     const vat = mk("input"), chk = mk("button", t.q_check), vm = mk("span", "", "muted");
     if (!me.has_company) { vat.placeholder = t.q_vat; vat.style.margin = "6px 6px 0 0"; chk.onclick = async () => { vm.textContent = ""; legal = "";
@@ -1032,13 +1051,17 @@ applyLang();
       msg.textContent = "";
       if (!cat.value && !ctry.value && !vat.value.trim()) { msg.textContent = t.q_pick; return; }
       go.disabled = true;
-      const [r, j] = await call("/start", {category: cat.value, country: ctry.value, vat: vat.value, legal_name: legal, lang});
+      const [r, j] = await call("/start", {category: cat.value, country: ctry.value, vat: vat.value, legal_name: legal, lang,
+                                           other_product: op.value, other_country: oc.value});
       go.disabled = false;
       if (!r.ok) { msg.textContent = j.error || r.status; return; }
       caseId = j.case_id; pathType = j.path_type;
       $("welcome").hidden = true; $("app").hidden = false;
       if (j.vat_error) add("bot", t.q_vat_bad + j.vat_error);
-      add("bot", j.covered ? t.q_ready : t.q_ready_sim);
+      if (j.requested) {
+        const p = j.requested.product || (cat.value && cat.value !== "other" ? t.q_cats[cat.value] : ""), c = j.requested.country || (ctry.value && ctry.value !== "other" ? t.q_countries[ctry.value] : "");
+        add("bot", t.q_req.replace("{what}", [p, c].filter(Boolean).join(lang === "it" ? " verso " : " to ") || (lang === "it" ? "questa richiesta" : "this request")));
+      } else add("bot", j.covered ? t.q_ready : t.q_ready_sim);
       $("journey").hidden = false; jsel = null; loadJourney();
     };
     box.append(go, msg);

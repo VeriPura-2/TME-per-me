@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import admin, ai_usage, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
+from . import admin, ai_usage, lane_requests, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -305,6 +305,8 @@ def handle_start(body, who):
         return 403, {"error": "forbidden"}
     cat = body.get("category") if body.get("category") in START_CATEGORIES else None
     country = body.get("country") if body.get("country") in START_COUNTRIES else None
+    other_product = str(body.get("other_product") or "").strip()[:120] if cat == "other" else ""
+    other_country = str(body.get("other_country") or "").strip()[:120] if country == "other" else ""
     raw_vat = str(body.get("vat") or "").strip()[:20]
     if not (cat or country or raw_vat):
         return 400, {"error": "nothing to start with"}
@@ -332,6 +334,10 @@ def handle_start(body, who):
     db.log_event(c, cid, "client", "start_form", {"category": cat, "country": country, "vat_given": bool(raw_vat),
                                                    "vat_error": vat_err})
     out = {"case_id": cid, "path_type": path, "covered": requirements.covers(cat, country)}
+    if other_product or other_country:  # something MioTEM does not cover yet: staff see it under Lane requests
+        lane_requests.record(c, cid, who["user"], {"product": other_product or cat, "country": other_country or country},
+                             source="start_form")
+        out["requested"] = {"product": other_product or None, "country": other_country or None}
     if vat_err:
         out["vat_error"] = vat_err
     if notice:
@@ -669,6 +675,10 @@ def handle_admin(path, body, who):
         return admin.owner_invite(c, who, cid)
     if path == "/admin/queue":
         return admin.queue(c, who)
+    if path == "/admin/lane_requests":
+        if not permissions.is_staff(who):
+            return 403, {"error": "forbidden"}
+        return 200, lane_requests.listing(c)
     if path == "/admin/ai_usage":
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}

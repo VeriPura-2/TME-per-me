@@ -188,7 +188,7 @@ def owner_invite(con, who, cid):
 
 LOAD_TEST_PREFIX = "Load test"
 CASE_TABLES = ("items", "confirmations", "checklist_confirmations", "case_notes", "core_checks", "core_consignments",
-               "usage_events", "histories", "events")  # rows that belong to a case; the case itself is removed last
+               "usage_events", "histories", "lane_requests", "events")  # rows that belong to a case; the case itself is removed last
 
 
 def load_test_cases(con, who):
