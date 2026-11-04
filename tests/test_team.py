@@ -14,7 +14,7 @@ def company(name, members):
         for t in ("memberships", "companies", "team_invites"):
             c.execute(f"DELETE FROM {t}")
     cid = "co-" + name
-    c.execute("INSERT INTO companies(id, vat, legal_name, created_at) VALUES (?,?,?,?)", (cid, "IT" + name, name, db.now()))
+    c.execute("INSERT INTO companies(id, vat, legal_name, created_at, owner_confirmed) VALUES (?,?,?,?,?)", (cid, "IT" + name, name, db.now(), "test"))
     for u, (role, status) in members.items():
         c.execute("INSERT INTO memberships(company_id, user_sub, role, status, created_at) VALUES (?,?,?,?,?)", (cid, u, role, status, db.now()))
         accounts.record_consent(c, u, app.TERMS_VERSION, "en", True)

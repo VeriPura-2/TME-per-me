@@ -238,7 +238,7 @@ def engage_accept(con, who, token, body, terms_version):
     r = _link(con, token)
     if r is None:
         return 400, {"error": "link_invalid"}
-    if not (body.get("accept_scope") and body.get("accept_core") and body.get("accept_terms")):
+    if not (body.get("accept_scope") and body.get("accept_core") and body.get("accept_terms") and body.get("authorised")):
         return 400, {"error": "all acceptances required"}
     from . import vat_check
     vat, err = vat_check.italian(body.get("vat"))
@@ -262,6 +262,7 @@ def engage_accept(con, who, token, body, terms_version):
         if permissions.role_in(con, cid, who["user"]) != "owner":
             return 403, {"error": "company_exists_owner_must_accept"}
     accounts.record_consent(con, who["user"], terms_version, lang, True)
+    accounts.record_company_consent(con, who["user"], terms_version, lang)  # authority confirmed: no second acceptance on Team
     f = con.execute("SELECT name FROM tem_firms WHERE id=?", (r["firm_id"],)).fetchone()
     scope = SCOPE[lang]
     text = _engagement_text(f["name"], {"legal_name": name, "vat": vat, "address": body.get("address")}, sig, scope, t, lang)

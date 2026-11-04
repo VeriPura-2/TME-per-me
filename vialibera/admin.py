@@ -102,6 +102,33 @@ WORK_STATES = ("paid", "in progress", "review")
 STAFF_TARGETS = ("in progress", "review", "delivered")
 
 
+def confirm_owner(con, who, cid):
+    """Staff confirm the provisional owner really belongs to the company (phone call, company registry)."""
+    if not _full(who):
+        return 403, {"error": "forbidden"}
+    if con.execute("SELECT 1 FROM companies WHERE id=?", (cid,)).fetchone() is None:
+        return 404, {"error": "no such company"}
+    con.execute("UPDATE companies SET owner_confirmed=? WHERE id=?", ("staff:" + who["user"] + "@" + db.now(), cid))
+    con.commit()
+    _log(con, who, "staff_change", cid, action="confirm_owner")
+    return 200, {"ok": True}
+
+
+def set_owner(con, who, cid, user):
+    """Staff give ownership to another member (or someone who asked for access); current owners become members."""
+    if not _full(who):
+        return 403, {"error": "forbidden"}
+    row = con.execute("SELECT status FROM memberships WHERE company_id=? AND user_sub=?", (cid, user)).fetchone()
+    if row is None:
+        return 400, {"error": "that person is not a member and has not asked for access"}
+    con.execute("UPDATE memberships SET role='member' WHERE company_id=? AND role='owner' AND user_sub<>?", (cid, user))
+    con.execute("UPDATE memberships SET role='owner', status='active' WHERE company_id=? AND user_sub=?", (cid, user))
+    con.execute("UPDATE companies SET owner_confirmed=? WHERE id=?", ("staff:" + who["user"] + "@" + db.now(), cid))
+    con.commit()
+    _log(con, who, "staff_change", cid, action="set_owner", user=user)
+    return 200, {"ok": True}
+
+
 def queue(con, who):
     """What staff owe clients: paid or running items that staff must do (managed level, compliance), oldest first."""
     if not _guard(who):
@@ -121,7 +148,14 @@ def queue(con, who):
                       "product": prod.get("name_brand") or prod.get("category"), "country": mkt.get("country")})
     unverified = [{"id": r["id"], "name": r["legal_name"], "vat": r["vat"]} for r in con.execute(
         "SELECT id, legal_name, vat FROM companies WHERE status='unverified' ORDER BY created_at").fetchall()]
-    return 200, {"items": items, "unverified": unverified}
+    owners = []
+    for r in con.execute("SELECT id, legal_name, vat, vies_name FROM companies WHERE owner_confirmed IS NULL ORDER BY created_at").fetchall():
+        people = [{"user": m["user_sub"], "label": m["label"] or m["user_sub"][-8:], "role": m["role"], "status": m["status"]}
+                  for m in con.execute("SELECT user_sub, label, role, status FROM memberships WHERE company_id=? ORDER BY created_at",
+                                       (r["id"],)).fetchall()]
+        owners.append({"id": r["id"], "name": r["legal_name"] or r["vies_name"], "vat": r["vat"], "vies_name": r["vies_name"],
+                       "people": people})
+    return 200, {"items": items, "unverified": unverified, "owners_to_confirm": owners}
 
 
 def set_item(con, who, item_id, state):
@@ -161,8 +195,8 @@ def add_company(con, who, vat, name):
     if con.execute("SELECT 1 FROM companies WHERE vat=?", (v,)).fetchone():
         return 409, {"error": "company exists"}
     cid = str(uuid.uuid4())
-    con.execute("INSERT INTO companies(id, vat, legal_name, created_by, created_at) VALUES (?,?,?,?,?)",
-                (cid, v, name, who["user"], db.now()))
+    con.execute("INSERT INTO companies(id, vat, legal_name, created_by, created_at, owner_confirmed) VALUES (?,?,?,?,?,?)",
+                (cid, v, name, who["user"], db.now(), "staff:" + who["user"]))  # staff created it: owner confirmed
     con.commit()
     _log(con, who, "staff_change", cid, action="add_company", vat=v)
     vat_check.check_company(con, cid)
