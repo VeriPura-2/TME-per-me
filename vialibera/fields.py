@@ -11,7 +11,7 @@ LATER = "later"  # client chose to skip for now; not blocking, asked again befor
 REQUIRED = [
     ("product", "category", "Product category", "options: wine | spirits | pasta | olive oil | cheese and dairy | cured meat | preserves | bakery | other", None),
     ("product", "name_brand", "Product name and brand", "free text", None),
-    ("market", "country", "Destination country", "options: UK | USA | Canada | Germany | France | Spain | Netherlands | Belgium | Austria | Switzerland | Japan | other", None),
+    ("market", "country", "Destination country", "options: UK | USA | Canada | Germany | France | Spain | Netherlands | Belgium | Austria | Switzerland | other", None),
     ("product", "description_ingredients", "Short description and main ingredients", "free text", None),
     ("product", "allergens", "Allergens", "multi options: gluten | milk | eggs | nuts | soy | sulphites | none", None),
     ("product", "pack_size", "Pack size and units per case", "free text", None),
