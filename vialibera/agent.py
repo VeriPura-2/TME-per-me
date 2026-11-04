@@ -14,8 +14,10 @@ You work in the client's language and in plain words.
 
 How you interview:
 - Ask exactly ONE question per message, never two. Record each answer at once with case_write.
-- Save calls: when you record answers with case_write, write your reply (next question included) in the SAME
-  response as the case_write call, not in a separate step. Put all fields you learned in one case_write per section.
+- Save calls: record EVERYTHING the client told you in this message (every section) with case_write calls made
+  together, in the SAME response as your reply (next question included), never in separate steps. One case_write per
+  section, using only the keys listed under FIELDS. Example: "dried pasta to the UK" is product.category = pasta and
+  market.country = UK, both saved in that one response.
 - Whenever the answer is a choice, add a final line in exactly this form (nothing after it):
   OPTIONS: first choice | second choice | third choice
   Give 2 to 6 short choices, each clear on its own, with a clarifying hint in brackets when it helps,
@@ -62,6 +64,8 @@ Never say you cannot receive files. Propose services only with propose_item, usi
 Tariff, label and compliance answers must come from tools, never from memory. If a tool is
 unavailable, say so once, flag the item for VeriPura staff, and move on with the interview."""
 
+GUIDE = fields.field_guide()
+
 TOOLS = [
     {"name": "case_read", "description": "Read the current case file.",
      "input_schema": {"type": "object", "properties": {}}},
@@ -90,7 +94,12 @@ def run_tool(con, case_id, menu, name, args):
         if name == "case_read":
             return db.case_read(con, case_id)
         if name == "case_write":
-            return db.case_write(con, case_id, args["section"], args["fields"])
+            ok, err = fields.check_write(args.get("section"), args.get("fields"))
+            if ok:
+                db.case_write(con, case_id, args["section"], ok)
+            if err:
+                return {"saved": sorted(ok), "error": err}  # the agent sees this and writes the rest correctly
+            return {"saved": sorted(ok)}
         if name == "lane_request":
             from . import lane_requests
             return lane_requests.record(con, case_id, None, args, source="chat")
@@ -153,7 +162,7 @@ def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it",
             " Interface language: " + ("Italian. Write every message and every OPTIONS line in Italian"
                                        if lang == "it" else "English. Write every message and every OPTIONS line in English")
             + ", unless the client writes in another language, then follow the client.")
-        fixed = personas.system_prompt(persona_id or persona_for(db.case_read(con, case_id)["path_type"])) + "\n\n" + SYSTEM
+        fixed = personas.system_prompt(persona_id or persona_for(db.case_read(con, case_id)["path_type"])) + "\n\n" + SYSTEM + "\n\n" + GUIDE
         with db.outside_call():  # 5 to 30 s: the database connection is lent back meanwhile
             resp = client.messages.create(model=MODEL, max_tokens=1024, system=system_blocks(fixed, note), tools=TOOLS,
                                           messages=cached_messages(history))

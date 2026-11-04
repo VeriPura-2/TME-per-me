@@ -47,6 +47,49 @@ REQUIRED = [
 ]
 
 
+EXTRA = [("market", "importer_name", "Importer or buyer name", "free text", None)]
+
+
+def allowed_keys():
+    """Every key the case file accepts, per section; "notes" in each section takes anything else worth keeping."""
+    out = {"company": {"notes"}, "product": {"notes"}, "market": {"notes"}}
+    for sec, key, *_ in REQUIRED + EXTRA:
+        out[sec].add(key)
+    return out
+
+
+def check_write(section, fields):
+    """Splits a case_write into accepted fields and an error naming the wrong keys and where they belong."""
+    allowed = allowed_keys()
+    if section not in allowed:
+        return {}, f"section must be one of: {', '.join(sorted(allowed))}"
+    ok = {k: v for k, v in (fields or {}).items() if k in allowed[section]}
+    bad = [k for k in (fields or {}) if k not in allowed[section]]
+    if not bad:
+        return ok, None
+    hints = []
+    for k in bad:
+        home = [s for s, keys in allowed.items() if k in keys and s != section]
+        hints.append(f"{k} belongs in section {home[0]}" if home else f"{k} is not a field")
+    return ok, ("Not saved: " + "; ".join(hints) + f". Valid keys for {section}: {', '.join(sorted(allowed[section]))}. "
+                "Write each fact again with the right section and key (see FIELDS).")
+
+
+def field_guide():
+    """The full list of case-file fields, for the agent's fixed instructions (same text on every call, so it caches)."""
+    lines, seen = [], set()
+    for sec, key, label, how, only in REQUIRED + EXTRA:
+        tag = f"{sec}.{key}"
+        extra = f" ({only} only)" if only else ""
+        if tag in seen:
+            lines.append(f"  {tag}{extra}: {how}")
+            continue
+        seen.add(tag)
+        lines.append(f"- {tag}: {label}{extra}; {how}")
+    return ("FIELDS (case_write uses exactly these sections and keys; anything else goes in that section's notes):\n"
+            + "\n".join(lines))
+
+
 def _norm(v):
     return str(v).strip().lower()
 
