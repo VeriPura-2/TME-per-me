@@ -80,6 +80,32 @@ def persona_for(path_type):
     return "chiara" if int(path_type or 1) in (3, 4) else "cosimo"
 
 
+def system_blocks(fixed, note):
+    """Prompt caching: tools and the fixed instructions (persona and rules) form a prefix that is the same on every
+    call of a conversation, so it is marked for the cache and billed at the cache-read price on repeat calls.
+    The case note changes as answers come in, so it goes after the cache mark."""
+    return [{"type": "text", "text": fixed, "cache_control": {"type": "ephemeral"}},
+            {"type": "text", "text": note}]
+
+
+def cached_messages(history):
+    """A copy of the history with a cache mark on its last block, so the conversation so far is read from the
+    cache on the next call (the second call of a turn, or the next message within a few minutes).
+    The saved history is never changed: marks must not pile up (the API allows at most 4)."""
+    if not history:
+        return history
+    out = list(history)
+    last = dict(out[-1])
+    content = last["content"]
+    blocks = [{"type": "text", "text": content}] if isinstance(content, str) else [dict(b) for b in content]
+    if not blocks:
+        return out
+    blocks[-1]["cache_control"] = {"type": "ephemeral"}
+    last["content"] = blocks
+    out[-1] = last
+    return out
+
+
 def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it", persona_id=None, usage=None):
     """One client message in, one agent reply out. history is a list of API messages (mutated).
     usage, when given, is a dict that collects the tokens of every AI call made for this message (ai_usage.add)."""
@@ -91,9 +117,10 @@ def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it",
             " Interface language: " + ("Italian. Write every message and every OPTIONS line in Italian"
                                        if lang == "it" else "English. Write every message and every OPTIONS line in English")
             + ", unless the client writes in another language, then follow the client.")
-        system = personas.system_prompt(persona_id or persona_for(db.case_read(con, case_id)["path_type"])) + "\n\n" + SYSTEM + "\n\n" + note
+        fixed = personas.system_prompt(persona_id or persona_for(db.case_read(con, case_id)["path_type"])) + "\n\n" + SYSTEM
         with db.outside_call():  # 5 to 30 s: the database connection is lent back meanwhile
-            resp = client.messages.create(model=MODEL, max_tokens=1024, system=system, tools=TOOLS, messages=history)
+            resp = client.messages.create(model=MODEL, max_tokens=1024, system=system_blocks(fixed, note), tools=TOOLS,
+                                          messages=cached_messages(history))
         if usage is not None:
             ai_usage.add(usage, getattr(resp, "usage", None))
         history.append({"role": "assistant", "content": [b.model_dump() for b in resp.content]})
