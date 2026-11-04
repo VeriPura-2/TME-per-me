@@ -289,6 +289,56 @@ def handle_chat(body, llm=None, who=None):
     return 200, out
 
 
+START_CATEGORIES = ("pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other")
+START_COUNTRIES = ("UK", "USA", "Canada", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria", "Switzerland", "other")
+
+
+def handle_start(body, who):
+    """Start form: product, country and VAT number go straight into a new case, with no AI call.
+    The checklist and duties are ready at once; the interview then starts from what is already known."""
+    if not who:
+        return 400, {"error": "sign-in required"}
+    c = con()
+    if not accounts.has_consent(c, who["user"], TERMS_VERSION):
+        return 403, {"error": "consent_required", "terms_version": TERMS_VERSION}
+    if not permissions.can(c, who, "write"):
+        return 403, {"error": "forbidden"}
+    cat = body.get("category") if body.get("category") in START_CATEGORIES else None
+    country = body.get("country") if body.get("country") in START_COUNTRIES else None
+    raw_vat = str(body.get("vat") or "").strip()[:20]
+    if not (cat or country or raw_vat):
+        return 400, {"error": "nothing to start with"}
+    vat, vat_err = (None, None)
+    if raw_vat:
+        vat, vat_err = vat_check.italian(raw_vat)
+    path = 4 if cat and country else 1
+    cid = db.create_case(c, path, actor="client", org_id=who.get("org"), owner_sub=who["user"])
+    if cat:
+        db.case_write(c, cid, "product", {"category": cat}, actor="client")
+    if country:
+        db.case_write(c, cid, "market", {"country": country}, actor="client")
+    company = permissions.company_of(c, who["user"])
+    notice = None
+    if vat and not vat_err:
+        fields_ = {"vat_number": vat}
+        name = str(body.get("legal_name") or "").strip()[:200]
+        if name:
+            fields_["legal_name"] = name
+        db.case_write(c, cid, "company", fields_, actor="client")
+        notice = accounts.attach_company(c, cid, who)
+    elif company:  # already works for a company: the new case belongs to it
+        c.execute("UPDATE cases SET company_id=? WHERE id=?", (company, cid))
+    c.commit()
+    db.log_event(c, cid, "client", "start_form", {"category": cat, "country": country, "vat_given": bool(raw_vat),
+                                                   "vat_error": vat_err})
+    out = {"case_id": cid, "path_type": path, "covered": requirements.covers(cat, country)}
+    if vat_err:
+        out["vat_error"] = vat_err
+    if notice:
+        out["account"] = notice
+    return 200, out
+
+
 def handle_consent(body, who):
     if not who:
         return 400, {"error": "sign-in required"}
@@ -953,7 +1003,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 traceback.print_exc()  # full details in the server log, not only the error name
                 return self._send(500, {"error": type(e).__name__})
-        if not (self.path in ("/chat", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
+        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
                 or self.path.startswith("/core/") or self.path.startswith("/tem/")):
             return self._send(404, {})
@@ -1013,6 +1063,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_invite_accept(body, who))
             if self.path == "/plan":
                 return self._send(*handle_plan(body, who))
+            if self.path == "/start":
+                return self._send(*handle_start(body, who))
             if self.path == "/journey":
                 return self._send(*handle_journey(body, who))
             host = self.headers.get("X-Forwarded-Host") or self.headers.get("Host")
@@ -1043,6 +1095,7 @@ class Handler(BaseHTTPRequestHandler):
                                         "role": permissions.my_role(con(), who) if who else None,
                                         "superadmin": permissions.is_superadmin(who), "staff_level": permissions.staff_level(who),
                                         "tem": tems.firm_of(con(), who["user"]) if who else None,
+                                        "has_company": bool(who and permissions.company_of(con(), who["user"])),
                                         **(accounts.get_profile(con(), who["user"]) if who else {})})
             self._send(*handle_chat(body, who=who))
         except Exception as e:  # keep the service up, report a typed error

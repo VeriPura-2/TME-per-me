@@ -130,6 +130,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <p id="w-expect"></p>
   <p class="muted" id="w-style"></p>
   <div id="w-styles"></div>
+  <div id="w-start"></div>
   <p><strong id="w-ask"></strong></p>
   <div id="w-opts"></div>
 </div>
@@ -203,6 +204,13 @@ const T = {
     w_can: "Puoi esplorare come esportare i tuoi prodotti alimentari, capire quali regole, documenti, etichette e dazi servono per un mercato, e ricevere un pacchetto di servizi con prezzi chiari.",
     w_expect: "Ti guida un assistente con intelligenza artificiale: una domanda alla volta, puoi saltarne quante vuoi, e non paghi nulla finché non approvi un pacchetto. Il personale VeriPura controlla le verifiche di conformità.",
     w_ask: "Che cosa vuoi esplorare per primo?",
+    q_title: "Partenza rapida (facoltativa)", q_help: "Scegli prodotto e paese: la lista dei documenti e i dazi sono pronti subito. Poi l'assistente continua da lì.",
+    q_prod: "Prodotto", q_country: "Paese di destinazione", q_vat: "Partita IVA (facoltativa)", q_check: "Verifica", q_start: "Inizia",
+    q_other: "altro", q_pick: "Scegli prodotto o paese, oppure inserisci la partita IVA.", q_ready: "Pronto. La lista dei documenti e i dazi sono in Servizi. Scrivimi qui per continuare o fare una domanda.",
+    q_ready_sim: "Pronto. Per questo prodotto o paese la lista è ancora indicativa (vedi Servizi). Scrivimi qui per continuare o fare una domanda.",
+    q_vat_bad: "Partita IVA non valida: ",
+    q_cats: {"pasta": "pasta", "wine": "vino", "olive oil": "olio d'oliva", "cheese and dairy": "formaggi e latticini", "spirits": "distillati", "cured meat": "salumi", "preserves": "conserve", "bakery": "prodotti da forno", "other": "altro"},
+    q_countries: {"UK": "Regno Unito", "USA": "Stati Uniti", "Canada": "Canada", "Germany": "Germania", "France": "Francia", "Spain": "Spagna", "Netherlands": "Paesi Bassi", "Belgium": "Belgio", "Austria": "Austria", "Switzerland": "Svizzera", "other": "altro"},
     w_first: "Esportare per la prima volta", w_market: "Un nuovo mercato per un prodotto che ho già", w_product: "Un nuovo prodotto per un mercato che già servo",
     w_req: "Cosa serve per un prodotto e un paese", w_q: "Ho una domanda", w_continue: "Riprendi la mia pratica", w_new: "Inizia una nuova pratica",
     account_created: "Account azienda creato dalla partita IVA.",
@@ -220,6 +228,13 @@ const T = {
     w_can: "You can explore how to export your food products, find out which rules, documents, labels and duties apply to a market, and get a package of services with clear prices.",
     w_expect: "An AI assistant guides you: one question at a time, you can skip as many as you like, and you pay nothing until you approve a package. VeriPura staff review compliance checks.",
     w_ask: "What would you like to explore first?",
+    q_title: "Quick start (optional)", q_help: "Choose product and country: the document checklist and duties are ready at once. The assistant then carries on from there.",
+    q_prod: "Product", q_country: "Destination country", q_vat: "VAT number (optional)", q_check: "Check", q_start: "Start",
+    q_other: "other", q_pick: "Choose a product or a country, or enter the VAT number.", q_ready: "Ready. The document checklist and duties are in Services. Write here to continue or to ask a question.",
+    q_ready_sim: "Ready. For this product or country the checklist is still indicative (see Services). Write here to continue or to ask a question.",
+    q_vat_bad: "VAT number not valid: ",
+    q_cats: {"pasta": "pasta", "wine": "wine", "olive oil": "olive oil", "cheese and dairy": "cheese and dairy", "spirits": "spirits", "cured meat": "cured meat", "preserves": "preserves", "bakery": "bakery", "other": "other"},
+    q_countries: {"UK": "United Kingdom", "USA": "United States", "Canada": "Canada", "Germany": "Germany", "France": "France", "Spain": "Spain", "Netherlands": "Netherlands", "Belgium": "Belgium", "Austria": "Austria", "Switzerland": "Switzerland", "other": "other"},
     w_first: "Exporting for the first time", w_market: "A new market for a product I already have", w_product: "A new product for a market I already serve",
     w_req: "What is needed for one product and country", w_q: "I have a question", w_continue: "Continue my case", w_new: "Start a new case",
     account_created: "Company account created from your VAT number.",
@@ -767,7 +782,7 @@ applyLang();
   }
   // ---- TEM workspace (export consultant firms). The server enforces who sees which client.
   const CATS = ["pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other"];
-  const COUNTRIES = ["UK", "USA", "Canada", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria", "Switzerland", "Japan", "other"];
+  const COUNTRIES = ["UK", "USA", "Canada", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria", "Switzerland", "other"];
   const sel0 = (opts, cur) => { const s = mk("select"); opts.forEach(o => { const e = mk("option", o); e.value = o; if (o === cur) e.selected = true; s.appendChild(e); }); return s; };
   const linkBox = (parent, url, note) => { const i = mk("input"); i.type = "text"; i.readOnly = true; i.value = url; i.style.width = "70%"; const c = mk("button", TT[lang].ws_copy);
     c.onclick = async () => { try { await navigator.clipboard.writeText(url); } catch (e) { i.select(); } }; parent.append(i, " ", c); if (note) parent.appendChild(mk("div", note, "muted")); };
@@ -998,6 +1013,36 @@ applyLang();
   }
   $("send").onclick = () => send();
   $("msg").onkeydown = e => { if (e.key === "Enter") send(); };
+  function quickStart(t) {  // start form: product, country, VAT straight into a case, no AI call
+    const box = $("w-start"); box.innerHTML = "";
+    if (me.tem) return;  // TEMs get their own start (to be designed)
+    box.style.cssText = "border:1px solid var(--line, #444);border-radius:8px;padding:10px 12px;margin:10px 0";
+    box.appendChild(mk("strong", t.q_title)); box.appendChild(mk("div", t.q_help, "muted"));
+    const sel = (label, opts, names) => { const s = mk("select"); s.setAttribute("aria-label", label); const e0 = mk("option", label + "…"); e0.value = ""; s.appendChild(e0);
+      opts.forEach(o => { const e = mk("option", names[o] || o); e.value = o; s.appendChild(e); }); s.style.margin = "6px 6px 0 0"; return s; };
+    const cat = sel(t.q_prod, CATS, t.q_cats), ctry = sel(t.q_country, COUNTRIES, t.q_countries);
+    const row = mk("div"); row.append(cat, ctry); box.appendChild(row);
+    let legal = "";
+    const vat = mk("input"), chk = mk("button", t.q_check), vm = mk("span", "", "muted");
+    if (!me.has_company) { vat.placeholder = t.q_vat; vat.style.margin = "6px 6px 0 0"; chk.onclick = async () => { vm.textContent = ""; legal = "";
+        const [rv, jv] = await call("/tem/vat_lookup", {vat: vat.value}); if (rv.ok && jv.name) { legal = jv.name; vm.textContent = " " + jv.name; } else vm.textContent = " " + (jv.detail || jv.error || jv.state || ""); };
+      const r2 = mk("div"); r2.append(vat, chk, vm); box.appendChild(r2); }
+    const go = mk("button", t.q_start), msg = mk("div", "", "muted"); go.className = "primary"; go.style.marginTop = "8px";
+    go.onclick = async () => {
+      msg.textContent = "";
+      if (!cat.value && !ctry.value && !vat.value.trim()) { msg.textContent = t.q_pick; return; }
+      go.disabled = true;
+      const [r, j] = await call("/start", {category: cat.value, country: ctry.value, vat: vat.value, legal_name: legal, lang});
+      go.disabled = false;
+      if (!r.ok) { msg.textContent = j.error || r.status; return; }
+      caseId = j.case_id; pathType = j.path_type;
+      $("welcome").hidden = true; $("app").hidden = false;
+      if (j.vat_error) add("bot", t.q_vat_bad + j.vat_error);
+      add("bot", j.covered ? t.q_ready : t.q_ready_sim);
+      $("journey").hidden = false; jsel = null; loadJourney();
+    };
+    box.append(go, msg);
+  }
   function welcome() {
     const t = T[lang];
     $("w-title").textContent = me.latest_case ? t.w_back : t.w_title;
@@ -1022,6 +1067,7 @@ applyLang();
       if (me.style === k) b.style.borderColor = "var(--accent)";
       sb.appendChild(b);
     });
+    quickStart(t);
     const box = $("w-opts"); box.innerHTML = "";
     const go = (label, path, text, resume) => {
       const b = document.createElement("button"); b.textContent = label; b.style.margin = "4px 6px 4px 0";
