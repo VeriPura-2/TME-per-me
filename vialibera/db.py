@@ -400,7 +400,7 @@ class PG:
 
 
 ADDED_COLUMNS = [("companies", c) for c in ("vies_state", "vies_name", "vies_address", "vies_checked_at")] + [
-    ("source_snapshots", "page_text")]
+    ("source_snapshots", "page_text"), ("companies", "owner_confirmed")]
 
 
 def connect(path=":memory:"):

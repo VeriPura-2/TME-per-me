@@ -146,6 +146,9 @@ def on_upload(con, case_id, doc_id):
         case = _case(con, case_id)
         if case is None or case["status"] not in PAID_STATES:
             return None
+        if not permissions.owner_confirmed(con, case["company_id"]):  # provisional owner: nothing goes for validation yet
+            db.log_event(con, case_id, "auto", "core_auto_held", {"document": doc_id, "reason": "owner_not_confirmed"})
+            return None
         return send(con, None, case_id, doc_id, via="auto")
     except Exception as e:  # an upload must never fail because Core did
         db.log_event(con, case_id, "auto", "core_auto_error", {"document": doc_id, "error": type(e).__name__})

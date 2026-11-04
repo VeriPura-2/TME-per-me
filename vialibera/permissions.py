@@ -59,6 +59,15 @@ def company_of(con, user_sub):
     return r["company_id"] if r else None
 
 
+def owner_confirmed(con, company_id):
+    """The first person to give a VAT number is a provisional owner until VeriPura staff confirm them
+    (or staff created the company). Until then: no team invites and no documents sent for validation."""
+    if not company_id:
+        return False
+    r = con.execute("SELECT owner_confirmed FROM companies WHERE id=?", (company_id,)).fetchone()
+    return bool(r and r["owner_confirmed"])
+
+
 def my_role(con, who):
     """Role in the person's own company. No company yet (still exploring) means full rights over their own work."""
     if who is None:

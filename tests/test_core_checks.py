@@ -36,6 +36,11 @@ class CoreChecks(unittest.TestCase):
         db.case_write(self.con, self.case, "product", {"category": "pasta", "name_brand": "Pasta X"})
         db.case_write(self.con, self.case, "market", {"country": "UK"})
         db.case_write(self.con, self.case, "company", {"legal_name": "Pastificio Test srl"})
+        self.con.execute("INSERT INTO companies(id, vat, legal_name, created_at, owner_confirmed) VALUES (?,?,?,?,?)",
+                         ("co-core", "IT01765920051", "Pastificio Test srl", db.now(), "test"))
+        self.con.execute("UPDATE cases SET company_id='co-core' WHERE id=?", (self.case,))
+        self.con.execute("INSERT INTO memberships(company_id, user_sub, role, status, created_at) VALUES (?,?,?,?,?)",
+                         ("co-core", CLIENT["user"], "owner", "active", db.now()))
         self.con.commit()
         _, out = docs.upload(self.con, CLIENT, "fattura_123.pdf", PDF, case_id=self.case)
         self.doc = out["id"]

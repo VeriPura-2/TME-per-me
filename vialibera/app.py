@@ -665,6 +665,10 @@ def handle_admin(path, body, who):
         return admin.audit(c, who)
     if path == "/admin/load_test_cleanup":
         return admin.load_test_cleanup(c, who, bool(body.get("confirm")), body.get("expected"))
+    if path == "/admin/confirm_owner":
+        return admin.confirm_owner(c, who, cid)
+    if path == "/admin/set_owner":
+        return admin.set_owner(c, who, cid, str(body.get("user") or ""))
     if path == "/admin/verify":
         return admin.verify(c, who, cid, bool(body.get("verified", True)))
     if path == "/admin/plan":

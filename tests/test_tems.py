@@ -16,7 +16,7 @@ VAT_A, VAT_B = "IT00743110157", "IT01765920051"
 
 def accept_body(vat, name):
     return {"vat": vat, "legal_name": name, "signatory_name": "Mario Rossi", "signatory_role": "Legale rappresentante",
-            "email": "m@example.it", "accept_scope": True, "accept_core": True, "accept_terms": True}
+            "email": "m@example.it", "accept_scope": True, "accept_core": True, "accept_terms": True, "authorised": True}
 
 
 class Tems(unittest.TestCase):
