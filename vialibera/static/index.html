@@ -162,7 +162,7 @@ const TT = {
        ws_copy: "Copia", ws_open: "Apri", ws_newp: "Nuovo progetto", ws_cat: "Prodotto", ws_country: "Destinazione", ws_name: "Nome prodotto",
        ws_create: "Crea", ws_missing: "documenti mancanti", ws_assign: "Assegnati", ws_back: "Torna ai clienti",
        ws_case: "Scheda pratica", ws_answered: "risposte", ws_todo: "Ancora da chiedere", ws_req: "Documenti richiesti",
-       ws_confirm: "Conferma", ws_unconfirm: "Annulla conferma", ws_confirmed: "confermato da", ws_note_q: "Nota (facoltativa) per la conferma:",
+       ws_confirm: "Conferma", ws_unconfirm: "Annulla conferma", ws_confirmed: "confermato da", ws_note_q: "Nota (facoltativa) per la conferma:", ws_save: "Salva", ws_cancel: "Annulla", ws_sure: "Clicca di nuovo per confermare", tem_bad: "Il link dello studio non è valido o è scaduto.", tem_staff: "Questo account è dello staff VeriPura e non può entrare in uno studio TEM. Usa un'altra email.", j_checked: "voce verificata da",
        ws_docs: "Documenti del progetto", ws_upload: "Carica nel progetto", ws_lib: "Archivio del cliente", ws_add: "Aggiungi al progetto",
        ws_core: "Controlli VeriPura CORE", ws_notes: "Note", ws_internal: "Interna (studio e VeriPura)", ws_client: "Visibile al cliente",
        ws_addnote: "Aggiungi nota", ws_transcript: "Intervista (sola lettura)", ws_chat: "Lavora in chat su questo progetto",
@@ -181,7 +181,7 @@ const TT = {
        ws_copy: "Copy", ws_open: "Open", ws_newp: "New project", ws_cat: "Product", ws_country: "Destination", ws_name: "Product name",
        ws_create: "Create", ws_missing: "documents missing", ws_assign: "Assigned", ws_back: "Back to clients",
        ws_case: "Case file", ws_answered: "answered", ws_todo: "Still to ask", ws_req: "Required documents",
-       ws_confirm: "Confirm", ws_unconfirm: "Undo confirmation", ws_confirmed: "confirmed by", ws_note_q: "Note (optional) for the confirmation:",
+       ws_confirm: "Confirm", ws_unconfirm: "Undo confirmation", ws_confirmed: "confirmed by", ws_note_q: "Note (optional) for the confirmation:", ws_save: "Save", ws_cancel: "Cancel", ws_sure: "Click again to confirm", tem_bad: "The firm link is not valid or has expired.", tem_staff: "This account is VeriPura staff and cannot join a TEM firm. Please use another email.", j_checked: "item checked by",
        ws_docs: "Project documents", ws_upload: "Upload to project", ws_lib: "Client library", ws_add: "Add to project",
        ws_core: "VeriPura CORE checks", ws_notes: "Notes", ws_internal: "Internal (firm and VeriPura)", ws_client: "Visible to the client",
        ws_addnote: "Add note", ws_transcript: "Interview (read only)", ws_chat: "Work on this project in the chat",
@@ -351,7 +351,7 @@ applyLang();
   } catch (e) {}
   try {
     const tf = localStorage.getItem("vl_tem");
-    if (tf) { const [rf] = await call("/tem/join", {token: tf, label: ctx.email}); localStorage.removeItem("vl_tem"); if (rf.ok) invitedNote = "tem_joined"; }
+    if (tf) { const [rf, jf] = await call("/tem/join", {token: tf, label: ctx.email}); localStorage.removeItem("vl_tem"); invitedNote = rf.ok ? "tem_joined" : (jf.error === "staff_cannot_join" ? "tem_staff" : "tem_bad"); }
   } catch (e) {}
   const eg = localStorage.getItem("vl_engage");
   if (eg) await engagementForm(eg);
@@ -536,7 +536,7 @@ applyLang();
           row.appendChild(document.createTextNode(i[lang] + " "));
           if (i.who) row.appendChild(mk("span", "(" + i.who[lang] + ") ", "muted"));
           row.appendChild(mk("span", i.on_file ? t.j_onfile : (i.importer_side ? t.j_side : t.j_missing), "muted"));
-          if (i.confirmed) row.appendChild(mk("span", " ✓ " + TT[lang].ws_confirmed + " " + i.confirmed.by, "tick"));
+          if (i.confirmed) row.appendChild(mk("span", " · " + TT[lang].j_checked + " " + i.confirmed.by, "tick"));
           else if (i.source_changed) row.appendChild(mk("span", " " + TT[lang].src_changed, "verify"));
           else if (i.verified === false) row.appendChild(mk("span", " " + t.j_verify, "verify"));
           if (i.source) { const s = mk("a", " " + t.j_src); s.href = i.source; s.target = "_blank"; s.rel = "noopener"; s.style.marginLeft = "6px"; row.appendChild(s); }
@@ -690,7 +690,7 @@ applyLang();
       if (full) {
         const next = i.state === "paid" ? ["in progress", "Start work"] : i.state === "in progress" ? (i.compliance ? ["review", "Send to review"] : ["delivered", "Mark delivered"]) : ["delivered", "Mark delivered"];
         const b = mk("button", next[1]);
-        b.onclick = async () => { const [rr, jj] = await call("/admin/item", {item_id: i.id, state: next[0]}); if (!rr.ok) alert(jj.detail || jj.error); loadQueue(); };
+        b.onclick = async () => { const [rr, jj] = await call("/admin/item", {item_id: i.id, state: next[0]}); if (!rr.ok) return pageMsg(b, jj.detail || jj.error); loadQueue(); };
         row.appendChild(b);
       }
       q.appendChild(row);
@@ -718,16 +718,15 @@ applyLang();
     const [r, j] = await call("/core/view", {case_id: caseId}); box.innerHTML = ""; if (!r.ok) { box.textContent = j.error || r.status; return; }
     box.style.cssText = "margin:6px 0 12px 16px";
     box.appendChild(mk("div", "Core mode: " + j.mode + (j.mode !== "live" ? " (test: Core is not called)" : "") + " · consignment: " + (j.consignment_id || "none") + (j.checked_at ? " · status checked " + sd(j.checked_at) : ""), "muted"));
-    if (j.consignment_id) { const rf = mk("button", "Refresh status"); rf.onclick = async () => { const [rr, jj] = await call("/core/refresh", {case_id: caseId}); if (!rr.ok) alert(jj.detail || jj.error); staffCore(caseId, box); }; box.appendChild(rf); }
+    if (j.consignment_id) { const rf = mk("button", "Refresh status"); rf.onclick = async () => { const [rr, jj] = await call("/core/refresh", {case_id: caseId}); if (!rr.ok) return pageMsg(rf, jj.detail || jj.error); staffCore(caseId, box); }; box.appendChild(rf); }
     if (j.core_status && j.core_status.roadmap) { box.appendChild(mk("div", "Core roadmap (" + j.core_status.consignmentStatus + "):", "muted"));
       Object.entries(j.core_status.roadmap).forEach(([k, v]) => box.appendChild(mk("div", "· " + k + ": " + v.status + (v.validationLevel ? " / " + v.validationLevel : "") + (v.required ? "" : " (optional)"), "muted"))); }
     else if (j.core_status) box.appendChild(mk("div", "Core status: " + j.core_status.status + " " + (j.core_status.reason || ""), "muted"));
     if (!j.documents.length) box.appendChild(mk("div", "No documents in this project.", "muted"));
     j.documents.forEach(x => { const row = mk("div"); row.appendChild(document.createTextNode(x.filename + " [" + (x.doc_type || "?") + "] "));
       if (x.check) row.appendChild(mk("span", x.check.label.en + " · " + (x.check.core_status || "") + " " + (x.check.level || "") + " · " + x.check.via + " · " + sd(x.check.at) + (x.check.simulated ? " · test" : "") + (x.check.error ? " · " + x.check.error : ""), "muted"));
-      if (full) { const sb = mk("button", x.check ? "Send again" : "Send to CORE"); sb.onclick = async () => {
-          if (!confirm("Send " + x.filename + " to VeriPura Core?" + (j.mode === "live" ? " This is a real, paid Core call." : ""))) return;
-          const [rr, jj] = await call("/core/send", {case_id: caseId, document_id: x.id}); if (!rr.ok) alert(jj.detail || jj.error); staffCore(caseId, box); };
+      if (full) { const sb = mk("button", (x.check ? "Send again" : "Send to CORE") + (j.mode === "live" ? " (real, paid call)" : ""));
+        twoClick(sb, async () => { const [rr, jj] = await call("/core/send", {case_id: caseId, document_id: x.id}); if (!rr.ok) return pageMsg(sb, jj.detail || jj.error); staffCore(caseId, box); });
         row.appendChild(sb); }
       box.appendChild(row); });
   }
@@ -736,8 +735,8 @@ applyLang();
     const [r, j] = await call("/core/auto_state", {}); if (!r.ok) return;
     const b = mk("button", j.auto ? "ON: switch off" : "OFF: switch on");
     holder.append(mk("span", "CORE automatic sending (paid projects, on upload), mode " + j.mode + ": ", "muted"), b);
-    b.onclick = async () => { if (!j.auto && !confirm("Every upload to a paid project will then be sent to Core automatically. Switch on?")) return;
-      await call("/core/auto", {on: !j.auto}); coreSwitch(); };
+    const go = async () => { await call("/core/auto", {on: !j.auto}); coreSwitch(); };
+    if (j.auto) b.onclick = go; else { holder.append(mk("span", " Every upload to a paid project will then be sent to Core automatically.", "muted")); twoClick(b, go); }
   }
   async function loadStaff() {
     addCompanyForm();
@@ -798,6 +797,12 @@ applyLang();
   const sel0 = (opts, cur) => { const s = mk("select"); opts.forEach(o => { const e = mk("option", o); e.value = o; if (o === cur) e.selected = true; s.appendChild(e); }); return s; };
   const linkBox = (parent, url, note) => { const i = mk("input"); i.type = "text"; i.readOnly = true; i.value = url; i.style.width = "70%"; const c = mk("button", TT[lang].ws_copy);
     c.onclick = async () => { try { await navigator.clipboard.writeText(url); } catch (e) { i.select(); } }; parent.append(i, " ", c); if (note) parent.appendChild(mk("div", note, "muted")); };
+  function pageMsg(el, text) { const m = mk("div", text, "verify"); el.after ? el.after(m) : el.appendChild(m); setTimeout(() => m.remove(), 8000); }
+  function twoClick(btn, action) {  // first click arms the button, second click within 5 s runs the action
+    const label = btn.textContent; let armed = false, timer = null;
+    btn.onclick = async () => { if (!armed) { armed = true; btn.textContent = TT[lang].ws_sure; timer = setTimeout(() => { armed = false; btn.textContent = label; }, 5000); return; }
+      clearTimeout(timer); armed = false; btn.textContent = label; await action(); };
+  }
   async function loadTem() {
     const tt = TT[lang], box = $("temws"); box.innerHTML = "";
     const [r, j] = await call("/tem/me", {}); if (!r.ok || !j.firm) { box.textContent = T[lang].err + (j.error || r.status); return; }
@@ -825,7 +830,7 @@ applyLang();
         const ob = mk("button", tt.ws_open); ob.onclick = () => temProject(p.id); row.appendChild(ob); cd.appendChild(row); });
       const np = mk("div"); const cs = sel0(CATS), co = sel0(COUNTRIES), nn = mk("input"); nn.type = "text"; nn.placeholder = tt.ws_name; nn.style.width = "30%";
       const cb = mk("button", tt.ws_create); cb.onclick = async () => { const [rr, jj] = await call("/tem/new_project", {company: c.id, category: cs.value, country: co.value, name: nn.value});
-        if (rr.ok) temProject(jj.case_id); else alert(jj.error || rr.status); };
+        if (rr.ok) temProject(jj.case_id); else pageMsg(cb, jj.error || rr.status); };
       np.append(mk("span", tt.ws_newp + ": ", "muted"), cs, " ", co, " ", nn, " ", cb); cd.appendChild(np);
       if (lead && j.members.length > 1) { const as = mk("div", tt.ws_assign + ": ", "muted");
         j.members.filter(m => m.role !== "lead").forEach(m => { const l = mk("label"); const ck = mk("input"); ck.type = "checkbox"; ck.checked = (c.assigned || []).includes(m.user);
@@ -856,8 +861,10 @@ applyLang();
         else if (!i.verified) row.appendChild(mk("span", t.j_verify + " ", "verify"));
         if (i.source) { const a = mk("a", t.j_src); a.href = i.source; a.target = "_blank"; a.rel = "noopener"; row.appendChild(a); row.appendChild(document.createTextNode(" ")); }
         if (i.confirmed || !i.verified) { const b = mk("button", i.confirmed ? tt.ws_unconfirm : tt.ws_confirm); b.onclick = async () => {
-            const note = i.confirmed ? null : prompt(tt.ws_note_q, ""); if (note === null && !i.confirmed) return;
-            await call("/tem/confirm", {case_id: caseId0, item: i.id, note, on: !i.confirmed}); temProject(caseId0); }; row.appendChild(b); }
+            if (i.confirmed) { await call("/tem/confirm", {case_id: caseId0, item: i.id, note: null, on: false}); return temProject(caseId0); }
+            const f = mk("div"), ni = mk("input"), sv = mk("button", tt.ws_save), cn = mk("button", tt.ws_cancel); ni.placeholder = tt.ws_note_q; ni.style.width = "60%";
+            sv.onclick = async () => { await call("/tem/confirm", {case_id: caseId0, item: i.id, note: ni.value || null, on: true}); temProject(caseId0); };
+            cn.onclick = () => { f.remove(); b.hidden = false; }; f.append(ni, " ", sv, " ", cn); b.hidden = true; row.appendChild(f); ni.focus(); }; row.appendChild(b); }
         if (i.only_if) row.appendChild(mk("div", t.j_onlyif + ": " + i.only_if[lang], "muted"));
         box.appendChild(row); }); });
     dutiesBox(box, j.duties);
@@ -868,7 +875,7 @@ applyLang();
       const ck = (j.core.documents.find(y => y.id === x.id) || {}).check; if (ck) row.appendChild(mk("span", " " + ck.label[lang] + (ck.simulated ? " (" + t.j_core_test + ")" : ""), "core-" + ck.result));
       box.appendChild(row); });
     const up = mk("input"); up.type = "file"; up.multiple = true; up.onchange = async e => { for (const f of e.target.files) {
-        const rr = await api("/upload", {method: "POST", body: f, headers: {"X-Filename": encodeURIComponent(f.name), "X-Case": caseId0}}); if (!rr.ok) { const jj = await rr.json(); alert(f.name + ": " + (jj.error || rr.status)); } } temProject(caseId0); };
+        const rr = await api("/upload", {method: "POST", body: f, headers: {"X-Filename": encodeURIComponent(f.name), "X-Case": caseId0}}); if (!rr.ok) { const jj = await rr.json(); pageMsg(up, f.name + ": " + (jj.error || rr.status)); await new Promise(r => setTimeout(r, 3000)); } } temProject(caseId0); };
     box.append(mk("div", tt.ws_upload + ":", "muted"), up);
     const lib = j.library.filter(x => !inProj.has(x.id));
     if (lib.length) { box.appendChild(mk("div", tt.ws_lib + ":", "muted"));
@@ -889,7 +896,7 @@ applyLang();
     const [r, j] = await call("/tem/client", {}); if (!r.ok || !j.firms.length) return;
     box.appendChild(mk("h3", tt.tc_title));
     j.firms.forEach(f => { const row = mk("div", f.name + " · " + (f.status === "active" ? tt.tc_since + " " + sd(f.since) : tt.tc_revoked + " " + sd(f.revoked_at)) + " ");
-      if (f.status === "active" && j.can_revoke) { const b = mk("button", tt.tc_revoke); b.onclick = async () => { if (!confirm(tt.tc_revoke + ": " + f.name + "?")) return; await call("/tem/revoke", {firm: f.id}); loadTeamTem(); }; row.appendChild(b); }
+      if (f.status === "active" && j.can_revoke) { const b = mk("button", tt.tc_revoke); twoClick(b, async () => { await call("/tem/revoke", {firm: f.id}); loadTeamTem(); }); row.appendChild(b); }
       box.appendChild(row); });
     if (j.log.length) { const det = mk("details"); det.appendChild(mk("summary", tt.tc_log)); j.log.forEach(e => det.appendChild(mk("div", sd(e.at) + " · " + (e.firm || "") + " · " + e.action, "muted"))); box.appendChild(det); }
   }
@@ -972,7 +979,9 @@ applyLang();
       box.appendChild(row); });
     if (full) { const n = mk("input"), v = mk("input"), st = mk("input"); n.placeholder = "Firm name"; v.placeholder = "VAT (optional)"; st.placeholder = "Seats (empty = not limited)"; st.type = "number";
       const b = mk("button", "Add TEM firm"), o = mk("div"); b.onclick = async () => { o.innerHTML = ""; const [rr, jj] = await call("/admin/tem_firm", {name: n.value, vat: v.value, seats: st.value || null});
-        if (rr.ok) { linkBox(o, location.origin + "/?tem=" + jj.lead_token, "Send this to the firm lead. Single use, 14 days."); } else o.textContent = jj.error || rr.status; };
+        if (rr.ok) { const url = location.origin + "/?tem=" + jj.lead_token, name = n.value; await staffTems();  // list refreshed, form cleared
+          const o2 = mk("div"); o2.appendChild(mk("div", "Created: " + name)); linkBox(o2, url, "Send this to the firm lead. Single use, 14 days."); $("s-tems").appendChild(o2); }
+        else o.textContent = jj.error || rr.status; };
       box.append(n, " ", v, " ", st, " ", b, o); }
   }
   if (me.staff_level) { $("sbtn").hidden = false; $("sbtn").onclick = () => { const p = $("staff"); p.hidden = !p.hidden; if (!p.hidden) loadStaff(); }; }
@@ -1121,6 +1130,10 @@ applyLang();
     if (curPersona) setPersona(curPersona);
   };
   welcome();
+  if (me.tem) {  // a TEM starts in the consultant workspace, not the exporter welcome
+    $("welcome").hidden = true; $("app").hidden = true; $("temws").hidden = false; loadTem().then(() => {
+      if (invitedNote === "tem_joined") $("temws").prepend(mk("p", TT[lang].tem_joined, "tick")); });
+  }
   try {  // back from Stripe: confirm with Stripe itself, so the result shows even before the webhook arrives
     const pid = localStorage.getItem("vl_paid"), cancelled = localStorage.getItem("vl_paycancel");
     if (pid || cancelled) {
