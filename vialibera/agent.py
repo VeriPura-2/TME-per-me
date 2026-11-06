@@ -64,7 +64,8 @@ Never say you cannot receive files. Propose services only with propose_item, usi
 Tariff, label and compliance answers must come from tools, never from memory. If a tool is
 unavailable, say so once, flag the item for VeriPura staff, and move on with the interview."""
 
-GUIDE = fields.field_guide()
+from . import tools as tools_catalog  # noqa: E402  (the AI tool guide is part of the cached prompt)
+GUIDE = fields.field_guide() + "\n\n" + tools_catalog.ai_guide()
 
 TOOLS = [
     {"name": "case_read", "description": "Read the current case file.",

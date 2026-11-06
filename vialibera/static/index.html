@@ -38,7 +38,7 @@ a{color:var(--accent)}
 .sim{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:10px;border:1px dashed #b26a00;color:#b26a00;margin-left:6px;vertical-align:middle}
 .simnote{font-size:.85rem;color:#b26a00;margin:4px 0 8px}
 .plans{display:flex;gap:8px;flex-wrap:wrap}.plans .card{flex:1 1 150px;margin:0;cursor:pointer}.plans .card.on{border-color:var(--accent);outline:2px solid var(--accent)}
-.plans .card.tool,.card.tool{flex:1 1 240px;cursor:default;margin:6px 0}.card.tool>div{margin:3px 0}
+.plans .card.tool,.card.tool{flex:1 1 240px;cursor:default;margin:6px 0}.card.tool>div{margin:3px 0}.by{font-size:.75em;letter-spacing:.04em;text-transform:uppercase;border:1px solid currentColor;border-radius:4px;padding:0 5px}.by.miotem{color:var(--accent)}.by.partner{color:var(--muted)}
 .tick{color:#188038}.todo{color:var(--muted)}.verify{color:#b06000;font-size:.85rem}.core-matched{color:#188038}.core-flagged{color:#b06000}.core-flagged_critical{color:#c5221f}
 footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-height:1.6}footer.legal a{color:inherit}
 </style></head><body>
@@ -134,6 +134,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <p class="muted" id="w-style"></p>
   <div id="w-styles"></div>
   <div id="w-start"></div>
+  <details id="w-tools"><summary id="w-tools-s"></summary><div id="w-tools-box"></div></details>
   <p><strong id="w-ask"></strong></p>
   <div id="w-opts"></div>
 </div>
@@ -148,6 +149,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   </div>
 </div>
 <div id="landing" hidden class="card">
+  <h2 id="landing-h"></h2>
   <p id="landing-t"></p>
   <p id="landing-err" class="muted" hidden></p>
   <button id="login" class="primary"></button>
@@ -200,18 +202,18 @@ const TL = {  // tool cards on the project (tools.py)
   it: {title: "Strumenti per questo progetto", link: "Si apre in una nuova scheda", preview: "In sviluppo", soon: "In arrivo", ex: "Esempio", tell: "Avvisami quando è pronto",
        told: "Grazie: ti avviseremo quando sarà pronto.", ref_t: "Verifica un riferimento di esportazione", ref_help: "Controlla il formato di un MRN (dichiarazione di esportazione) o di un ARC (e-AD per il vino) prima di usarlo nei documenti.",
        mrn: "MRN", arc: "ARC (e-AD)", check: "Controlla il formato", lookup: "Servizio UE di verifica MRN", steps: "Come funzionerà",
-       vis: "Visibile al cliente", today: "Oggi", next: "In arrivo", count: "Il tuo cliente vede {n} strumenti su {m}. Attiva o disattiva ciascuno qui sotto."},
+       vis: "Visibile al cliente", today: "Oggi", next: "Poi", miotem: "MioTEM", partner: "Partner", go: "Portami lì", tour: "I tuoi strumenti: cosa fa MioTEM per te", tour_t: "Strumenti di MioTEM e dei partner", count: "Il tuo cliente vede {n} strumenti su {m}. Attiva o disattiva ciascuno qui sotto."},
   en: {title: "Tools for this project", link: "Opens in a new tab", preview: "In development", soon: "Coming soon", ex: "Example", tell: "Tell me when it's ready",
        told: "Thank you: we will let you know when it is ready.", ref_t: "Check an export reference", ref_help: "Check the format of an MRN (export declaration) or an ARC (e-AD for wine) before you use it in your documents.",
        mrn: "MRN", arc: "ARC (e-AD)", check: "Check format", lookup: "EU MRN follow-up service", steps: "How it will work",
-       vis: "Visible to client", today: "Today", next: "Next", count: "Your client sees {n} of {m} tools. Switch each one on or off below."},
+       vis: "Visible to client", today: "Today", next: "Next", miotem: "MioTEM", partner: "Partner", go: "Take me there", tour: "Your tools: what MioTEM does for you", tour_t: "MioTEM and partner tools", count: "Your client sees {n} of {m} tools. Switch each one on or off below."},
 };
 const T = {
   it: {
     signin: "Accedi / Registrati", signout: "Esci", send: "Invia", ph: "Racconta il tuo prodotto e il mercato",
     own_pending: "La tua titolarità dell'azienda è in verifica da parte dello staff VeriPura (di solito entro un giorno lavorativo). Nel frattempo puoi lavorare; inviti ai colleghi e invio dei documenti alla validazione attendono la conferma.",
     verify_email: "Conferma la tua email: ti abbiamo inviato un link (controlla anche lo spam). Poi accedi di nuovo.", login_refused: "Accesso non riuscito: ",
-    signed: "Accesso come ", landing: "Il tuo export manager con intelligenza artificiale per i prodotti alimentari italiani.",
+    signed: "Accesso come ", landing_h: "MioTEM. Il tuo Export Manager AI.", landing: "La piattaforma per sviluppare, gestire e far crescere il tuo business internazionale.",
     gateIntro: "Prima di iniziare, leggi e accetta le condizioni.",
     c1: 'Ho letto e accetto le <a href="/terms?lang=it" target="_blank">Condizioni del servizio</a> e l\'<a href="/terms?lang=it#privacy" target="_blank">Informativa sulla privacy</a>.',
     c2: "Approvo specificamente, ai sensi degli artt. 1341 e 1342 c.c., le clausole indicate nelle Condizioni (limitazione di responsabilità, sospensione e cessazione, modifiche unilaterali, legge applicabile e foro competente).",
@@ -239,7 +241,7 @@ const T = {
     signin: "Sign in / Sign up", signout: "Sign out", send: "Send", ph: "Tell us about your product and market",
     own_pending: "VeriPura staff are confirming that you own this company (usually within one working day). Meanwhile you can work; inviting colleagues and sending documents for validation wait for that confirmation.",
     verify_email: "Please confirm your email: we sent you a link (check spam too). Then sign in again.", login_refused: "Sign-in failed: ",
-    signed: "Signed in as ", landing: "Your AI export manager for Italian food products.",
+    signed: "Signed in as ", landing_h: "MioTEM. Your AI Export Manager.", landing: "The platform that guides Italian businesses into international markets, from first export to growth.",
     gateIntro: "Before we start, please read and accept the terms.",
     c1: 'I have read and accept the <a href="/terms?lang=en" target="_blank">Terms of Service</a> and the <a href="/terms?lang=en#privacy" target="_blank">Privacy Notice</a>.',
     c2: "I specifically approve, under Articles 1341 and 1342 of the Italian Civil Code, the clauses listed in the Terms (limitation of liability, suspension and ending, changes to the terms, governing law and courts).",
@@ -283,7 +285,7 @@ function applyLang() {
   document.documentElement.lang = lang;
   $("lang").textContent = lang === "it" ? "EN" : "IT";
   $("logout").textContent = t.signout; $("docsbtn").textContent = t.d_btn; $("jbtn").textContent = t.j_btn; $("ibtn").textContent = t.i_btn; $("tbtn").textContent = t.t_btn; $("send").textContent = t.send; $("msg").placeholder = t.ph;
-  $("landing-t").textContent = t.landing; $("login").textContent = t.signin;
+  $("landing-h").textContent = t.landing_h; $("landing-t").textContent = t.landing; $("login").textContent = t.signin;
   $("gate-intro").textContent = t.gateIntro; $("c1t").innerHTML = t.c1; $("c2t").textContent = t.c2;
   $("gate-ai").textContent = t.ai; $("accept").textContent = t.accept;
   if (ctx.email) $("who").textContent = t.signed + ctx.email;
@@ -499,9 +501,17 @@ applyLang();
     }
     vat();
   }
-  function toolsBox(box, data, cid, tem) {  // tem: the TEM's view, with a "Visible to client" switch per card
+  function goTo(key) {  // buttons from the tool list and from the AI ("GOTO: key")
+    const into = () => { $("welcome").hidden = true; $("app").hidden = false; };
+    if (key === "chat") { into(); $("msg").focus(); return; }
+    if (key === "docs") { into(); if ($("docs").hidden) $("docsbtn").click(); $("docs").scrollIntoView({behavior: "smooth"}); return; }
+    const target = {req: "j-req", duties: "j-core", eori: "j-eori", tools: "j-tools"}[key] || "journey";
+    into(); $("journey").hidden = false; jsel = null;
+    loadJourney().then(() => { const el = $(target); if (el) el.scrollIntoView({behavior: "smooth"}); });
+  }
+  function toolsBox(box, data, cid, tem, title) {  // tem: the TEM's view, with a "Visible to client" switch per card
     const t = TL[lang]; box.innerHTML = ""; const list = data && data.cards; if (!list || !list.length) return;
-    box.appendChild(mk("h3", t.title));
+    box.appendChild(mk("h3", title || t.title));
     if (tem && data.client_count) box.appendChild(mk("div", t.count.replace("{n}", data.client_count.shown).replace("{m}", data.client_count.total), "muted"));
     const sw = (parent, tool, on) => { const l = mk("label", null, "muted"), c = document.createElement("input"); c.type = "checkbox"; c.checked = on;
       c.onchange = async () => { c.disabled = true; const [r] = await call("/tem/tool_visibility", {case_id: cid, tool, visible: c.checked}); if (!r.ok) c.checked = !c.checked; c.disabled = false; temProject(cid); };
@@ -510,10 +520,12 @@ applyLang();
     const linkTo = (parent, l) => { const p = mk("div"), a = mk("a", l.label[lang] + " ↗"); a.href = l.url; a.target = "_blank"; a.rel = "noopener"; a.title = t.link; p.appendChild(a); parent.appendChild(p); };
     list.forEach(c => {
       const card = mk("div", null, "card tool"); card.dataset.tool = c.id;
-      if (tem) sw(card, c.id, c.client_visible);
+      if (tem && !c.always) sw(card, c.id, c.client_visible);
+      const by = mk("div"); by.appendChild(mk("span", c.by.kind === "miotem" ? t.miotem : t.partner + ": " + c.by.name, "by " + c.by.kind)); card.appendChild(by);
       card.appendChild(mk("strong", c.name[lang]));
       if (c.today) { const d = mk("div"); d.appendChild(mk("strong", t.today + ": ")); d.appendChild(document.createTextNode(c.today.text[lang])); card.appendChild(d);
         (c.today.links || []).forEach(l => linkTo(card, l)); if (c.today.note) card.appendChild(mk("div", c.today.note[lang], "muted")); }
+      if (c.go && !tem) { const g = mk("button", t.go); g.onclick = () => goTo(c.go); card.appendChild(g); }
       const n = c.coming;
       if (n) { const d = mk("div"); if (c.today) d.appendChild(mk("strong", t.next + ": ")); d.appendChild(mk("span", (n.status === "preview" ? t.preview : t.soon), "sim"));
         d.appendChild(document.createTextNode(" " + n.text[lang])); card.appendChild(d);
@@ -1103,6 +1115,10 @@ applyLang();
         b.onclick = () => /^(something else|altro|qualcos'altro)/i.test(o) ? $("msg").focus() : send(o);
         $("opts").appendChild(b);
       });
+    } else if (last.startsWith("GOTO:")) {
+      add("bot", lines.slice(0, -1).join("\n").trim(), true);
+      const key = last.slice(5).trim().toLowerCase();
+      if (["chat", "req", "duties", "docs", "eori", "tools"].includes(key)) { const b = document.createElement("button"); b.textContent = TL[lang].go; b.className = "primary"; b.onclick = () => goTo(key); $("opts").appendChild(b); }
     } else add("bot", reply, true);
   }
   async function send(text) {
@@ -1181,6 +1197,8 @@ applyLang();
       sb.appendChild(b);
     });
     quickStart(t);
+    $("w-tools-s").textContent = TL[lang].tour; $("w-tools").open = !me.latest_case;
+    call("/tools/catalog", {}).then(([rc, jc]) => { if (rc.ok) toolsBox($("w-tools-box"), jc, null, false, TL[lang].tour_t); });
     const box = $("w-opts"); box.innerHTML = "";
     const go = (label, path, text, resume) => {
       const b = document.createElement("button"); b.textContent = label; b.style.margin = "4px 6px 4px 0";
