@@ -252,6 +252,23 @@ CREATE TABLE IF NOT EXISTS lane_requests (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS tool_interest (
+  id TEXT PRIMARY KEY,
+  case_id TEXT,
+  company_id TEXT,
+  user_sub TEXT,
+  tool TEXT NOT NULL,                  -- a tool card id from tools.py ("Tell me when it's ready")
+  user_type TEXT,                      -- exporter (no TEM), tem, client (of a TEM)
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tool_visibility (
+  case_id TEXT NOT NULL,
+  tool TEXT NOT NULL,
+  visible INTEGER NOT NULL,            -- 1 shown to the TEM's client, 0 hidden, no row means the default in tools.py
+  set_by TEXT NOT NULL,
+  set_at TEXT NOT NULL,
+  PRIMARY KEY (case_id, tool)
+);
 CREATE TABLE IF NOT EXISTS case_notes (
   id TEXT PRIMARY KEY,
   case_id TEXT NOT NULL,
