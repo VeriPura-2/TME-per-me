@@ -645,6 +645,13 @@ def handle_tools(path, body, who):
             if err and tems._case_tem(c, who, cid) is None:  # a TEM works on client projects through the engagement
                 return err
         return tools.record_interest(c, cid, who["user"], str(body.get("tool") or ""))
+    if path == "/tools/catalog":  # the tool tour after sign-in: every tool, as this user would see it
+        company = permissions.company_of(c, who["user"])
+        viewer = "tem" if tems.firm_of(c, who["user"]) else ("client" if tools.has_tem(c, company) else "exporter")
+        cards = tools.for_case(None, None)
+        if viewer == "client":
+            cards = [x for x in cards if x.get("always") or x["id"] not in tools.CLIENT_OFF]
+        return 200, {"cards": cards, "refcheck": True, "viewer": viewer}
     if path == "/tools/refcheck":
         out = tools.check_reference(str(body.get("kind") or ""), body.get("value"))
         return (400 if out.get("error") else 200), out

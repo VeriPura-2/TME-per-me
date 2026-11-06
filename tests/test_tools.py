@@ -17,16 +17,16 @@ EM_DASH = "—"
 
 class ToolCards(unittest.TestCase):
     def test_parcel_order_depends_on_chilled_products(self):
-        pasta = tools.for_case("pasta", "UK")[0]["today"]
-        cheese = tools.for_case("cheese", "France")[0]["today"]
+        ship = lambda p, c: {x["id"]: x for x in tools.for_case(p, c)}["shipping"]["today"]
+        pasta, cheese = ship("pasta", "UK"), ship("cheese", "France")
         self.assertIn("sendcloud", pasta["links"][0]["url"])
         self.assertIn("shippypro", cheese["links"][0]["url"])
         self.assertNotIn("note", pasta)
         self.assertIn("samples", cheese["note"]["en"])
 
     def test_cards_are_copies(self):
-        tools.for_case("cheese", "France")[0]["today"]["note"] = "x"
-        self.assertNotIn("note", tools.for_case("pasta", "UK")[0]["today"])
+        tools.for_case("cheese", "France")[0]["today"]["text"] = "x"
+        self.assertNotEqual(tools.for_case("cheese", "France")[0]["today"]["text"], "x")
 
     def test_us_wine_certificate_preview_only_for_wine_to_the_us(self):
         ids = lambda p, c: {x["id"] for x in tools.for_case(p, c)}
@@ -168,3 +168,49 @@ class Visibility(unittest.TestCase):
         self.assertEqual(tools.user_type(self.con, self.co, "lead"), "tem")
         self.assertEqual(tools.user_type(self.con, self.co, "ca"), "client")
         self.assertEqual(tools.user_type(self.con, None, "someone"), "exporter")
+
+
+class CoreAndGuide(unittest.TestCase):
+    def test_miotem_tools_first_and_labelled(self):
+        cards = tools.for_case("pasta", "UK")
+        kinds = [c["by"]["kind"] for c in cards]
+        self.assertEqual(kinds, sorted(kinds, key=lambda k: k != "miotem"))
+        by = {c["id"]: c["by"] for c in cards}
+        self.assertEqual(by["checklist"]["kind"], "miotem")
+        self.assertEqual(by["doc_checks"], {"kind": "partner", "name": "VeriPura"})
+        self.assertEqual(by["label_check"]["name"], "VeriPura")
+        self.assertIn("Sendcloud", by["shipping"]["name"])
+
+    def test_core_tools_always_shown_and_not_switchable(self):
+        c = app.con()
+        cid = __import__("vialibera.db", fromlist=["x"]).create_case(c, 1)
+        row = c.execute("SELECT * FROM cases WHERE id=?", (cid,)).fetchone()
+        client = {x["id"] for x in tools.for_viewer(c, row, "pasta", "UK", "client")["cards"]}
+        for core in ("ai_manager", "checklist", "duties", "library", "eori", "consultants"):
+            self.assertIn(core, client)
+        self.assertEqual(tools.set_visibility(c, {"user": "nobody"}, cid, "checklist", False)[0], 404)
+
+    def test_ai_guide_lists_every_tool_and_goto_keys(self):
+        g = tools.ai_guide()
+        for c in tools.CORE + tools.CARDS:
+            self.assertIn(c["name"]["en"], g)
+        for key in ("chat", "req", "duties", "docs", "eori", "tools"):
+            self.assertIn(key, g)
+        self.assertIn("GOTO:", g)
+        self.assertNotIn(EM_DASH, g)
+        from vialibera import agent
+        self.assertIn("MioTEM TOOLS", agent.GUIDE)
+
+    def test_catalog_for_a_signed_in_user(self):
+        code, out = app.handle_tools("/tools/catalog", {}, user("tools-cat"))
+        self.assertEqual(code, 200)
+        self.assertEqual(out["viewer"], "exporter")
+        self.assertIn("importers", {x["id"] for x in out["cards"]})
+        self.assertNotIn("ttb_agent", {x["id"] for x in out["cards"]})
+
+    def test_frontend_has_goto_and_tour(self):
+        html = open(os.path.join(os.path.dirname(app.__file__), "static", "index.html"), encoding="utf-8").read()
+        self.assertIn('last.startsWith("GOTO:")', html)
+        self.assertIn('id="w-tools"', html)
+        self.assertIn("MioTEM. Your AI Export Manager.", html)
+        self.assertIn("MioTEM. Il tuo Export Manager AI.", html)
