@@ -410,7 +410,10 @@ applyLang();
     };
     d.appendChild(b);
   };
-  const add = (cls, t, speakable) => { const d = document.createElement("div"); d.className = cls; d.textContent = t; if (speakable && cfg.voice && cfg.voice_replies) speakBtn(d, t); $("log").appendChild(d); d.scrollIntoView({block: "nearest"}); $("log").scrollTop = $("log").scrollHeight; window.scrollTo(0, document.body.scrollHeight); };
+  const richText = (d, t) => t.split(/(\*\*[^*\n]+?\*\*)/).forEach(part => {  // only **bold** becomes markup; everything else stays plain text
+    if (part.length > 4 && part.startsWith("**") && part.endsWith("**")) { const b = document.createElement("strong"); b.textContent = part.slice(2, -2); d.appendChild(b); }
+    else if (part) d.appendChild(document.createTextNode(part)); });
+  const add = (cls, t, speakable) => { const d = document.createElement("div"); d.className = cls; if (cls === "bot") richText(d, t); else d.textContent = t; if (speakable && cfg.voice && cfg.voice_replies) speakBtn(d, t.replace(/\*\*/g, "")); $("log").appendChild(d); d.scrollIntoView({block: "nearest"}); $("log").scrollTop = $("log").scrollHeight; window.scrollTo(0, document.body.scrollHeight); };
   // ---- documents
   let types = [];
   const tname = id => { const t = types.find(x => x.id === id); return t ? t[lang] : id; };

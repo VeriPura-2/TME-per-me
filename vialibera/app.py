@@ -555,7 +555,7 @@ def handle_speak(body, who, post=None):
     p = accounts.get_profile(con(), who["user"])
     pid = p["persona_id"]
     name = personas.BY_ID[pid]["name"] if pid in personas.BY_ID else None
-    return voice.speak(con(), who["user"], str(body.get("text", "")), pid,
+    return voice.speak(con(), who["user"], str(body.get("text", "")).replace("**", ""), pid,
                        lang="en" if body.get("lang") == "en" else "it",
                        intro_name=name if body.get("intro") else None, post=post)
 

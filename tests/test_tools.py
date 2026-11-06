@@ -214,3 +214,11 @@ class CoreAndGuide(unittest.TestCase):
         self.assertIn('id="w-tools"', html)
         self.assertIn("MioTEM. Your AI Export Manager.", html)
         self.assertIn("MioTEM. Il tuo Export Manager AI.", html)
+
+
+class ChatBold(unittest.TestCase):
+    def test_bot_messages_render_bold_safely(self):
+        html = open(os.path.join(os.path.dirname(app.__file__), "static", "index.html"), encoding="utf-8").read()
+        self.assertIn('if (cls === "bot") richText(d, t); else d.textContent = t;', html)
+        self.assertIn('b.textContent = part.slice(2, -2)', html)  # bold text is set as text, never as HTML
+        self.assertIn("d.appendChild(document.createTextNode(part))", html)
