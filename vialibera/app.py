@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import admin, ai_usage, lane_requests, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
+from . import admin, ai_usage, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -453,6 +453,8 @@ def handle_tem(path, body, who):
         return tems.new_project(c, who, str(body.get("company") or ""), body.get("category"), body.get("country"), body.get("name"))
     if path == "/tem/project":
         return tems.project(c, who, case_id)
+    if path == "/tem/tool_visibility":
+        return tools.set_visibility(c, who, case_id, str(body.get("tool") or ""), body.get("visible", True) is not False)
     return 404, {}
 
 
@@ -620,6 +622,8 @@ def handle_journey(body, who):
     out["core"] = core_checks.summary(c, row["id"])
     out["notes"] = tems.notes(c, row["id"], internal=False)
     out["duties"] = duties.for_case(c, case)
+    viewer = "client" if tools.has_tem(c, row["company_id"]) and not tems.firm_of(c, who["user"]) else "exporter"
+    out["tools"] = tools.for_viewer(c, row, case["product"].get("category"), case["market"].get("country"), viewer)
     if features.is_sim("options_packet"):
         from .sim import packet
         sel = body.get("selected") or packet.wanted_items(case["market"].get("needs"))
@@ -627,6 +631,24 @@ def handle_journey(body, who):
         out["packet"] = packet.build(sel, plan)
         out["selected"] = sel
     return 200, out
+
+
+def handle_tools(path, body, who):
+    """Tool cards on the project: interest clicks and export reference format checks."""
+    if not who:
+        return 400, {"error": "sign-in required"}
+    c = con()
+    if path == "/tools/interest":
+        cid = body.get("case_id")
+        if cid:
+            row, err = _case_for(body, who)
+            if err and tems._case_tem(c, who, cid) is None:  # a TEM works on client projects through the engagement
+                return err
+        return tools.record_interest(c, cid, who["user"], str(body.get("tool") or ""))
+    if path == "/tools/refcheck":
+        out = tools.check_reference(str(body.get("kind") or ""), body.get("value"))
+        return (400 if out.get("error") else 200), out
+    return 404, {}
 
 
 def handle_team(path, body, who):
@@ -683,6 +705,10 @@ def handle_admin(path, body, who):
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
         return 200, lane_requests.listing(c)
+    if path == "/admin/tool_interest":
+        if not permissions.is_staff(who):
+            return 403, {"error": "forbidden"}
+        return 200, tools.interest_listing(c)
     if path == "/admin/ai_usage":
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
@@ -1019,7 +1045,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(500, {"error": type(e).__name__})
         if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
-                or self.path.startswith("/core/") or self.path.startswith("/tem/")):
+                or self.path.startswith("/core/") or self.path.startswith("/tem/") or self.path.startswith("/tools/")):
             return self._send(404, {})
         try:
             if self.path == "/stripe/webhook":
@@ -1081,6 +1107,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_start(body, who))
             if self.path == "/journey":
                 return self._send(*handle_journey(body, who))
+            if self.path.startswith("/tools/"):
+                return self._send(*handle_tools(self.path, body, who))
             host = self.headers.get("X-Forwarded-Host") or self.headers.get("Host")
             if self.path == "/pay":
                 return self._send(*handle_pay(body, who, host))

@@ -38,6 +38,7 @@ a{color:var(--accent)}
 .sim{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:10px;border:1px dashed #b26a00;color:#b26a00;margin-left:6px;vertical-align:middle}
 .simnote{font-size:.85rem;color:#b26a00;margin:4px 0 8px}
 .plans{display:flex;gap:8px;flex-wrap:wrap}.plans .card{flex:1 1 150px;margin:0;cursor:pointer}.plans .card.on{border-color:var(--accent);outline:2px solid var(--accent)}
+.plans .card.tool,.card.tool{flex:1 1 240px;cursor:default;margin:6px 0}.card.tool>div{margin:3px 0}
 .tick{color:#188038}.todo{color:var(--muted)}.verify{color:#b06000;font-size:.85rem}.core-matched{color:#188038}.core-flagged{color:#b06000}.core-flagged_critical{color:#c5221f}
 footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-height:1.6}footer.legal a{color:inherit}
 </style></head><body>
@@ -78,6 +79,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <h3 id="j-plans-t"></h3><div id="j-plans-sim"></div><div id="j-plans" class="plans"></div>
   <h3 id="j-req-t"></h3><div id="j-req"></div>
   <div id="j-core"></div>
+  <div id="j-tools"></div>
   <div id="j-eori"></div>
   <h3 id="j-pk-t"></h3><div id="j-pk"></div>
   <div id="j-done"></div>
@@ -193,6 +195,16 @@ const TT = {
        en_btn: "Accept the engagement", en_ok: "Engagement accepted. The consultant can now work for your company. You can revoke it at any time in the Team section.",
        en_bad: "The engagement link is not valid or has expired.", tc_title: "Export consultants", tc_since: "since", tc_revoked: "revoked", tc_revoke: "Revoke access",
        tc_log: "Consultant access log", tem_joined: "You have joined the consultant firm.", c_notes: "Messages from your export consultant", du_t: "Duties and VAT (official source)", du_src: "source", du_read: "read on", du_na: "Duty service unavailable right now. Staff will check.", du_none: "n/a", vs_check: "Check", vs_valid: "VAT number confirmed in VIES (EU). Details filled in.", vs_not: "VAT number not in VIES: fine to continue. Staff will check it.", vs_na: "VIES service unavailable right now: carry on, we will check again.", vs_ok: "VAT confirmed in VIES", vs_no: "VAT not in VIES", vs_pend: "VIES check pending", src_changed: "source changed, to re-verify"},
+};
+const TL = {  // tool cards on the project (tools.py)
+  it: {title: "Strumenti per questo progetto", link: "Si apre in una nuova scheda", preview: "In sviluppo", soon: "In arrivo", ex: "Esempio", tell: "Avvisami quando è pronto",
+       told: "Grazie: ti avviseremo quando sarà pronto.", ref_t: "Verifica un riferimento di esportazione", ref_help: "Controlla il formato di un MRN (dichiarazione di esportazione) o di un ARC (e-AD per il vino) prima di usarlo nei documenti.",
+       mrn: "MRN", arc: "ARC (e-AD)", check: "Controlla il formato", lookup: "Servizio UE di verifica MRN", steps: "Come funzionerà",
+       vis: "Visibile al cliente", today: "Oggi", next: "In arrivo", count: "Il tuo cliente vede {n} strumenti su {m}. Attiva o disattiva ciascuno qui sotto."},
+  en: {title: "Tools for this project", link: "Opens in a new tab", preview: "In development", soon: "Coming soon", ex: "Example", tell: "Tell me when it's ready",
+       told: "Thank you: we will let you know when it is ready.", ref_t: "Check an export reference", ref_help: "Check the format of an MRN (export declaration) or an ARC (e-AD for wine) before you use it in your documents.",
+       mrn: "MRN", arc: "ARC (e-AD)", check: "Check format", lookup: "EU MRN follow-up service", steps: "How it will work",
+       vis: "Visible to client", today: "Today", next: "Next", count: "Your client sees {n} of {m} tools. Switch each one on or off below."},
 };
 const T = {
   it: {
@@ -487,6 +499,44 @@ applyLang();
     }
     vat();
   }
+  function toolsBox(box, data, cid, tem) {  // tem: the TEM's view, with a "Visible to client" switch per card
+    const t = TL[lang]; box.innerHTML = ""; const list = data && data.cards; if (!list || !list.length) return;
+    box.appendChild(mk("h3", t.title));
+    if (tem && data.client_count) box.appendChild(mk("div", t.count.replace("{n}", data.client_count.shown).replace("{m}", data.client_count.total), "muted"));
+    const sw = (parent, tool, on) => { const l = mk("label", null, "muted"), c = document.createElement("input"); c.type = "checkbox"; c.checked = on;
+      c.onchange = async () => { c.disabled = true; const [r] = await call("/tem/tool_visibility", {case_id: cid, tool, visible: c.checked}); if (!r.ok) c.checked = !c.checked; c.disabled = false; temProject(cid); };
+      l.append(c, " " + t.vis); parent.appendChild(l); };
+    const grid = mk("div", null, "plans");
+    const linkTo = (parent, l) => { const p = mk("div"), a = mk("a", l.label[lang] + " ↗"); a.href = l.url; a.target = "_blank"; a.rel = "noopener"; a.title = t.link; p.appendChild(a); parent.appendChild(p); };
+    list.forEach(c => {
+      const card = mk("div", null, "card tool"); card.dataset.tool = c.id;
+      if (tem) sw(card, c.id, c.client_visible);
+      card.appendChild(mk("strong", c.name[lang]));
+      if (c.today) { const d = mk("div"); d.appendChild(mk("strong", t.today + ": ")); d.appendChild(document.createTextNode(c.today.text[lang])); card.appendChild(d);
+        (c.today.links || []).forEach(l => linkTo(card, l)); if (c.today.note) card.appendChild(mk("div", c.today.note[lang], "muted")); }
+      const n = c.coming;
+      if (n) { const d = mk("div"); if (c.today) d.appendChild(mk("strong", t.next + ": ")); d.appendChild(mk("span", (n.status === "preview" ? t.preview : t.soon), "sim"));
+        d.appendChild(document.createTextNode(" " + n.text[lang])); card.appendChild(d);
+        if (n.example) { card.appendChild(mk("div", t.ex + ":", "muted")); n.example.forEach(x => card.appendChild(mk("div", "· " + x[lang], "muted"))); }
+        if (n.steps) { card.appendChild(mk("div", t.steps + ":", "muted")); n.steps.forEach((st, i) => { const r = mk("div"); r.appendChild(mk("strong", (i + 1) + ". " + st.t[lang] + " ")); r.appendChild(mk("span", st.ex[lang], "muted")); card.appendChild(r); }); }
+        const b = mk("button", t.tell);
+        b.onclick = async () => { if (b.disabled) return; b.disabled = true; const [r] = await call("/tools/interest", {case_id: cid, tool: c.id});
+          if (r.ok) b.replaceWith(mk("div", t.told, "tick")); else b.disabled = false; };
+        card.appendChild(b);
+      }
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+    if (!data.refcheck) return;
+    const rf = mk("div", null, "card tool"); if (tem) sw(rf, "refcheck", data.refcheck_client_visible); rf.appendChild(mk("strong", t.ref_t)); rf.appendChild(mk("div", t.ref_help, "muted"));
+    const sel = document.createElement("select"); [["mrn", t.mrn], ["arc", t.arc]].forEach(([v, l]) => { const o = document.createElement("option"); o.value = v; o.textContent = l; sel.appendChild(o); });
+    const inp = document.createElement("input"); inp.type = "text"; inp.maxLength = 30; inp.style.width = "16em";
+    const go = mk("button", t.check), res = mk("div");
+    go.onclick = async () => { res.innerHTML = ""; const [r, j] = await call("/tools/refcheck", {kind: sel.value, value: inp.value}); if (!r.ok) return;
+      res.appendChild(mk("div", (j.format_ok ? "✓ " : "✗ ") + j.message[lang], j.format_ok ? "tick" : "verify"));
+      if (j.format_ok && j.lookup) linkTo(res, {label: {it: t.lookup, en: t.lookup}, url: j.lookup}); };
+    const row = mk("div"); row.append(sel, " ", inp, " ", go); rf.appendChild(row); rf.appendChild(res); box.appendChild(rf);
+  }
   async function loadJourney() {
     const t = T[lang];
     const y = window.scrollY;
@@ -568,6 +618,7 @@ applyLang();
         cb.appendChild(row); });
     }
     dutiesBox(cb, j.duties);
+    toolsBox($("j-tools"), j.tools, cid);
     if (j.notes && j.notes.length) { cb.appendChild(mk("h3", TT[lang].c_notes)); j.notes.forEach(n => cb.appendChild(mk("div", n.at.slice(0, 10) + " · " + n.by + ": " + n.text))); }
     loadEori(j.case && j.case.export_registration, cid);
     const pk = $("j-pk"); pk.innerHTML = "";
@@ -885,6 +936,7 @@ applyLang();
         if (i.only_if) row.appendChild(mk("div", t.j_onlyif + ": " + i.only_if[lang], "muted"));
         box.appendChild(row); }); });
     dutiesBox(box, j.duties);
+    const tb = mk("div"); box.appendChild(tb); toolsBox(tb, j.tools, caseId0, true);
     box.appendChild(mk("h3", tt.ws_docs));
     const dl = async (doc) => { const rr = await api("/doc/" + doc.id); const bl = await rr.blob(); const a = document.createElement("a"); a.href = URL.createObjectURL(bl); a.download = doc.filename; a.click(); };
     const inProj = new Set(j.documents.map(x => x.id));
@@ -968,12 +1020,17 @@ applyLang();
   async function staffLanes() {
     const box = $("s-lanes"); box.innerHTML = ""; const [r, j] = await call("/admin/lane_requests", {}); if (!r.ok) return;
     box.appendChild(mk("h3", "Lane requests (" + j.total + "): countries and products not covered yet"));
-    if (!j.total) { box.appendChild(mk("div", "No requests yet.", "muted")); return; }
-    box.appendChild(mk("div", "By country: " + j.by_country.map(x => x.name + " " + x.n).join(" · ")));
-    box.appendChild(mk("div", "By product: " + j.by_product.map(x => x.name + " " + x.n).join(" · ")));
+    if (!j.total) box.appendChild(mk("div", "No requests yet.", "muted"));
+    else { box.appendChild(mk("div", "By country: " + j.by_country.map(x => x.name + " " + x.n).join(" · ")));
+    box.appendChild(mk("div", "By product: " + j.by_product.map(x => x.name + " " + x.n).join(" · "))); }
     j.requests.forEach(q => box.appendChild(mk("div", sd(q.updated_at) + " · " + (q.company || "(no company)") + " · " + (q.product || "?") + " → " + (q.country || "?")
       + (q.timing ? " · when: " + q.timing : "") + (q.volume ? " · volume: " + q.volume : "") + (q.buyer ? " · buyer: " + q.buyer : "")
       + (q.notes ? " · " + q.notes : "") + " · via " + (q.source === "start_form" ? "start form" : "chat"), "muted")));
+    const [r2, j2] = await call("/admin/tool_interest", {}); if (!r2.ok) return;
+    box.appendChild(mk("h3", "Tool interest (" + j2.total + "): \"Tell me when it's ready\" clicks"));
+    if (!j2.total) { box.appendChild(mk("div", "No clicks yet.", "muted")); return; }
+    box.appendChild(mk("div", j2.by_tool.map(x => x.tool + " " + x.n).join(" · ")));
+    box.appendChild(mk("div", "By user type: " + j2.by_user_type.map(x => x.type + " " + x.n).join(" · "), "muted"));
   }
   async function staffAI() {
     const box = $("s-ai"); box.innerHTML = ""; const [r, j] = await call("/admin/ai_usage", {days: 14}); if (!r.ok) return;
