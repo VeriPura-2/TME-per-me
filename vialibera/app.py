@@ -573,7 +573,17 @@ def handle_account(body, who):
     """Plan, usage and limits for the Account page."""
     if not who:
         return 400, {"error": "sign-in required"}
-    return 200, limits.usage(con(), who["user"])
+    c = con()
+    out = limits.usage(c, who["user"])
+    cid = permissions.company_of(c, who["user"])
+    out["company"] = None
+    if cid:
+        co = c.execute("SELECT legal_name, vat, vies_state FROM companies WHERE id=?", (cid,)).fetchone()
+        n = c.execute("SELECT COUNT(*) AS n FROM memberships WHERE company_id=? AND status='active'", (cid,)).fetchone()["n"]
+        out["company"] = {"name": co["legal_name"], "vat": co["vat"], "vies": co["vies_state"],
+                          "owner_confirmed": permissions.owner_confirmed(c, cid),
+                          "team": {"used": n, "cap": plans.get(out["plan"])["team_members"]}}
+    return 200, out
 
 
 def handle_plan(body, who):
