@@ -106,3 +106,24 @@ class UsageTest(unittest.TestCase):
         self.assertEqual(app.handle_account({}, None)[0], 400)
         code, out = app.handle_account({}, {"user": "usage-b", "roles": []})
         self.assertEqual((code, out["plan"]), (200, "esplora"))
+
+
+class AccountCompanyTest(unittest.TestCase):
+    def test_no_company_yet(self):
+        code, out = app.handle_account({}, {"user": "co-none", "roles": []})
+        self.assertEqual((code, out["company"]), (200, None))
+
+    def test_company_card_data(self):
+        c = app.con()
+        c.execute("INSERT INTO companies(id, vat, legal_name, created_at, vies_state) VALUES (?,?,?,?,?)",
+                  ("co-acct", "IT00000000001", "Esempio Srl", "2026-11-08", "valid"))
+        c.execute("INSERT INTO memberships(company_id, user_sub, role, status, created_at) VALUES (?,?,?,?,?)",
+                  ("co-acct", "co-owner", "owner", "active", "2026-11-08"))
+        c.commit()
+        code, out = app.handle_account({}, {"user": "co-owner", "roles": []})
+        co = out["company"]
+        self.assertEqual((co["name"], co["vat"], co["vies"]), ("Esempio Srl", "IT00000000001", "valid"))
+        self.assertFalse(co["owner_confirmed"])
+        self.assertEqual(co["team"], {"used": 1, "cap": 1})
+        c.execute("UPDATE companies SET owner_confirmed='staff' WHERE id='co-acct'"); c.commit()
+        self.assertTrue(app.handle_account({}, {"user": "co-owner", "roles": []})[1]["company"]["owner_confirmed"])
