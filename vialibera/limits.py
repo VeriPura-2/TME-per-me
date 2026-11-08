@@ -107,3 +107,16 @@ def take_free_check(con, who, case_id):
     _bump(con, key, "free_check")
     con.commit()
     return True
+
+
+def usage(con, user_sub):
+    """What the Account page shows: plan, covered and uncovered projects against the caps, and the free check."""
+    plan_id = accounts.get_plan(con, user_sub) or plans.DEFAULT
+    plan = plans.get(plan_id)
+    key = owner_key(con, user_sub)
+    cov = _ever(con, key, "covered") if plan_id == plans.DEFAULT else _live(con, key, "covered")
+    return {"plan": plan_id,
+            "covered": {"used": cov, "cap": plan["max_projects"]},
+            "uncovered": {"used": _live(con, key, "uncovered"), "cap": plan["max_uncovered"]},
+            "free_check": {"allowed": plan["free_checks"], "used": _ever(con, key, "free_check")},
+            "grandfathered": _grandfathered(con, user_sub)}

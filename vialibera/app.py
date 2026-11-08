@@ -569,6 +569,13 @@ def handle_speak(body, who, post=None):
                        intro_name=name if body.get("intro") else None, post=post)
 
 
+def handle_account(body, who):
+    """Plan, usage and limits for the Account page."""
+    if not who:
+        return 400, {"error": "sign-in required"}
+    return 200, limits.usage(con(), who["user"])
+
+
 def handle_plan(body, who):
     if not who:
         return 400, {"error": "sign-in required"}
@@ -1087,7 +1094,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 traceback.print_exc()  # full details in the server log, not only the error name
                 return self._send(500, {"error": type(e).__name__})
-        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/lane/details", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
+        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/lane/details", "/account", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
                 or self.path.startswith("/core/") or self.path.startswith("/tem/") or self.path.startswith("/tools/")):
             return self._send(404, {})
@@ -1151,6 +1158,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_start(body, who))
             if self.path == "/journey":
                 return self._send(*handle_journey(body, who))
+            if self.path == "/account":
+                return self._send(*handle_account(body, who))
             if self.path == "/lane/details":
                 return self._send(*handle_lane_details(body, who))
             if self.path == "/checklist/mark":
