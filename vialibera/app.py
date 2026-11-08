@@ -826,6 +826,8 @@ def handle_admin(path, body, who):
         return tems.list_firms(c, who)
     if path == "/admin/tem_firm":
         return tems.create_firm(c, who, body.get("name"), body.get("vat"), body.get("seats"))
+    if path == "/admin/tem_project_limit":
+        return tems.set_project_limit(c, who, str(body.get("firm") or ""), body.get("limit"))
     if path == "/admin/tem_lead_link":
         return tems.lead_link(c, who, str(body.get("firm") or ""))
     if path == "/admin/item":
