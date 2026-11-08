@@ -78,7 +78,6 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <div id="j-core"></div>
   <div id="j-tools"></div>
   <div id="j-eori"></div>
-  <h3 id="j-pk-t"></h3><div id="j-pk"></div>
   <div id="j-done"></div>
 </div>
 
@@ -690,11 +689,10 @@ applyLang();
   }
   async function loadJourneyInner() {
     const t = T[lang];
-    $("j-title").textContent = t.j_title; $("j-req-t").textContent = t.j_req; $("j-pk-t").textContent = t.j_pk;
+    $("j-title").textContent = t.j_title; $("j-req-t").textContent = t.j_req;
     $("j-done").innerHTML = "";
-    const pl = await (await fetch("/plans.json")).json();
     const cid = caseId || me.latest_case || null;
-    if (!cid) { $("j-req").textContent = t.j_nocase; $("j-pk").textContent = ""; }
+    if (!cid) { $("j-req").textContent = t.j_nocase; }
     const [r, j] = await call("/journey", {case_id: cid, selected: jsel});
     if (!r.ok) return;
     const rq = $("j-req"); rq.innerHTML = "";
@@ -764,42 +762,6 @@ applyLang();
     jToolsBoxes(j.tools, cid, t);
     if (j.notes && j.notes.length) { cb.appendChild(mk("h3", TT[lang].c_notes)); j.notes.forEach(n => cb.appendChild(mk("div", n.at.slice(0, 10) + " · " + n.by + ": " + n.text))); }
     loadEori(j.case && j.case.export_registration, cid);
-    const pk = $("j-pk"); pk.innerHTML = "";
-    if (j.packet) {
-      simMark(pk, j.packet); pk.appendChild(mk("div", j.packet.data.label[lang], "muted"));
-      jsel = j.selected;
-      j.packet.data.items.forEach(i => {
-        const row = mk("label"), cb = document.createElement("input"); cb.type = "checkbox";
-        const explicit = j.selected.includes(i.id); cb.checked = true; cb.disabled = !explicit;
-        cb.onchange = () => { jsel = jsel.filter(x => x !== i.id); loadJourney(); };
-        row.append(cb, " " + i.name[lang] + " · " + eur(i.price_cents) + " ");
-        if (i.added_because.length) row.appendChild(mk("span", t.j_add + " " + i.added_because.join(", "), "muted"));
-        pk.appendChild(row);
-      });
-      pk.appendChild(mk("p", t.j_total + ": " + eur(j.packet.data.total_cents)));
-      const bal = j.credits ? j.credits.balance_cents : 0;
-      if (bal > 0) {
-        const cl = mk("p", t.j_credit + ": " + eurc(bal) + " · " + t.j_pay_due + ": " + eurc(Math.max(0, j.packet.data.total_cents - bal)));
-        if (j.credits.simulated) cl.appendChild(mk("span", t.j_sim, "sim")); pk.appendChild(cl);
-      }
-      const live = pl.stripe && pl.stripe.enabled;
-      const pay = mk("button", live ? t.j_pay_stripe : t.j_pay, "primary");
-      pay.onclick = async () => {
-        if (pay.disabled) return; pay.disabled = true;
-        let r2, j2;
-        try { [r2, j2] = await call(live ? "/pay" : "/simpay", {case_id: caseId || me.latest_case, selected: jsel, lang, email: ctx.email}); } finally { setTimeout(() => { pay.disabled = false; }, live ? 8000 : 1500); }
-        const dn = $("j-done"); dn.innerHTML = "";
-        if (live && r2.ok && j2.url) { location.href = j2.url; return; }
-        if (live && r2.ok && j2.paid) { dn.appendChild(mk("p", t.j_paid_ok)); return; }
-        if (live) { dn.textContent = t.err + (j2.error || r2.status); return; }
-        if (!r2.ok) { dn.textContent = t.err + (j2.error || r2.status); return; }
-        simMark(dn, j2.payment); dn.appendChild(mk("p", j2.payment.data.message[lang]));
-        if (j2.payment.data.credit_used_cents) dn.appendChild(mk("p", t.j_credit + ": -" + eurc(j2.payment.data.credit_used_cents) + " · " + t.j_pay_due + ": " + eurc(j2.payment.data.payable_cents)));
-        if (j2.deliverables) { dn.appendChild(mk("h3", t.j_delivered)); simMark(dn, j2.deliverables);
-          j2.deliverables.data.forEach(x => dn.appendChild(mk("div", x.sample[lang]))); }
-      };
-      if (!j.role || ["owner", "manager"].includes(j.role)) pk.appendChild(pay);
-    }
   }
   // ---- invites
   async function loadInvite() {
