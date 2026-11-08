@@ -36,6 +36,25 @@ class StartForm(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertFalse(out["covered"])
 
+    def test_description_is_saved_with_the_product(self):
+        who = user("start-desc")
+        code, out = app.handle_start({"category": "wine", "country": "France", "description": "  Barbera d'Asti DOCG, 750 ml  "}, who)
+        self.assertEqual(code, 200)
+        case = db.case_read(app.con(), out["case_id"])
+        self.assertEqual(case["product"]["name_brand"], "Barbera d'Asti DOCG, 750 ml")
+
+    def test_other_eu_country_creates_a_project_that_is_not_covered(self):
+        who = user("start-eu")
+        code, out = app.handle_start({"category": "wine", "country": "other", "other_country": "EU: Sweden"}, who)
+        self.assertEqual(code, 200)
+        self.assertFalse(out["covered"])
+        self.assertEqual(out["requested"]["country"], "EU: Sweden")
+
+    def test_covered_eu_state_gets_the_checklist(self):
+        code, out = app.handle_start({"category": "wine", "country": "Germany"}, user("start-de"))
+        self.assertEqual(code, 200)
+        self.assertTrue(out["covered"])
+
     def test_unknown_values_are_ignored_and_empty_form_refused(self):
         who = user("start-c")
         self.assertEqual(app.handle_start({"category": "caviar", "country": "Japan"}, who)[0], 400)
