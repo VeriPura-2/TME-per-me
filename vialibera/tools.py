@@ -153,6 +153,7 @@ CARDS = [
                           "Lo stato di ogni spedizione in un'unica vista, dalla partenza alla consegna.")}},
 ]
 TOOL_IDS = {c["id"] for c in CORE + CARDS} | {"refcheck"}
+STEP = {"label_check": 2, "label_design": 2, "ttb_agent": 3, "shipping": 4}  # the checklist step where the tool helps (1 Company, 2 Product, 3 Destination, 4 Shipment)
 CLIENT_OFF = {"shipping", "label_check", "importers"}  # hidden from a TEM's client unless the TEM switches them on
 
 
@@ -170,6 +171,8 @@ def for_case(product_category, country):
         if only and not (p in only["products"] and k in only["countries"]):
             continue
         card = copy.deepcopy({kk: v for kk, v in c.items() if kk != "only"})
+        if c["id"] in STEP:
+            card["step"] = STEP[c["id"]]
         if card["id"] == "shipping":
             order = ["shippypro", "sendcloud"] if p in CHILLED else ["sendcloud", "shippypro"]
             card["today"]["links"] = [PARCEL_LINKS[x] for x in order]
