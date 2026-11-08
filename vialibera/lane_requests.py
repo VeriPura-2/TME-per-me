@@ -50,6 +50,24 @@ def record(con, case_id, user_sub, data, source="chat"):
     return {"ok": True, "request_id": rid}
 
 
+def latest(con, case_id):
+    r = con.execute("SELECT * FROM lane_requests WHERE case_id=? ORDER BY created_at DESC, rowid DESC LIMIT 1", (case_id,)).fetchone()
+    return dict(r) if r else None
+
+
+def add_details(con, case_id, who, data):
+    """The three optional questions on the project page: when, how much, buyer. Updates the project's request."""
+    r = latest(con, case_id)
+    if r is None:
+        return 404, {"error": "no_request"}
+    d = _clean({k: data.get(k) for k in ("timing", "volume", "buyer")})
+    sets = {k: d.get(k) for k in ("timing", "volume", "buyer")}  # empty answers clear the field
+    con.execute("UPDATE lane_requests SET timing=?, volume=?, buyer=?, updated_at=? WHERE id=?", (sets["timing"], sets["volume"], sets["buyer"], db.now(), r["id"]))
+    con.commit()
+    db.log_event(con, case_id, who["user"], "lane_details", {k: v for k, v in sets.items() if v})
+    return 200, {"ok": True, **{k: v or "" for k, v in sets.items()}}
+
+
 def listing(con, limit=200):
     rows = [dict(r) for r in con.execute(
         "SELECT l.*, co.legal_name AS company FROM lane_requests l LEFT JOIN companies co ON co.id=l.company_id "

@@ -343,7 +343,7 @@ def handle_start(body, who):
                                                    "vat_error": vat_err})
     limits.register(c, who, cid)
     out = {"case_id": cid, "path_type": path, "covered": requirements.covers(cat, country)}
-    if other_product or other_country:  # something MioTEM does not cover yet: staff see it under Lane requests
+    if other_product or other_country or not out["covered"]:  # something MioTEM does not cover yet: staff see it under Lane requests
         lane_requests.record(c, cid, who["user"], {"product": other_product or cat, "country": other_country or country},
                              source="start_form")
         out["requested"] = {"product": other_product or None, "country": other_country or None}
@@ -619,6 +619,14 @@ def handle_mark(body, who):
     return marks.mark(c, row["id"], who, body.get("item"), body.get("on", True) is not False, ids)
 
 
+def handle_lane_details(body, who):
+    """Save the optional questions (timing, volume, buyer) for a project on a route we do not cover yet."""
+    row, err = _case_for(body, who, "write")
+    if err:
+        return err
+    return lane_requests.add_details(con(), row["id"], who, body)
+
+
 def handle_journey(body, who):
     """Everything the Journey panel shows. Simulated parts are tagged by sim.tag."""
     row, err = _case_for(body, who)
@@ -643,6 +651,9 @@ def handle_journey(body, who):
         jobs.apply_source_flags(c, row["id"], out["required_docs"])
         vat_check.apply_to_checklist(c, row["company_id"], out["required_docs"])
         marks.apply(c, row["id"], out["required_docs"])
+    if not requirements.covers(case["product"].get("category"), case["market"].get("country")):
+        lr = lane_requests.latest(c, row["id"])
+        out["lane_request"] = {k: (lr or {}).get(k) or "" for k in ("timing", "volume", "buyer")} if lr else None
     out["core"] = core_checks.summary(c, row["id"])
     out["notes"] = tems.notes(c, row["id"], internal=False)
     out["duties"] = duties.for_case(c, case)
@@ -1074,7 +1085,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 traceback.print_exc()  # full details in the server log, not only the error name
                 return self._send(500, {"error": type(e).__name__})
-        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
+        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/lane/details", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
                 or self.path.startswith("/core/") or self.path.startswith("/tem/") or self.path.startswith("/tools/")):
             return self._send(404, {})
@@ -1138,6 +1149,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_start(body, who))
             if self.path == "/journey":
                 return self._send(*handle_journey(body, who))
+            if self.path == "/lane/details":
+                return self._send(*handle_lane_details(body, who))
             if self.path == "/checklist/mark":
                 return self._send(*handle_mark(body, who))
             if self.path.startswith("/tools/"):
