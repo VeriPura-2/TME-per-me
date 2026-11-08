@@ -221,6 +221,19 @@ CREATE TABLE IF NOT EXISTS tem_clients (
   revoked_by TEXT,
   PRIMARY KEY (firm_id, company_id)
 );
+CREATE TABLE IF NOT EXISTS tem_requests (
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  company_id TEXT NOT NULL,
+  firm_id TEXT NOT NULL,
+  tool TEXT,                           -- NULL = the general "other tools" line
+  note TEXT,
+  status TEXT NOT NULL,                -- open or done
+  created_by TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  done_by TEXT,
+  done_at TEXT
+);
 CREATE TABLE IF NOT EXISTS tem_assignments (
   firm_id TEXT NOT NULL,
   company_id TEXT NOT NULL,
