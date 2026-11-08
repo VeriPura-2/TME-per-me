@@ -247,3 +247,17 @@ class Mode2Card(unittest.TestCase):
     def test_duties_text_says_updated_weekly(self):
         cards = {c["id"]: c for c in tools.for_case("wine", "USA")}
         self.assertIn("updated weekly", cards["duties"]["today"]["text"]["en"])
+
+
+class PublicCatalog(unittest.TestCase):
+    def test_public_catalog_has_every_tool_and_no_partner_names(self):
+        cat = tools.public_catalog()
+        self.assertEqual({c["id"] for c in cat}, tools.TOOL_IDS - {"refcheck"})
+        blob = str(cat)
+        for bad in ("Sendcloud", "ShippyPro", "GoVisually", "Food Label Maker", "OUTREACH", "VeriPura Core"):
+            self.assertNotIn(bad, blob)
+        self.assertEqual([c["status"] for c in cat], sorted([c["status"] for c in cat], key=lambda s: {"live": 0, "preview": 1, "soon": 2}[s]))
+
+    def test_public_endpoint_is_registered(self):
+        src = open(os.path.join(os.path.dirname(app.__file__), "app.py"), encoding="utf-8").read()
+        self.assertIn('"/tools/public.json"', src)

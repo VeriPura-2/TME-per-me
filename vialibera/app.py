@@ -1021,6 +1021,8 @@ class Handler(BaseHTTPRequestHandler):
                                     "terms_version": TERMS_VERSION,
                                     "voice": voice.configured(),
                                     "voice_replies": os.environ.get("VOICE_REPLIES") == "1"})
+        if path == "/tools/public.json":  # the public landing page's tool list: no partner names, no user data
+            return self._send(200, {"tools": tools.public_catalog()})
         if path == "/plans.json":
             body = plans.public()
             body["stripe"] = stripe_pay.status()

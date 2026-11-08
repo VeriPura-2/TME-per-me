@@ -148,7 +148,8 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <h2 id="landing-h"></h2>
   <p id="landing-t"></p>
   <p id="landing-err" class="muted" hidden></p>
-  <button id="login" class="primary"></button>
+  <button id="login" class="primary"></button> <a href="#l-how" id="l-how-link"></a> <a href="#l-tools" id="l-tools-link"></a>
+  <div id="landing-body"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@auth0/auth0-spa-js@2.1.3/dist/auth0-spa-js.production.js"></script>
@@ -209,7 +210,7 @@ const T = {
     signin: "Accedi / Registrati", signout: "Esci", send: "Invia", ph: "Racconta il tuo prodotto e il mercato",
     own_pending: "La tua titolarità dell'azienda è in verifica da parte dello staff VeriPura (di solito entro un giorno lavorativo). Nel frattempo puoi lavorare; inviti ai colleghi e invio dei documenti alla validazione attendono la conferma.",
     verify_email: "Conferma la tua email: ti abbiamo inviato un link (controlla anche lo spam). Poi accedi di nuovo.", login_refused: "Accesso non riuscito: ",
-    signed: "Accesso come ", landing_h: "MioTEM. Il tuo Export Manager AI.", landing: "La piattaforma per sviluppare, gestire e far crescere il tuo business internazionale.",
+    signed: "Accesso come ", landing_h: "MioTEM. Il tuo Export Manager AI.", landing: "Vuoi vendere all'estero ma non hai mai esportato? MioTEM ti dice quali documenti servono per il tuo prodotto e il tuo paese, chi prepara ciascuno, quali dazi paghi, e ti aiuta a controllare i documenti prima di spedire.",
     gateIntro: "Prima di iniziare, leggi e accetta le condizioni.",
     c1: 'Ho letto e accetto le <a href="/terms?lang=it" target="_blank">Condizioni del servizio</a> e l\'<a href="/terms?lang=it#privacy" target="_blank">Informativa sulla privacy</a>.',
     c2: "Approvo specificamente, ai sensi degli artt. 1341 e 1342 c.c., le clausole indicate nelle Condizioni (limitazione di responsabilità, sospensione e cessazione, modifiche unilaterali, legge applicabile e foro competente).",
@@ -243,7 +244,7 @@ const T = {
     signin: "Sign in / Sign up", signout: "Sign out", send: "Send", ph: "Tell us about your product and market",
     own_pending: "VeriPura staff are confirming that you own this company (usually within one working day). Meanwhile you can work; inviting colleagues and sending documents for validation wait for that confirmation.",
     verify_email: "Please confirm your email: we sent you a link (check spam too). Then sign in again.", login_refused: "Sign-in failed: ",
-    signed: "Signed in as ", landing_h: "MioTEM. Your AI Export Manager.", landing: "The platform that guides Italian businesses into international markets, from first export to growth.",
+    signed: "Signed in as ", landing_h: "MioTEM. Your AI Export Manager.", landing: "Want to sell abroad but have never exported? MioTEM tells you which documents your product needs for your country, who prepares each one, which duties you pay, and helps you check your documents before you ship.",
     gateIntro: "Before we start, please read and accept the terms.",
     c1: 'I have read and accept the <a href="/terms?lang=en" target="_blank">Terms of Service</a> and the <a href="/terms?lang=en#privacy" target="_blank">Privacy Notice</a>.',
     c2: "I specifically approve, under Articles 1341 and 1342 of the Italian Civil Code, the clauses listed in the Terms (limitation of liability, suspension and ending, changes to the terms, governing law and courts).",
@@ -294,6 +295,7 @@ function applyLang() {
   $("lang").textContent = lang === "it" ? "EN" : "IT";
   $("logout").textContent = t.signout; $("docsbtn").textContent = t.d_btn; $("jbtn").textContent = t.j_btn; $("ibtn").textContent = t.i_btn; $("tbtn").textContent = t.t_btn; $("send").textContent = t.send; $("msg").placeholder = t.ph;
   $("landing-h").textContent = t.landing_h; $("landing-t").textContent = t.landing; $("login").textContent = t.signin;
+  if (typeof renderLanding === "function") renderLanding();
   $("gate-intro").textContent = t.gateIntro; $("c1t").innerHTML = t.c1; $("c2t").textContent = t.c2;
   $("gate-ai").textContent = t.ai; $("accept").textContent = t.accept;
   if (ctx.email) $("who").textContent = t.signed + ctx.email;
@@ -305,6 +307,57 @@ $("theme").onclick = () => {
   theme = dark ? "light" : "dark"; store.set("vl_theme", theme); applyTheme();
 };
 ["c1", "c2"].forEach(id => $(id).onchange = () => $("accept").disabled = !($("c1").checked && $("c2").checked));
+const LAND = {
+  it: {start: "Inizia gratis", how: "Come funziona", tools: "Tutti gli strumenti", forwho: "Per chi è",
+    who: ["Aziende italiane alla prima esportazione di vino, pasta, olio d'oliva o formaggi", "Esportatori di questi prodotti che vogliono entrare in nuovi mercati", "Altri prodotti alimentari in arrivo: dicci cosa esporti e registriamo la tua richiesta", "Temporary Export Manager che seguono i loro clienti e, presto, trovano nuovi clienti", "Verso il Regno Unito, gli Stati Uniti, il Canada, la Svizzera e sei Paesi dell'Unione europea (Germania, Francia, Spagna, Paesi Bassi, Belgio, Austria)"],
+    steps: [["Scopri cosa serve", "I documenti necessari, chi prepara ciascuno e la fonte ufficiale. I dazi dalle tariffe ufficiali, aggiornati ogni settimana."], ["Controlla i documenti", "Fattura, packing list e documento di trasporto confrontati tra loro, ingredienti controllati rispetto agli additivi vietati nell'Unione europea."], ["Spedisci", "Pacchi per campioni e piccoli ordini. Pallet e container: in arrivo."]],
+    walkh: "Come funziona", walkp: "Un esempio con dati reali dell'app: vino italiano verso gli Stati Uniti. Esempio, non il tuo progetto.",
+    w1p: "Il tuo percorso ha 4 tappe: Azienda, Prodotto, Mercato, Spedizione. Alcune voci:", staff: "Da verificare dallo staff",
+    rows: [["Azienda", "Numero EORI italiano", "Chi: Agenzia delle Dogane", 0], ["Azienda", "Registrazione impresa alimentare (SCIA all'ASL)", "Chi: ASL", 1], ["Prodotto", "COLA: approvazione TTB di ogni etichetta", "Chi: Importatore. Tu stampi le etichette solo dopo l'approvazione.", 0], ["Mercato", "Registrazione FDA dello stabilimento, con US agent", "Chi: Esportatore", 0], ["Spedizione", "Fattura commerciale", "Chi: Esportatore", 0]],
+    w2p: "Carica i documenti nel progetto. Confronta fattura, packing list e documento di trasporto tra loro, e controlla gli ingredienti rispetto agli additivi vietati nell'Unione europea.", w2n: "Anteprima: anche la dichiarazione di esportazione, l'e-AD per il vino e i certificati per il vino negli USA.",
+    w3p: "Pacchi per campioni e piccoli ordini, prenotabili con servizi partner.", w3a: "Pacchi", w3b: "Pallet e container: preventivi, prenotazione e tracciamento",
+    live: "Attivo", prev: "Anteprima", soon: "In arrivo", toolsh: "Tutti gli strumenti", toolsp: "Quelli attivi oggi e quelli in arrivo. Ogni strumento dice chi lo offre: MioTEM o un partner.", partner: "Partner",
+    grp: {live: "Disponibili ora", preview: "Anteprima", soon: "In arrivo"},
+    tag: "Compliance document validation, powered by orchestrated AI-Agents. Strumenti MioTEM e dei nostri partner, incluso VeriPura."},
+  en: {start: "Start free", how: "How it works", tools: "All tools", forwho: "Who it's for",
+    who: ["Italian companies exporting wine, pasta, olive oil or cheese for the first time", "Exporters of these products looking to enter new markets", "Other food products coming: tell us what you export and we'll record your request", "Temporary export managers who follow their clients and, soon, find new ones", "To the United Kingdom, the United States, Canada, Switzerland and six European Union countries (Germany, France, Spain, the Netherlands, Belgium, Austria)"],
+    steps: [["Find out what you need", "The documents you need, who prepares each one, and the official source. Duties from the official tariffs, updated weekly."], ["Check your documents", "Invoice, packing list and transport document compared with each other, ingredients screened against additives banned in the European Union."], ["Ship", "Parcels for samples and small orders. Pallets and containers: coming soon."]],
+    walkh: "How it works", walkp: "An example with real data from the app: Italian wine to the United States. An example, not your project.",
+    w1p: "Your path has 4 steps: Company, Product, Destination, Shipment. A few items:", staff: "Staff to verify",
+    rows: [["Company", "Italian EORI number", "Who: Italian customs", 0], ["Company", "Food business registration (SCIA to ASL)", "Who: ASL (local health authority)", 1], ["Product", "COLA: TTB approval for each label", "Who: Importer. You print export labels only after approval.", 0], ["Destination", "FDA food facility registration, with US agent", "Who: Exporter", 0], ["Shipment", "Commercial invoice", "Who: Exporter", 0]],
+    w2p: "Upload your documents in the project. Checks the invoice, packing list and transport document against each other, and screens ingredients against additives banned in the European Union.", w2n: "Preview: also the export declaration, the e-AD for wine and the US wine certificates.",
+    w3p: "Parcels for samples and small orders, booked with partner services.", w3a: "Parcels", w3b: "Pallets and containers: quotes, booking and tracking",
+    live: "Live", prev: "Preview", soon: "Coming soon", toolsh: "All tools", toolsp: "The ones live today and the ones coming. Each tool says who offers it: MioTEM or a partner.", partner: "Partner",
+    grp: {live: "Available now", preview: "Preview", soon: "Coming soon"},
+    tag: "Compliance document validation, powered by orchestrated AI-Agents. Tools from MioTEM and our partners, including VeriPura."}
+};
+let landingTools = null;
+function renderLanding() {
+  const L = LAND[lang], box = $("landing-body"); if (!box) return;
+  const el = (tag, text, cls, st) => { const e = document.createElement(tag); if (text) e.textContent = text; if (cls) e.className = cls; if (st) e.style.cssText = st; return e; };
+  $("l-how-link").textContent = L.how; $("l-tools-link").textContent = L.tools;
+  [$("l-how-link"), $("l-tools-link")].forEach(a => a.style.margin = "0 10px");
+  box.innerHTML = "";
+  const sb = el("button", L.start, "primary", "margin:8px 0 16px"); sb.onclick = () => $("login").click(); box.appendChild(sb);
+  const forwho = el("div", null, "card"); forwho.append(el("strong", L.forwho)); L.who.forEach(w => forwho.appendChild(el("div", w, null, "padding:6px 0;border-top:1px solid var(--line);font-size:14px"))); box.appendChild(forwho);
+  const steps = el("div", null, null, "display:flex;gap:12px;flex-wrap:wrap;margin-top:16px");
+  L.steps.forEach(([h, p], i) => { const c = el("div", null, "card", "flex:1 1 220px"); c.append(el("strong", (i + 1) + ". " + h), el("div", p, "muted", "margin-top:4px;font-size:14px")); steps.appendChild(c); }); box.appendChild(steps);
+  const how = el("div", null, null, "margin-top:28px"); how.id = "l-how"; how.append(el("h3", L.walkh), el("div", L.walkp, "muted"));
+  const cards = el("div", null, null, "display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;align-items:stretch");
+  const c1 = el("div", null, "card", "flex:1 1 280px"); c1.append(el("strong", "1. " + L.steps[0][0]), el("div", L.w1p, "muted", "font-size:13px;margin:4px 0"));
+  L.rows.forEach(([st, nm, who, ver]) => { const r = el("div", null, null, "padding:6px 0;border-top:1px solid var(--line);font-size:13px"); r.append(el("span", st + " · ", "muted"), nm, el("div", who, "muted")); if (ver) r.appendChild(el("span", L.staff, "verify")); c1.appendChild(r); });
+  const c2 = el("div", null, "card", "flex:1 1 280px"); c2.append(el("strong", "2. " + L.steps[1][0]), el("div", L.w2p, "muted", "font-size:14px;margin-top:4px"), el("div", L.w2n, "muted", "font-size:13px;margin-top:8px"));
+  const c3 = el("div", null, "card", "flex:1 1 280px"); c3.append(el("strong", "3. " + L.steps[2][0]), el("div", L.w3p, "muted", "font-size:14px;margin-top:4px"), el("div", L.live + ": " + L.w3a, null, "font-size:13px;margin-top:8px"), el("div", L.soon + ": " + L.w3b, null, "font-size:13px"));
+  cards.append(c1, c2, c3); how.appendChild(cards); box.appendChild(how);
+  const tl = el("div", null, null, "margin-top:28px"); tl.id = "l-tools"; tl.append(el("h3", L.toolsh), el("div", L.toolsp, "muted")); box.appendChild(tl);
+  const draw = () => { if (!landingTools) return; let last = "";
+    landingTools.forEach(x => { if (x.status !== last) { last = x.status; tl.appendChild(el("div", L.grp[x.status], "muted", "margin-top:12px;font-size:12px")); }
+      const d = document.createElement("details"); d.style.cssText = "border-top:1px solid var(--line)";
+      const sm = document.createElement("summary"); sm.style.cssText = "padding:8px 0;cursor:pointer"; sm.append(el("strong", x.name[lang]), " ", el("span", x.by === "miotem" ? "MioTEM" : L.partner, "muted"), " ", el("span", L[x.status === "live" ? "live" : x.status === "preview" ? "prev" : "soon"], "muted"));
+      d.append(sm, el("div", x.text[lang], "muted", "padding:0 0 10px 18px;font-size:13px")); tl.appendChild(d); }); };
+  if (landingTools) draw(); else fetch("/tools/public.json").then(r => r.json()).then(j => { landingTools = j.tools; renderLanding(); }).catch(() => {});
+  box.appendChild(el("p", L.tag, "muted", "margin-top:20px;font-size:12px"));
+}
 applyLang();
 
 (async () => {

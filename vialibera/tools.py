@@ -187,6 +187,33 @@ def for_case(product_category, country):
     return sorted(out, key=lambda c: c["by"]["kind"] != "miotem")  # MioTEM first, then partners; stable within each
 
 
+PUBLIC_TEXT = {  # shorter wording for the public page (no link details, no partner names beyond the approved label validator)
+    "shipping": L("Parcels for samples and small orders, booked with partner services. Next: pallets and containers.",
+                  "Pacchi per campioni e piccoli ordini, prenotabili con servizi partner. Poi: pallet e container."),
+    "label_check": L("Check your label artwork in the VeriPura label validator. Next: the result inside your project, in Italian.",
+                     "Verifica la grafica dell'etichetta nel validatore etichette VeriPura. Poi: il risultato dentro il progetto, in italiano."),
+    "importers": L("A growing list of verified foreign buyers and importers of Italian products, with outreach emails sent from your own address.",
+                   "Un elenco crescente di acquirenti e importatori esteri verificati di prodotti italiani, con email inviate dal tuo indirizzo."),
+}
+
+
+def public_catalog():
+    """The tool list for the public landing page: every tool, live or planned, with no partner names and no user data."""
+    out = []
+    for c in CORE + CARDS:
+        today, coming = c.get("today"), c.get("coming")
+        status = "live" if today else ("preview" if coming and coming["status"] == "preview" else "soon")
+        text = {}
+        for lg in ("en", "it"):
+            parts = [today["text"][lg]] if today else []
+            if coming and (not today or coming["status"] != "soon" or c["id"] in ("shipping", "consultants", "label_check")):
+                parts.append(("Poi: " if lg == "it" else "Next: ") + coming["text"][lg] if today else coming["text"][lg])
+            text[lg] = " ".join(parts)
+        out.append({"id": c["id"], "name": c["name"], "by": c["by"]["kind"], "status": status, "text": PUBLIC_TEXT.get(c["id"], text)})
+    order = {"live": 0, "preview": 1, "soon": 2}
+    return sorted(out, key=lambda x: order[x["status"]])  # stable: MioTEM tools stay ahead of partner tools within a status
+
+
 def ai_guide():
     """The tool list for the AI's fixed prompt (cached): what each tool does today, what is next, and where it is."""
     lines = ["MioTEM TOOLS. When the client asks what MioTEM can do, about a tool, or how to use one, answer briefly from this list "
