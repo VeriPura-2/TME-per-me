@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import admin, ai_usage, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
+from . import admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -259,6 +259,9 @@ def handle_chat(body, llm=None, who=None):
     else:
         if not permissions.can(c, who, "write"):
             return 403, {"error": "forbidden"}
+        refused = limits.check_new(c, who)
+        if refused:
+            return refused
         cid = db.create_case(c, int(body.get("path_type", 1)), org_id=(who or {}).get("org"),
                              owner_sub=who["user"] if who else None)
     history = db.load_history(c, cid)
@@ -280,6 +283,7 @@ def handle_chat(body, llm=None, who=None):
         # history is not saved: the message counts as not sent, so resending it starts clean
         return 503, {"error": "ai_unavailable", "case_id": cid}
     db.save_history(c, cid, history)
+    limits.register(c, who, cid)
     ai_usage.record(c, cid, who["user"] if who else "client", usage, agent.MODEL, load_test=bool(body.get("load_test")))
     out = {"case_id": cid, "reply": reply,
            "persona": {"id": pid, "name": personas.BY_ID[pid]["name"]} if pid else None}
@@ -314,6 +318,9 @@ def handle_start(body, who):
     if raw_vat:
         vat, vat_err = vat_check.italian(raw_vat)
     path = 4 if cat and country else 1
+    refused = limits.check_new(c, who, cat, country)
+    if refused:
+        return refused
     cid = db.create_case(c, path, actor="client", org_id=who.get("org"), owner_sub=who["user"])
     if cat:
         db.case_write(c, cid, "product", {"category": cat}, actor="client")
@@ -333,6 +340,7 @@ def handle_start(body, who):
     c.commit()
     db.log_event(c, cid, "client", "start_form", {"category": cat, "country": country, "vat_given": bool(raw_vat),
                                                    "vat_error": vat_err})
+    limits.register(c, who, cid)
     out = {"case_id": cid, "path_type": path, "covered": requirements.covers(cat, country)}
     if other_product or other_country:  # something MioTEM does not cover yet: staff see it under Lane requests
         lane_requests.record(c, cid, who["user"], {"product": other_product or cat, "country": other_country or country},

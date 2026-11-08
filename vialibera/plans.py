@@ -6,11 +6,11 @@ Item levels: 1 instant, 2 checked, 3 managed by staff or partners.
 
 PLANS = {
     "esplora": {"rank": 0, "name": {"it": "Esplora", "en": "Explore"}, "tier": {"it": "Gratuito", "en": "Free"},
-                "monthly": False, "max_projects": 1, "team_members": 1, "alerts": False, "priority_help": False},
+                "monthly": False, "max_projects": 1, "max_uncovered": 2, "free_checks": 1, "team_members": 1, "alerts": False, "priority_help": False},
     "parti":   {"rank": 1, "name": {"it": "Parti", "en": "Start"}, "tier": {"it": "Base", "en": "Basic"},
-                "monthly": True, "max_projects": 5, "team_members": 3, "alerts": False, "priority_help": False},
+                "monthly": True, "max_projects": 5, "max_uncovered": 10, "free_checks": None, "team_members": 3, "alerts": False, "priority_help": False},
     "cresci":  {"rank": 2, "name": {"it": "Cresci", "en": "Grow"}, "tier": {"it": "Avanzato", "en": "Advanced"},
-                "monthly": True, "max_projects": None, "team_members": 10, "alerts": True, "priority_help": True},
+                "monthly": True, "max_projects": None, "max_uncovered": 50, "free_checks": None, "team_members": 10, "alerts": True, "priority_help": True},
 }
 
 LEVELS = {

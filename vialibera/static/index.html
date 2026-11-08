@@ -227,6 +227,9 @@ const T = {
     q_other: "altro", q_pick: "Scegli prodotto o paese, oppure inserisci la partita IVA.", q_ready: "Pronto. La lista dei documenti e i dazi sono in Servizi. Scrivimi qui per continuare o fare una domanda.",
     q_ready_sim: "Pronto. Per questo prodotto o paese la lista è ancora indicativa (vedi Servizi). Scrivimi qui per continuare o fare una domanda.",
     q_vat_bad: "Partita IVA non valida: ",
+    q_limit_free: "Il piano Esplora include 1 progetto in tutto: eliminarlo non libera il posto. I progetti su percorsi non ancora coperti non contano nel limite (fino a 2).",
+    q_limit_cov: "Hai raggiunto il numero di progetti incluso nel tuo piano.",
+    q_limit_unc: "Hai raggiunto il numero di progetti su percorsi non ancora coperti incluso nel tuo piano.",
     q_which_p: "Quale prodotto?", q_which_c: "Quale paese?",
     q_req: "Grazie. MioTEM non ha ancora una lista di documenti verificata per {what}. Abbiamo registrato la tua richiesta: il nostro team le esamina per decidere quali paesi e prodotti aggiungere. Se vuoi, scrivimi qui quando pensi di spedire, i volumi indicativi e se hai già un acquirente. Posso anche aiutarti con domande generali sull'export, o preparare subito la lista completa per uno dei paesi che copriamo.",
     q_cats: {"pasta": "pasta", "wine": "vino", "olive oil": "olio d'oliva", "cheese and dairy": "formaggi e latticini", "spirits": "distillati", "cured meat": "salumi", "preserves": "conserve", "bakery": "prodotti da forno", "other": "altro"},
@@ -255,6 +258,9 @@ const T = {
     q_other: "other", q_pick: "Choose a product or a country, or enter the VAT number.", q_ready: "Ready. The document checklist and duties are in Services. Write here to continue or to ask a question.",
     q_ready_sim: "Ready. For this product or country the checklist is still indicative (see Services). Write here to continue or to ask a question.",
     q_vat_bad: "VAT number not valid: ",
+    q_limit_free: "The Explore plan includes 1 project in total: deleting it does not free the slot. Projects on routes not covered yet do not count toward the limit (up to 2).",
+    q_limit_cov: "You have reached the number of projects included in your plan.",
+    q_limit_unc: "You have reached the number of projects on routes not covered yet included in your plan.",
     q_which_p: "Which product?", q_which_c: "Which country?",
     q_req: "Thank you. MioTEM does not yet have a checked document list for {what}. We have recorded your request: our team reviews these requests to decide which countries and products to add next. If you like, write here when you plan to ship, rough volumes and whether you already have a buyer. I can also help with general export questions, or prepare the full checklist right away for any of the countries we cover.",
     q_cats: {"pasta": "pasta", "wine": "wine", "olive oil": "olive oil", "cheese and dairy": "cheese and dairy", "spirits": "spirits", "cured meat": "cured meat", "preserves": "preserves", "bakery": "bakery", "other": "other"},
@@ -1163,7 +1169,13 @@ applyLang();
       const [r, j] = await call("/start", {category: cat.value, country: ctry.value, vat: vat.value, legal_name: legal, lang,
                                            other_product: op.value, other_country: oc.value});
       go.disabled = false;
-      if (!r.ok) { msg.textContent = j.error || r.status; return; }
+      if (!r.ok) {
+        const t2 = T[lang];
+        msg.textContent = j.error === "plan_limit"
+          ? (j.plan === "esplora" && j.limit !== "uncovered" ? t2.q_limit_free : (j.limit === "uncovered" ? t2.q_limit_unc : t2.q_limit_cov))
+          : (j.error || r.status);
+        return;
+      }
       caseId = j.case_id; pathType = j.path_type;
       $("welcome").hidden = true; $("app").hidden = false;
       if (j.vat_error) add("bot", t.q_vat_bad + j.vat_error);
