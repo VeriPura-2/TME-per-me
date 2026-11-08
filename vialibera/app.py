@@ -433,6 +433,13 @@ def handle_tem(path, body, who):
     case_id = str(body.get("case_id") or "")
     if path == "/tem/me":
         return tems.overview(c, who)
+    if path == "/tem/ask":  # a client asks their TEM; the client signs in as an ordinary user
+        if not consent_ok(who):
+            return 403, {"error": "consent_required"}
+        row, err = _case_for(body, who, "write")
+        if err:
+            return err
+        return tems.ask(c, who, row, body.get("tool"), body.get("note"))
     if path == "/tem/join":
         return tems.join(c, who, str(body.get("token") or ""), body.get("label"))
     if path == "/tem/engage_info":
@@ -463,6 +470,8 @@ def handle_tem(path, body, who):
         return tems.new_project(c, who, str(body.get("company") or ""), body.get("category"), body.get("country"), body.get("name"))
     if path == "/tem/project":
         return tems.project(c, who, case_id)
+    if path == "/tem/request_done":
+        return tems.request_done(c, who, str(body.get("id") or ""))
     if path == "/tem/tool_visibility":
         return tools.set_visibility(c, who, case_id, str(body.get("tool") or ""), body.get("visible", True) is not False)
     return 404, {}
@@ -679,6 +688,10 @@ def handle_journey(body, who):
     out["duties"] = duties.for_case(c, case)
     viewer = "client" if tools.has_tem(c, row["company_id"]) and not tems.firm_of(c, who["user"]) else "exporter"
     out["tools"] = tools.for_viewer(c, row, case["product"].get("category"), case["market"].get("country"), viewer)
+    if viewer == "client":  # the client can ask their TEM for help with the tools they see
+        out["tools"]["tem"] = True
+        out["tools"]["open_requests"] = [r["tool"] or "" for r in c.execute(
+            "SELECT tool FROM tem_requests WHERE case_id=? AND status='open'", (row["id"],)).fetchall()]
     if features.is_sim("options_packet"):
         from .sim import packet
         sel = body.get("selected") or packet.wanted_items(case["market"].get("needs"))

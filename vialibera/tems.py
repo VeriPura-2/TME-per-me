@@ -290,6 +290,47 @@ def engage_accept(con, who, token, body, terms_version):
 
 # client side ---------------------------------------------------------------------
 
+# client requests ("Ask my TEM") ---------------------------------------------------
+
+NOTE_MAX = 500
+
+
+def ask(con, who, case_row, tool, note):
+    """A client asks their TEM for help with a visible tool (or, with no tool, with other tools).
+    No payment: the TEM already works for the client under the engagement."""
+    from . import tools
+    link = con.execute("SELECT firm_id FROM tem_clients WHERE company_id=? AND status='active' LIMIT 1", (case_row["company_id"],)).fetchone()
+    if not link or firm_of(con, who["user"]):
+        return 404, {"error": "no TEM works on this project"}
+    tool = str(tool).strip() if tool else None
+    if tool:
+        always = {c["id"] for c in tools.CORE}
+        if tool not in tools.TOOL_IDS or not (tool in always or tools._visibility(con, case_row["id"]).get(tool)):
+            return 400, {"error": "unknown or hidden tool"}
+    note = str(note or "").strip()[:NOTE_MAX] or None
+    if con.execute("SELECT 1 FROM tem_requests WHERE case_id=? AND COALESCE(tool,'')=? AND status='open'",
+                   (case_row["id"], tool or "")).fetchone():
+        return 409, {"error": "already_open"}
+    rid = uuid.uuid4().hex
+    con.execute("INSERT INTO tem_requests(id, case_id, company_id, firm_id, tool, note, status, created_by, created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                (rid, case_row["id"], case_row["company_id"], link["firm_id"], tool, note, "open", who["user"], db.now()))
+    con.commit()
+    db.log_event(con, case_row["id"], who["user"], "tem_request", {"tool": tool})
+    return 200, {"ok": True, "id": rid}
+
+
+def request_done(con, who, request_id):
+    r = con.execute("SELECT * FROM tem_requests WHERE id=?", (request_id,)).fetchone()
+    case = con.execute("SELECT * FROM cases WHERE id=?", (r["case_id"],)).fetchone() if r else None
+    if r is None or case is None or not has_access(con, who, r["company_id"]):
+        return 404, {"error": "no such request"}
+    con.execute("UPDATE tem_requests SET status='done', done_by=?, done_at=? WHERE id=? AND status='open'",
+                (who["user"], db.now(), request_id))
+    con.commit()
+    log_access(con, who, case, "request_done")
+    return 200, {"ok": True}
+
+
 def client_view(con, who):
     """For the client's owner: the firms working for the company and their access log."""
     cid = permissions.company_of(con, who["user"]) if who else None
@@ -327,7 +368,8 @@ def overview(con, who):
     fr = con.execute("SELECT * FROM tem_firms WHERE id=?", (f["firm_id"],)).fetchone()
     members = [dict(r) for r in con.execute("SELECT user_sub AS user, role, label FROM tem_members WHERE firm_id=? ORDER BY created_at",
                                             (f["firm_id"],)).fetchall()] if lead else []
-    from . import requirements
+    from . import requirements, tools
+    names = {c["id"]: c["name"] for c in tools.for_case(None, None)}
     clients = []
     for c in con.execute("SELECT t.company_id, t.engaged_at, co.legal_name, co.vat FROM tem_clients t JOIN companies co ON co.id=t.company_id "
                          "WHERE t.firm_id=? AND t.status='active' ORDER BY co.legal_name", (f["firm_id"],)).fetchall():
@@ -345,8 +387,14 @@ def overview(con, who):
                              "updated_at": k["updated_at"]})
         assigned = [r["user_sub"] for r in con.execute("SELECT user_sub FROM tem_assignments WHERE firm_id=? AND company_id=?",
                                                         (f["firm_id"], c["company_id"])).fetchall()]
+        requests = [{"id": q["id"], "case_id": q["case_id"], "tool": q["tool"], "tool_name": names.get(q["tool"]), "note": q["note"], "at": q["created_at"],
+                     "project": " → ".join(x for x in [(json.loads(q["product"] or "{}").get("name_brand") or json.loads(q["product"] or "{}").get("category")),
+                                                       json.loads(q["market"] or "{}").get("country")] if x)}
+                    for q in con.execute("SELECT r.*, k.product, k.market FROM tem_requests r JOIN cases k ON k.id=r.case_id "
+                                         "WHERE r.firm_id=? AND r.company_id=? AND r.status='open' ORDER BY r.created_at",
+                                         (f["firm_id"], c["company_id"])).fetchall()]
         clients.append({"id": c["company_id"], "name": c["legal_name"], "vat": c["vat"], "since": c["engaged_at"],
-                        "projects": projects, "assigned": assigned if lead else None})
+                        "projects": projects, "assigned": assigned if lead else None, "requests": requests})
     return 200, {"firm": {"id": f["firm_id"], "name": f["name"], "seats": fr["seats"]}, "role": f["role"], "members": members,
                  "clients": clients}
 

@@ -161,7 +161,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
 <footer class="legal">MioTEM is operated by A&amp;O CONSULT S.A.S., 14059 Vesime (AT), Italy. VAT (P.IVA) 01765920051. PEC aeoconsultsas@pec.it.<br><a href="/terms?lang=it" target="_blank">Condizioni</a> · <a href="/terms?lang=it#privacy" target="_blank">Privacy</a> · <a href="/terms?lang=en" target="_blank">Terms</a> · <a href="/terms?lang=en#privacy" target="_blank">Privacy (EN)</a></footer>
 <script>
 const TT = {
-  it: {tem_btn: "Clienti TEM", ws_title: "Area consulente export", ws_firm: "Studio", ws_lead: "responsabile", ws_member: "membro",
+  it: {tem_btn: "Clienti TEM", rq_h: "Richiesta del cliente", rq_other: "altri strumenti", rq_done: "Segna come fatta", ws_title: "Area consulente export", ws_firm: "Studio", ws_lead: "responsabile", ws_member: "membro",
        ws_team: "Squadra dello studio", ws_invite: "Invita un collega", ws_seats: "Posti", ws_unlimited: "non limitati",
        ws_clients: "Clienti", ws_none: "Nessun cliente ancora. Crea un link d'incarico e mandalo al cliente.",
        ws_engage: "Nuovo cliente: link d'incarico", ws_engage_note: "Link valido 14 giorni, monouso. Il cliente accede con la sua email, inserisce i dati dell'azienda e accetta l'incarico.",
@@ -180,7 +180,7 @@ const TT = {
        en_btn: "Accetta l'incarico", en_ok: "Incarico accettato. Il consulente può ora lavorare per la tua azienda. Puoi revocarlo in qualsiasi momento dalla sezione Squadra.",
        en_bad: "Link d'incarico non valido o scaduto.", tc_title: "Consulenti export", tc_since: "dal", tc_revoked: "revocato", tc_revoke: "Revoca accesso",
        tc_log: "Accessi dei consulenti", tem_joined: "Sei entrato nello studio del consulente.", c_notes: "Messaggi del tuo consulente export", du_t: "Dazi e IVA (fonte ufficiale)", du_src: "fonte", du_read: "letto il", du_na: "Servizio dazi non disponibile ora. Lo staff verificherà.", du_none: "n.d.", vs_check: "Verifica", vs_valid: "Partita IVA confermata nel VIES (UE). Dati compilati.", vs_not: "Partita IVA non presente nel VIES: va bene per continuare. Lo staff la verificherà.", vs_na: "Servizio VIES non disponibile ora: continua pure, lo ricontrolliamo noi.", vs_ok: "IVA confermata nel VIES", vs_no: "IVA non presente nel VIES", vs_pend: "verifica VIES in sospeso", src_changed: "la fonte è cambiata, da riverificare"},
-  en: {tem_btn: "TEM clients", ws_title: "Export consultant workspace", ws_firm: "Firm", ws_lead: "lead", ws_member: "member",
+  en: {tem_btn: "TEM clients", rq_h: "Client request", rq_other: "other tools", rq_done: "Mark as done", ws_title: "Export consultant workspace", ws_firm: "Firm", ws_lead: "lead", ws_member: "member",
        ws_team: "Firm team", ws_invite: "Invite a colleague", ws_seats: "Seats", ws_unlimited: "not limited",
        ws_clients: "Clients", ws_none: "No clients yet. Create an engagement link and send it to the client.",
        ws_engage: "New client: engagement link", ws_engage_note: "Link valid for 14 days, single use. The client signs in with their email, enters the company details and accepts the engagement.",
@@ -201,11 +201,11 @@ const TT = {
        tc_log: "Consultant access log", tem_joined: "You have joined the consultant firm.", c_notes: "Messages from your export consultant", du_t: "Duties and VAT (official source)", du_src: "source", du_read: "read on", du_na: "Duty service unavailable right now. Staff will check.", du_none: "n/a", vs_check: "Check", vs_valid: "VAT number confirmed in VIES (EU). Details filled in.", vs_not: "VAT number not in VIES: fine to continue. Staff will check it.", vs_na: "VIES service unavailable right now: carry on, we will check again.", vs_ok: "VAT confirmed in VIES", vs_no: "VAT not in VIES", vs_pend: "VIES check pending", src_changed: "source changed, to re-verify"},
 };
 const TL = {  // tool cards on the project (tools.py)
-  it: {title: "Strumenti per questo progetto", link: "Si apre in una nuova scheda", preview: "In sviluppo", soon: "In arrivo", ex: "Esempio", tell: "Avvisami quando è pronto",
+  it: {title: "Strumenti per questo progetto", ask: "Chiedi al mio TEM", ask_other: "Chiedi al mio TEM altri strumenti", ask_other_n: "Per tutto ciò che qui non vedi, senza dover conoscere lo strumento.", ask_note: "Una nota per il TEM (facoltativa)", ask_send: "Invia richiesta", ask_sent: "Richiesta inviata.", ask_seen: "Il TEM la vede nel suo studio. Nessun costo.", link: "Si apre in una nuova scheda", preview: "In sviluppo", soon: "In arrivo", ex: "Esempio", tell: "Avvisami quando è pronto",
        told: "Grazie: ti avviseremo quando sarà pronto.", ref_t: "Verifica un riferimento di esportazione", ref_help: "Controlla il formato di un MRN (dichiarazione di esportazione) o di un ARC (e-AD per il vino) prima di usarlo nei documenti.",
        mrn: "MRN", arc: "ARC (e-AD)", check: "Controlla il formato", lookup: "Servizio UE di verifica MRN", steps: "Come funzionerà",
        vis: "Visibile al cliente", today: "Oggi", next: "Poi", miotem: "MioTEM", partner: "Partner", go: "Portami lì", tour: "I tuoi strumenti: cosa fa MioTEM per te", tour_t: "Strumenti di MioTEM e dei partner", count: "Il tuo cliente vede {n} strumenti su {m}. Attiva o disattiva ciascuno qui sotto."},
-  en: {title: "Tools for this project", link: "Opens in a new tab", preview: "In development", soon: "Coming soon", ex: "Example", tell: "Tell me when it's ready",
+  en: {title: "Tools for this project", ask: "Ask my TEM", ask_other: "Ask my TEM about other tools", ask_other_n: "For anything you do not see here, without needing to know the tool.", ask_note: "A note for your TEM (optional)", ask_send: "Send request", ask_sent: "Request sent.", ask_seen: "Your TEM sees it in their workspace. No cost.", link: "Opens in a new tab", preview: "In development", soon: "Coming soon", ex: "Example", tell: "Tell me when it's ready",
        told: "Thank you: we will let you know when it is ready.", ref_t: "Check an export reference", ref_help: "Check the format of an MRN (export declaration) or an ARC (e-AD for wine) before you use it in your documents.",
        mrn: "MRN", arc: "ARC (e-AD)", check: "Check format", lookup: "EU MRN follow-up service", steps: "How it will work",
        vis: "Visible to client", today: "Today", next: "Next", miotem: "MioTEM", partner: "Partner", go: "Take me there", tour: "Your tools: what MioTEM does for you", tour_t: "MioTEM and partner tools", count: "Your client sees {n} of {m} tools. Switch each one on or off below."},
@@ -579,6 +579,19 @@ applyLang();
     into(); $("journey").hidden = false; jsel = null;
     loadJourney().then(() => { const el = $(target); if (el) el.scrollIntoView({behavior: "smooth"}); });
   }
+  function askTem(parent, cid, tool, open) {  // a client asks their TEM for help (tool null = other tools)
+    const t = TL[lang];
+    if (open && open.includes(tool || "")) { parent.appendChild(mk("div", t.ask_sent, "tick")); return; }
+    const b = mk("button", tool ? t.ask : t.ask_other); parent.appendChild(b);
+    b.onclick = () => {
+      b.hidden = true;
+      const f = mk("div"), n = document.createElement("input"); n.type = "text"; n.maxLength = 500; n.placeholder = t.ask_note; n.style.width = "70%";
+      const send = mk("button", t.ask_send), msg = mk("span", "", "muted");
+      send.onclick = async () => { send.disabled = true; const [r, j] = await call("/tem/ask", {case_id: cid, tool, note: n.value});
+        if (r.ok || r.status === 409) f.replaceWith(mk("div", t.ask_sent + (r.ok ? " " + t.ask_seen : ""), "tick")); else { send.disabled = false; msg.textContent = T[lang].err + (j.error || r.status); } };
+      f.append(n, " ", send, " ", msg); parent.appendChild(f); n.focus();
+    };
+  }
   function toolsBox(box, data, cid, tem, title) {  // tem: the TEM's view, with a "Visible to client" switch per card
     const t = TL[lang]; box.innerHTML = ""; const list = data && data.cards; if (!list || (!list.length && !data.refcheck)) return;
     if (title !== "") box.appendChild(mk("h3", title || t.title));
@@ -596,6 +609,7 @@ applyLang();
       if (c.today) { const d = mk("div"); d.appendChild(mk("strong", t.today + ": ")); d.appendChild(document.createTextNode(c.today.text[lang])); card.appendChild(d);
         (c.today.links || []).forEach(l => linkTo(card, l)); if (c.today.note) card.appendChild(mk("div", c.today.note[lang], "muted")); }
       if (c.go && !tem) { const g = mk("button", t.go); g.onclick = () => goTo(c.go); card.appendChild(g); }
+      if (data.tem && !tem) askTem(card, cid, c.id, data.open_requests);
       const n = c.coming;
       if (n) { const d = mk("div"); if (c.today) d.appendChild(mk("strong", t.next + ": ")); d.appendChild(mk("span", (n.status === "preview" ? t.preview : t.soon), "sim"));
         d.appendChild(document.createTextNode(" " + n.text[lang])); card.appendChild(d);
@@ -625,13 +639,15 @@ applyLang();
     const rest = ((data && data.cards) || []).filter(c => !c.step && !PAGE.includes(c.id));
     const groups = [[t.tl_now, rest.filter(c => c.today)], [t.tl_prev, rest.filter(c => !c.today && c.coming && c.coming.status === "preview")],
                     [t.tl_soon, rest.filter(c => !c.today && !(c.coming && c.coming.status === "preview"))]];
-    if (!rest.length && !(data && data.refcheck)) return;
+    const t2ask = () => TL[lang];
+    if (!rest.length && !(data && data.refcheck) && !(data && data.tem)) return;
     jt.appendChild(mk("h3", t.tl_more));
     groups.forEach(([label, cards], gi) => {
       if (!cards.length && !(gi === 0 && data && data.refcheck)) return;
       jt.appendChild(mk("div", label, "muted")); const gb = mk("div"); jt.appendChild(gb);
-      toolsBox(gb, {cards, refcheck: gi === 0 && !!(data && data.refcheck)}, cid, false, "");
+      toolsBox(gb, {cards, refcheck: gi === 0 && !!(data && data.refcheck), tem: data && data.tem, open_requests: data && data.open_requests}, cid, false, "");
     });
+    if (data && data.tem) { const g = mk("div", null, "card"); g.appendChild(mk("div", t2ask().ask_other_n, "muted")); askTem(g, cid, null, data.open_requests); jt.appendChild(g); }
   }
   async function loadAccount() {
     const t = T[lang], y = window.scrollY;
@@ -741,7 +757,7 @@ applyLang();
             up.onclick = e => { e.preventDefault(); const p = $("docs"); if (p.hidden) $("docsbtn").click(); $("d-file").click(); }; row.appendChild(up); }
           rq.appendChild(row); });
         const stepCards = ((j.tools && j.tools.cards) || []).filter(c => c.step === l);
-        if (stepCards.length) { const sb = mk("div"); sb.style.cssText = "margin:8px 0 0 12px"; rq.appendChild(sb); toolsBox(sb, {cards: stepCards, refcheck: false}, cid, false, t.tl_step); }
+        if (stepCards.length) { const sb = mk("div"); sb.style.cssText = "margin:8px 0 0 12px"; rq.appendChild(sb); toolsBox(sb, {cards: stepCards, refcheck: false, tem: j.tools && j.tools.tem, open_requests: j.tools && j.tools.open_requests}, cid, false, t.tl_step); }
       });
       (d.data.not_needed || []).forEach(n => { const row = mk("div", "✗ " + t.j_notneeded + ": " + n[lang], "muted");
         if (n.source) { const s = mk("a", " " + t.j_src); s.href = n.source; s.target = "_blank"; s.rel = "noopener"; row.appendChild(s); }
@@ -999,6 +1015,10 @@ applyLang();
     j.clients.forEach(c => {
       const cd = mk("div", null, "card"); cd.appendChild(mk("strong", c.name + " (" + c.vat + ")"));
       cd.appendChild(mk("span", " · " + tt.tc_since + " " + sd(c.since), "muted"));
+      (c.requests || []).forEach(q => { const row = mk("div", null, "verify");
+        row.append(mk("strong", tt.rq_h + ": "), q.project + (q.tool ? " · " + ((q.tool_name && q.tool_name[lang]) || q.tool) : " · " + tt.rq_other) + (q.note ? " · \u201c" + q.note + "\u201d" : "") + " ");
+        const d = mk("button", tt.rq_done); d.onclick = async () => { d.disabled = true; const [r] = await call("/tem/request_done", {id: q.id}); if (r.ok) loadTem(); else d.disabled = false; };
+        row.appendChild(d); cd.appendChild(row); });
       c.projects.forEach(p => { const row = mk("div", (p.product || "-") + " → " + (p.country || "-") + " · " + p.status + (p.missing != null ? " · " + p.missing + " " + tt.ws_missing : "") + " ");
         const ob = mk("button", tt.ws_open); ob.onclick = () => temProject(p.id); row.appendChild(ob); cd.appendChild(row); });
       const np = mk("div"); const cs = sel0(CATS), co = sel0(COUNTRIES), nn = mk("input"); nn.type = "text"; nn.placeholder = tt.ws_name; nn.style.width = "30%";
