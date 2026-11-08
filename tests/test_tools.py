@@ -53,10 +53,52 @@ class ToolCards(unittest.TestCase):
         cards = {x["id"]: x for x in tools.for_case("cheese", "France")}
         self.assertEqual(cards["label_check"]["today"]["links"][0]["url"], "https://label.veripura.com/")
         self.assertEqual(cards["label_check"]["coming"]["status"], "preview")
-        self.assertIn("additives banned in the European Union", cards["doc_checks"]["today"]["text"]["en"])
-        self.assertNotIn("VeriPura", cards["doc_checks"]["name"]["en"] + cards["doc_checks"]["today"]["text"]["en"])  # no VeriPura or Core name on the site (8 Nov)
+        self.assertIn("additives banned in the European Union", cards["doc_checks"]["coming"]["text"]["en"])
+        self.assertEqual(cards["doc_checks"]["name"]["en"], "VeriPura Document Checker")  # named on 8 Nov by Thomas; Core itself is still not named
+        self.assertNotIn("Core", cards["doc_checks"]["name"]["en"] + cards["doc_checks"]["coming"]["text"]["en"])
+        self.assertEqual(cards["doc_checks"]["coming"]["status"], "preview")
+        self.assertNotIn("tracking", cards)  # folded into the Shipping card's coming-soon line
+        self.assertIn("freight forwarder", cards["shipping"]["coming"]["text"]["en"])
         self.assertEqual(cards["shipping"]["coming"]["status"], "soon")
         self.assertFalse({"pallets", "containers", "label_check_inside", "doc_checks_more"} & set(cards))
+
+
+class FundingCard(unittest.TestCase):
+    def card(self):
+        return {x["id"]: x for x in tools.for_case("wine", "USA")}["funding"]
+
+    def test_every_call_has_a_status_and_closed_calls_stay_listed(self):
+        links = self.card()["today"]["links"]
+        self.assertTrue(all(l["status"] in ("open", "closed", "check") for l in links))
+        closed = [l for l in links if l["status"] == "closed"]
+        self.assertGreaterEqual(len(closed), 4)
+        self.assertTrue(all(l.get("note") for l in closed))
+        self.assertFalse(any("modena" in l["url"] and l["status"] == "open" for l in links))
+
+    def test_last_checked_date_and_notify_button(self):
+        today = self.card()["today"]
+        self.assertRegex(today["checked"], r"^\d{4}-\d{2}-\d{2}$")
+        self.assertEqual(today["notify"], "funding_calls")
+        self.assertIn("funding_calls", tools.INTEREST_ONLY)
+        self.assertNotIn("funding_calls", tools.TOOL_IDS)
+
+    def test_notify_interest_is_recorded_once(self):
+        who = user("fund-a")
+        con = app.con()
+        for _ in range(2):
+            self.assertEqual(tools.record_interest(con, None, "fund-a", "funding_calls")[0], 200)
+        n = con.execute("SELECT COUNT(*) AS n FROM tool_interest WHERE tool='funding_calls' AND user_sub='fund-a'").fetchone()["n"]
+        self.assertEqual(n, 1)
+
+    def test_wording_changes(self):
+        cards = {x["id"]: x for x in tools.for_case("wine", "USA")}
+        self.assertNotIn("updated weekly", cards["duties"]["today"]["text"]["en"])
+        self.assertIn("where we have one", cards["checklist"]["today"]["text"]["en"])
+        self.assertIn("draft", cards["eori"]["today"]["text"]["en"])
+        self.assertNotIn("pay through", cards["mode2"]["coming"]["text"]["en"])
+        self.assertNotIn("free tools", cards["label_design"]["today"]["text"]["en"])
+        self.assertNotIn("United States", cards["label_design"]["today"]["text"]["en"])
+        self.assertIn("Example, not a real shipment", cards["buyer_verification"]["coming"]["example"][0]["en"])
 
 
 class Interest(unittest.TestCase):
@@ -178,7 +220,7 @@ class CoreAndGuide(unittest.TestCase):
         self.assertEqual(kinds, sorted(kinds, key=lambda k: k != "miotem"))
         by = {c["id"]: c["by"] for c in cards}
         self.assertEqual(by["checklist"]["kind"], "miotem")
-        self.assertEqual(by["doc_checks"], {"kind": "partner", "name": ""})
+        self.assertEqual(by["doc_checks"], {"kind": "partner", "name": "VeriPura"})
         self.assertEqual(by["label_check"]["name"], "VeriPura")
         self.assertIn("Sendcloud", by["shipping"]["name"])
 
@@ -244,9 +286,10 @@ class Mode2Card(unittest.TestCase):
         self.assertNotIn("today", cards["mode2"])
         self.assertIn("mode2", tools.TOOL_IDS)
 
-    def test_duties_text_says_updated_weekly(self):
+    def test_duties_text_does_not_claim_weekly_updates_until_the_first_automatic_run(self):
+        # 8 Nov 2026: the weekly run is proven only by hand; restore "updated weekly" after the automatic run on 16 Nov.
         cards = {c["id"]: c for c in tools.for_case("wine", "USA")}
-        self.assertIn("updated weekly", cards["duties"]["today"]["text"]["en"])
+        self.assertIn("checked against the official tariffs", cards["duties"]["today"]["text"]["en"])
 
 
 class PublicCatalog(unittest.TestCase):
