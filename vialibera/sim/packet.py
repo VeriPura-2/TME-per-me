@@ -1,7 +1,7 @@
 """SIMULATED options packet. Items, dependency rules and prices are examples.
 Delete when real adapters and the VeriPura menu exist; set "options_packet" to live."""
-from . import tag, prices
-from .. import plans
+from . import tag
+from .. import plans, plan_prices
 
 NEEDS = {  # interview "needs" answer keyword -> item
     "tariff": "tariff_lookup", "duty": "tariff_lookup", "dazi": "tariff_lookup",
@@ -52,13 +52,16 @@ def expand(selected):
 
 def build(selected, plan_id):
     items, why = expand(selected)
-    price_tbl = prices.EXAMPLE[plan_id]["levels"]
-    rows = []
+    price_tbl = plan_prices.MENU[plan_id]["levels"]
+    rows, not_available = [], []
     for it in items:
         lv = plans.level_of(it)
+        if price_tbl[lv] is None:  # this plan cannot buy this level (Explore: checks need a paid plan)
+            not_available.append(it)
+            continue
         rows.append({"id": it, "name": {"it": NAMES[it][0], "en": NAMES[it][1]}, "level": lv,
                      "price_cents": price_tbl[lv], "added_because": why.get(it, [])})
     total = sum(r["price_cents"] for r in rows)
-    return tag("options_packet", {"plan": plan_id, "items": rows, "total_cents": total,
-                                  "monthly_cents": prices.EXAMPLE[plan_id]["monthly"], "currency": "EUR",
-                                  "label": {"it": "Prezzi di esempio, da definire da VeriPura", "en": "Example prices, to be set by VeriPura"}})
+    return tag("options_packet", {"plan": plan_id, "items": rows, "not_available": not_available, "total_cents": total,
+                                  "monthly_cents": plan_prices.MENU[plan_id]["monthly"], "currency": "EUR",
+                                  "label": {"it": "Prezzi del listino", "en": "Price list"}})

@@ -132,6 +132,7 @@ class CompanyCreditAndConsentTest(unittest.TestCase):
         self.assertEqual(invites.balance(self.c, "mem"), 2000)
         self.assertEqual(invites.balance(self.c, "newb"), 2000)  # the newcomer had no company: held personally
         # a manager pays: the company credit is used, everyone in the company sees the lower balance
+        accounts.set_plan(self.c, "man", "parti")  # Explore cannot buy checks
         out = app.handle_simpay({"case_id": self.case, "selected": ["label_check"]}, who("man"))[1]["payment"]["data"]
         self.assertGreater(out["credit_used_cents"], 0)
         self.assertEqual(invites.balance(self.c, "own"), 2000 - out["credit_used_cents"])

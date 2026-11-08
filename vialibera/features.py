@@ -14,7 +14,7 @@ FEATURES = {
     "required_docs_other": {"phase": 1, "mode": "sim", "sim_file": "sim/required_docs.py"},  # lanes outside Wave 1
     "tariff_lookup":    {"phase": 1, "mode": "live"},  # duties.py: every Wave 1 lane, from the weekly tariff check (tariff_watch); EU lanes: no duty
     "options_packet":   {"phase": 1, "mode": "sim", "sim_file": "sim/packet.py"},
-    "price_menu":       {"phase": 1, "mode": "sim", "sim_file": "sim/prices.py"},
+    "price_menu":       {"phase": 1, "mode": "live"},  # plan_prices.py: set by Thomas on 8 Nov 2026
     "payment":          {"phase": 1, "mode": "sim", "sim_file": "sim/payment.py"},  # real Stripe test payments take over automatically when STRIPE_SECRET_KEY exists, see stripe_pay.py
     "deliverables":     {"phase": 1, "mode": "sim", "sim_file": "sim/deliverables.py"},
     "voice_output":     {"phase": 2, "mode": "live"},

@@ -1,5 +1,5 @@
 """Usage plans. Structure only, no money. Prices and discounts come from the
-VeriPura price menu (sim/prices.py until VeriPura supplies real values).
+plan price menu (plan_prices.py).
 
 Item levels: 1 instant, 2 checked, 3 managed by staff or partners.
 """
@@ -11,6 +11,8 @@ PLANS = {
                 "monthly": True, "max_projects": 5, "max_uncovered": 10, "free_checks": None, "team_members": 3, "alerts": False, "priority_help": False},
     "cresci":  {"rank": 2, "name": {"it": "Cresci", "en": "Grow"}, "tier": {"it": "Avanzato", "en": "Advanced"},
                 "monthly": True, "max_projects": None, "max_uncovered": 50, "free_checks": None, "team_members": 10, "alerts": True, "priority_help": True},
+    "tem":     {"rank": 3, "name": {"it": "TEM", "en": "TEM"}, "tier": {"it": "Per i TEM", "en": "For TEMs"}, "audience": "tem",
+                "monthly": True, "max_projects": 50, "max_uncovered": 50, "free_checks": None, "team_members": 10, "alerts": True, "priority_help": True},
 }
 
 LEVELS = {
@@ -39,4 +41,5 @@ def can_add_project(plan_id, current_projects):
 
 
 def public():
-    return {"plans": PLANS, "levels": LEVELS, "default": DEFAULT}
+    """What exporters see: the TEM plan is set by staff, not chosen here."""
+    return {"plans": {k: v for k, v in PLANS.items() if v.get("audience") != "tem"}, "levels": LEVELS, "default": DEFAULT}

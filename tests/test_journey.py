@@ -58,9 +58,10 @@ class JourneyTest(unittest.TestCase):
 
     def test_plan_choice_changes_prices(self):
         cid = make_case("j4")
-        a = app.handle_journey({"case_id": cid, "selected": ["label_check"]}, who("j4"))[1]["packet"]["data"]["total_cents"]
+        app.handle_plan({"plan": "parti"}, who("j4"))
+        a = app.handle_journey({"case_id": cid, "selected": ["lab_cert"]}, who("j4"))[1]["packet"]["data"]["total_cents"]
         app.handle_plan({"plan": "cresci"}, who("j4"))
-        b = app.handle_journey({"case_id": cid, "selected": ["label_check"]}, who("j4"))[1]["packet"]["data"]["total_cents"]
+        b = app.handle_journey({"case_id": cid, "selected": ["lab_cert"]}, who("j4"))[1]["packet"]["data"]["total_cents"]
         self.assertLess(b, a)
 
     def test_bad_plan_is_ignored(self):
