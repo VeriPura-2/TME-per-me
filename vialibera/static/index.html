@@ -1158,9 +1158,9 @@ applyLang();
   $("msg").onkeydown = e => { if (e.key === "Enter") send(); };
   // Routes with a verified checklist. The server decides for real (requirements.covers); this only shows the notice early.
   const COVERED_PRODUCTS = ["pasta", "wine", "olive oil", "cheese and dairy"];
-  const COVERED_COUNTRIES = ["UK", "USA", "Canada", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria"];
+  const COVERED_COUNTRIES = ["UK", "USA", "Canada", "Switzerland", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria"];
   const PICK_PRODUCTS = ["wine", "pasta", "olive oil", "cheese and dairy", "other"];
-  const PICK_COUNTRIES = ["UK", "USA", "Canada", "EU", "other"];
+  const PICK_COUNTRIES = ["UK", "USA", "Canada", "Switzerland", "EU", "other"];
   const EU_STATES = ["Germany", "France", "Spain", "Netherlands", "Belgium", "Austria", "other_eu"];
   function quickStart(t) {  // first question: product, optional description, country. Straight into a project, no AI call
     const box = $("w-start"); box.innerHTML = "";
