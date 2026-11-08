@@ -1,0 +1,1821 @@
+{
+"updated": "2026-10-11",
+"importers": [
+{
+"company": "Buon'Italia",
+"country": "US",
+"city": "New York",
+"segment": "food",
+"focus": "Broad Italian specialty, retail plus NY restaurant wholesale",
+"website": "buonitalia.com"
+},
+{
+"company": "Forever Cheese",
+"country": "US",
+"city": "New York",
+"segment": "food",
+"focus": "Artisan cheese and accompaniments (IT, ES, PT, HR)",
+"website": "forevercheese.com"
+},
+{
+"company": "Gustiamo",
+"country": "US",
+"city": "Bronx",
+"segment": "food",
+"focus": "Tomatoes (San Marzano), olive oil, regional pantry",
+"website": "gustiamo.com"
+},
+{
+"company": "Manicaretti Italian Food Importers",
+"country": "US",
+"city": "Oakland",
+"segment": "food",
+"focus": "Olive oil, vinegar, pasta, rice, preserves",
+"website": "manicaretti.com"
+},
+{
+"company": "MAXCO International",
+"country": "US",
+"city": "Ladera Ranch",
+"segment": "food",
+"focus": "DOP and IGP fine food for retail and foodservice",
+"website": "maxcointernationalgroup.com"
+},
+{
+"company": "Ambrosi Food USA",
+"country": "US",
+"city": "Brooklyn",
+"segment": "food",
+"focus": "Italian cheeses (Parmigiano Reggiano, Grana Padano)",
+"website": "ambrosifoodusa.com"
+},
+{
+"company": "Bona Furtuna",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "Sicilian organic olive oil, pasta, herbs",
+"website": ""
+},
+{
+"company": "Cibo Italia",
+"country": "US",
+"city": "Moonachie",
+"segment": "food",
+"focus": "Artisan foods made in Italy",
+"website": "cibo-italia.com"
+},
+{
+"company": "Flora Fine Foods",
+"country": "US",
+"city": "Coral Springs",
+"segment": "food",
+"focus": "Olive oil, pasta, sauces, cheese, San Marzano tomatoes",
+"website": "florafoods.com"
+},
+{
+"company": "Giannetti Artisans",
+"country": "US",
+"city": "Highwood",
+"segment": "food",
+"focus": "Italian specialty food",
+"website": "giannettiartisans.com"
+},
+{
+"company": "Italian Harvest",
+"country": "US",
+"city": "South San Francisco",
+"segment": "food",
+"focus": "Artisan foods from Italy",
+"website": "italianharvest.com"
+},
+{
+"company": "La Valle Foods USA",
+"country": "US",
+"city": "East Rutherford",
+"segment": "food",
+"focus": "Canned Italian tomatoes, preserved vegetables, oil, vinegar",
+"website": "lavalleus.com"
+},
+{
+"company": "Mangia Inc. (Carmelina Brands)",
+"country": "US",
+"city": "Irvine",
+"segment": "food",
+"focus": "Carmelina San Marzano tomatoes, Italian beans",
+"website": "carmelinabrands.com"
+},
+{
+"company": "Marovato Italian Imports",
+"country": "US",
+"city": "Brooklyn",
+"segment": "food",
+"focus": "Luxury products from Puglia",
+"website": "marovatoitalianimports.com"
+},
+{
+"company": "Ritrovo Italian Regional Foods",
+"country": "US",
+"city": "Seattle",
+"segment": "food",
+"focus": "EVOO, balsamico, grains, rice, pestos, pasta",
+"website": "ritrovo.com"
+},
+{
+"company": "United Olive Oil Import Corp",
+"country": "US",
+"city": "New York",
+"segment": "food",
+"focus": "Italian olive oil, Mediterranean specialties",
+"website": "unitedoliveoil.com"
+},
+{
+"company": "Urbani Truffles USA",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "Italian truffles and truffle products",
+"website": ""
+},
+{
+"company": "Dalla Terra Winery Direct",
+"country": "US",
+"city": "Napa",
+"segment": "wine",
+"focus": "Family-owned Italian wineries, Italian spirits",
+"website": ""
+},
+{
+"company": "Five Flights Wines and Spirits",
+"country": "US",
+"city": "New York",
+"segment": "wine",
+"focus": "Italian, small brands",
+"website": ""
+},
+{
+"company": "Lewis Imports",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Premium Italian wines, family wineries",
+"website": ""
+},
+{
+"company": "Oliver McCrum Wines & Spirits",
+"country": "US",
+"city": "Oakland",
+"segment": "wine",
+"focus": "Italian-only since 2007, 45+ producers, 15 regions",
+"website": "omwines.com"
+},
+{
+"company": "The Source Imports",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Indigenous Italian wines",
+"website": "thesourceimports.com"
+},
+{
+"company": "Import Italian",
+"country": "CA",
+"city": "Montreal",
+"segment": "food",
+"focus": "Gourmet food mainly from Italy, upscale retail and foodservice",
+"website": ""
+},
+{
+"company": "Itaca Direct",
+"country": "CA",
+"city": "Montreal",
+"segment": "food",
+"focus": "High-end Italian food",
+"website": ""
+},
+{
+"company": "San Remo Food Importers",
+"country": "CA",
+"city": "Vancouver",
+"segment": "food",
+"focus": "Italian specialties since 1985; San Remo private label incl. organic tomatoes, EVOO, balsamic",
+"website": "sanremofoods.com"
+},
+{
+"company": "Cavinona Wine Agency",
+"country": "CA",
+"city": "",
+"segment": "wine",
+"focus": "Indigenous Italian wines, 70+ small family producers",
+"website": "cavinona.com"
+},
+{
+"company": "Astrum Wine Cellars",
+"country": "UK",
+"city": "Mitcham, Surrey CR4",
+"segment": "wine",
+"focus": "Italian and Central European wine, trade only",
+"website": "astrumwinecellars.com"
+},
+{
+"company": "Eurowines",
+"country": "UK",
+"city": "London SW6",
+"segment": "wine",
+"focus": "Italy-led wine; also olive oils. 8x Best Italian Importer, Sommelier Wine Awards",
+"website": "eurowines.co.uk"
+},
+{
+"company": "Vinexus",
+"country": "UK",
+"city": "London W6",
+"segment": "wine",
+"focus": "Italian wine sourced direct from growers; markets traceability and authenticity",
+"website": "vinexus.co.uk"
+},
+{
+"company": "Alivini",
+"country": "UK",
+"city": "London N4 (depot in Leeds)",
+"segment": "food",
+"focus": "Regional Italian olive oils, cheeses, cured meats, wine; national cold-chain fleet",
+"website": "alivini.com"
+},
+{
+"company": "Rondanini",
+"country": "UK",
+"city": "London SE24",
+"segment": "food",
+"focus": "Cured meats, cheeses, olive oils; supplies major retailers; sister co. Salvo1968",
+"website": "rondanini.co.uk"
+},
+{
+"company": "La Credenza",
+"country": "UK",
+"city": "Croydon CR0",
+"segment": "food",
+"focus": "200+ farmhouse cheeses incl. DOP, cold-extracted oils; sourcing office in Italy",
+"website": "lacredenza.co.uk"
+},
+{
+"company": "Viani Alimentari GmbH",
+"country": "DE",
+"city": "",
+"segment": "food",
+"focus": "Italian food importer and distributor to gastronomy and retail",
+"website": "viani.de"
+},
+{
+"company": "S.A. Frega Bremen GmbH",
+"country": "DE",
+"city": "",
+"segment": "food",
+"focus": "Long-established Italian food importer, Bremen",
+"website": "frega.de"
+},
+{
+"company": "SUPERIORE.DE GmbH",
+"country": "DE",
+"city": "",
+"segment": "wine",
+"focus": "Italian wine importer and online merchant",
+"website": "superiore.de"
+},
+{
+"company": "Jacopini Import GmbH",
+"country": "DE",
+"city": "",
+"segment": "wine",
+"focus": "Italian wine import and trade",
+"website": "jacopini-weinhandel.de"
+},
+{
+"company": "Selezione La Vista",
+"country": "DE",
+"city": "",
+"segment": "food",
+"focus": "Olive oil importer",
+"website": "lavistaolivenoel.de"
+},
+{
+"company": "Bindella",
+"country": "CH",
+"city": "",
+"segment": "wine",
+"focus": "Italian wine importer, Tuscan estate owner, restaurant group (Zurich)",
+"website": "bindella.ch"
+},
+{
+"company": "Caratello Weine AG",
+"country": "CH",
+"city": "",
+"segment": "wine",
+"focus": "Italian wine specialist importer",
+"website": "caratello.ch"
+},
+{
+"company": "Donati Vini AG",
+"country": "CH",
+"city": "",
+"segment": "wine",
+"focus": "Italian wine importer",
+"website": "donativini.ch"
+},
+{
+"company": "Vergani 1892",
+"country": "CH",
+"city": "",
+"segment": "both",
+"focus": "Italian food and wine importer, deli and gastronomy, Zurich",
+"website": "vergani.ch"
+},
+{
+"company": "Caporaso AG",
+"country": "CH",
+"city": "",
+"segment": "food",
+"focus": "Italian food wholesale to gastronomy",
+"website": "caporaso.ch"
+},
+{
+"company": "Ambrofood SA",
+"country": "CH",
+"city": "",
+"segment": "food",
+"focus": "Italian food importer and distributor",
+"website": "ambrofood.ch"
+},
+{
+"company": "LAPA finest italian food GmbH",
+"country": "CH",
+"city": "",
+"segment": "food",
+"focus": "Italian fine food importer",
+"website": "lapa.ch"
+},
+{
+"company": "Ambriola Company",
+"country": "US",
+"city": "West Caldwell",
+"segment": "food",
+"focus": "Locatelli Pecorino Romano, Auricchio Provolone, Gorgonzola, Taleggio",
+"website": "ambriola.com"
+},
+{
+"company": "Empson USA",
+"country": "US",
+"city": "Alexandria",
+"segment": "wine",
+"focus": "Italian wine and spirits",
+"website": "empsonusa.com"
+},
+{
+"company": "Ad Maiora",
+"country": "US",
+"city": "Miami",
+"segment": "food",
+"focus": "Italian food products",
+"website": "admaiorafoods.com"
+},
+{
+"company": "Alma Gourmet",
+"country": "US",
+"city": "Long Island City",
+"segment": "food",
+"focus": "Italian food",
+"website": "almagourmet.com"
+},
+{
+"company": "Ariola Imports",
+"country": "US",
+"city": "Los Angeles",
+"segment": "food",
+"focus": "Fresh produce, dried veg, dairy, honey",
+"website": "ariolaimports.com"
+},
+{
+"company": "Arthur Schuman Inc.",
+"country": "US",
+"city": "Fairfield",
+"segment": "food",
+"focus": "Hard Italian cheeses",
+"website": ""
+},
+{
+"company": "Barbiero Italian Foods",
+"country": "US",
+"city": "Peabody",
+"segment": "food",
+"focus": "Italian food products",
+"website": "barbieroitalianfoods.com"
+},
+{
+"company": "Becro Food & Beverage",
+"country": "US",
+"city": "Brooklyn",
+"segment": "food",
+"focus": "Italian food (also Spain)",
+"website": "becrofood.com"
+},
+{
+"company": "Bella Mia Foods",
+"country": "US",
+"city": "Staten Island",
+"segment": "food",
+"focus": "Italian food products",
+"website": "bellamiafoods.com"
+},
+{
+"company": "Botticelli Foods",
+"country": "US",
+"city": "Commack",
+"segment": "food",
+"focus": "Olive oil, pasta sauces, vinegars, semolina pasta",
+"website": "botticellifoods.com"
+},
+{
+"company": "Castle Importing",
+"country": "US",
+"city": "Fontana",
+"segment": "food",
+"focus": "Hard Italian cheese processing, Italian olive oil",
+"website": "castleimporting.com"
+},
+{
+"company": "Cerami Sales Company",
+"country": "US",
+"city": "Gardena",
+"segment": "food",
+"focus": "Fine Italian food",
+"website": "ceramisales.com"
+},
+{
+"company": "Ciao Imports",
+"country": "US",
+"city": "Miami",
+"segment": "food",
+"focus": "Pasta, olive oil, balsamic, truffle products",
+"website": "ciaoimports.com"
+},
+{
+"company": "Cibo Divino LLC",
+"country": "US",
+"city": "Bedford",
+"segment": "food",
+"focus": "Artisan pasta, balsamic, sauces, chocolate",
+"website": "cibodivino-us.com"
+},
+{
+"company": "Conca D'Oro Importers",
+"country": "US",
+"city": "Totowa",
+"segment": "food",
+"focus": "Italian specialties for foodservice and gourmet retail",
+"website": "concadorofood.com"
+},
+{
+"company": "D. Coluccio and Sons",
+"country": "US",
+"city": "Brooklyn",
+"segment": "food",
+"focus": "Italian specialty foods",
+"website": "dcoluccioandsons.com"
+},
+{
+"company": "De Medici Imports",
+"country": "US",
+"city": "Elizabeth",
+"segment": "food",
+"focus": "EVOO, vinegars, rice, pasta, sea salt",
+"website": "demedici.com"
+},
+{
+"company": "Ferina Gourmet Imports",
+"country": "US",
+"city": "Jensen Beach",
+"segment": "food",
+"focus": "Italian food",
+"website": "ferinagourmetimports.com"
+},
+{
+"company": "Garofalo Pasta USA",
+"country": "US",
+"city": "New York",
+"segment": "food",
+"focus": "Gragnano IGP pasta",
+"website": "pasta-garofalo.com"
+},
+{
+"company": "Guidi Marcello Ltd",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "Italian foods and drinks",
+"website": ""
+},
+{
+"company": "IBS Trading",
+"country": "US",
+"city": "New York",
+"segment": "food",
+"focus": "Coffee, pasta, olive oil, tomatoes, pastry",
+"website": "ibstrading.us"
+},
+{
+"company": "Italfoods Inc.",
+"country": "US",
+"city": "South San Francisco",
+"segment": "food",
+"focus": "Italian specialty foods",
+"website": "italfoodsinc.com"
+},
+{
+"company": "Italian Bottega",
+"country": "US",
+"city": "Chicago",
+"segment": "food",
+"focus": "Italian food products",
+"website": "italianbottega.com"
+},
+{
+"company": "Italian Products USA",
+"country": "US",
+"city": "Elizabeth",
+"segment": "food",
+"focus": "Specialty food from Italy (also Scandinavia, Portugal)",
+"website": "italianproducts.com"
+},
+{
+"company": "JVM Sales (Milano's Cheese)",
+"country": "US",
+"city": "Linden",
+"segment": "food",
+"focus": "Italian cheese",
+"website": "milanoscheese.com"
+},
+{
+"company": "La Rosa Azzurra",
+"country": "US",
+"city": "Astoria",
+"segment": "food",
+"focus": "Italian gourmet foods",
+"website": "larosaazzurra.com"
+},
+{
+"company": "Lotito Foods",
+"country": "US",
+"city": "Edison",
+"segment": "food",
+"focus": "Italian and European cheeses, specialty foods",
+"website": "lotitofoods.com"
+},
+{
+"company": "Love To Italy",
+"country": "US",
+"city": "Greensboro",
+"segment": "food",
+"focus": "100% Made in Italy food",
+"website": "lovetoitaly.com"
+},
+{
+"company": "Milano Foods",
+"country": "US",
+"city": "Moorestown",
+"segment": "food",
+"focus": "Italian food products",
+"website": "milanofoodsinc.com"
+},
+{
+"company": "Monini North America",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "Olive oil",
+"website": ""
+},
+{
+"company": "Mutti USA Inc.",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "Tomato products (Mutti S.p.A. subsidiary)",
+"website": ""
+},
+{
+"company": "Nastasi Foods",
+"country": "US",
+"city": "Woodbridge",
+"segment": "food",
+"focus": "Italian specialty foods",
+"website": "nastasifoods.com"
+},
+{
+"company": "Orlando Foods",
+"country": "US",
+"city": "Glen Rock",
+"segment": "food",
+"focus": "Flour, tomatoes, oil, buffalo mozzarella, pasta",
+"website": "orlandofoods.com"
+},
+{
+"company": "Pastene Companies",
+"country": "US",
+"city": "Canton",
+"segment": "food",
+"focus": "Tomatoes, olive oil, pasta, Italian staples",
+"website": ""
+},
+{
+"company": "Penta International",
+"country": "US",
+"city": "Millburn",
+"segment": "food",
+"focus": "Gourmet foods and beverages, Italian focus",
+"website": ""
+},
+{
+"company": "Principe Foods USA",
+"country": "US",
+"city": "Long Beach",
+"segment": "food",
+"focus": "Prosciutto di San Daniele, Italian salumi",
+"website": ""
+},
+{
+"company": "Pure Italian LLC",
+"country": "US",
+"city": "Watertown",
+"segment": "food",
+"focus": "Olives, EVOO, peeled tomatoes, cheese, pasta, rice",
+"website": "pureitalian.net"
+},
+{
+"company": "Racconto Italian Foods",
+"country": "US",
+"city": "Melrose Park",
+"segment": "food",
+"focus": "Italian foods",
+"website": "racconto.com"
+},
+{
+"company": "Rogers Collection",
+"country": "US",
+"city": "Portland",
+"segment": "food",
+"focus": "Artisan European foods incl. Italian",
+"website": ""
+},
+{
+"company": "Russo-Tiesi Imports",
+"country": "US",
+"city": "Fairfield",
+"segment": "food",
+"focus": "Granoro (exclusive), Parmacotto, Pennisi, Fiore di Puglia",
+"website": "russotiesi.com"
+},
+{
+"company": "Sabatino Tartufi (US)",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "Truffles and truffle products",
+"website": ""
+},
+{
+"company": "Savello USA",
+"country": "US",
+"city": "Wilkes-Barre",
+"segment": "food",
+"focus": "Italian cheeses, oils, specialty items",
+"website": "savellousa.com"
+},
+{
+"company": "Sclafani Foods",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "EVOO, pasta, San Marzano tomatoes, vinegar",
+"website": ""
+},
+{
+"company": "Umbria Olii International USA",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "Olive oil (US arm of Umbria Olii)",
+"website": ""
+},
+{
+"company": "Viola Imports",
+"country": "US",
+"city": "Elk Grove Village",
+"segment": "food",
+"focus": "Gourmet Italian foods and ingredients",
+"website": "violaimports.com"
+},
+{
+"company": "World Finer Foods",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "Mazzetti and Fini balsamic, Da Vinci pasta, Casa Firelli",
+"website": ""
+},
+{
+"company": "Zia Pia Imports",
+"country": "US",
+"city": "Charlotte",
+"segment": "food",
+"focus": "Regional Italian foods",
+"website": "ziapia.com"
+},
+{
+"company": "A.I. Selections",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Italian-focused portfolio",
+"website": ""
+},
+{
+"company": "Banville Wine Merchants",
+"country": "US",
+"city": "New York",
+"segment": "wine",
+"focus": "Italian-heavy portfolio",
+"website": ""
+},
+{
+"company": "Enotec Imports",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Family-owned Italian estates, since 1985",
+"website": ""
+},
+{
+"company": "Enotria Wine Imports",
+"country": "US",
+"city": "New York",
+"segment": "wine",
+"focus": "Family-owned Italian estates",
+"website": ""
+},
+{
+"company": "Ethica Wines",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "25 Italian wineries, about 1M cases (2022)",
+"website": ""
+},
+{
+"company": "Indigenous Selections",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Italian specialist",
+"website": ""
+},
+{
+"company": "Jan D'Amore Wines",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Italian specialist",
+"website": ""
+},
+{
+"company": "Kermit Lynch Wine Merchant",
+"country": "US",
+"city": "Berkeley",
+"segment": "wine",
+"focus": "French and Italian (about 50 Italian wineries)",
+"website": ""
+},
+{
+"company": "Kobrand Corporation",
+"country": "US",
+"city": "Purchase",
+"segment": "wine",
+"focus": "Wine importer since 1944 with strong Italian focus",
+"website": ""
+},
+{
+"company": "Louis/Dressner Selections",
+"country": "US",
+"city": "New York",
+"segment": "wine",
+"focus": "Natural/artisan, significant Italian book",
+"website": ""
+},
+{
+"company": "Masciarelli Wine Company",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Italian portfolio",
+"website": ""
+},
+{
+"company": "Montcalm Wine Importers",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Italian portfolio",
+"website": ""
+},
+{
+"company": "North Berkeley Imports",
+"country": "US",
+"city": "Berkeley",
+"segment": "wine",
+"focus": "French and Italian, about 100 growers",
+"website": ""
+},
+{
+"company": "Polaner Selections",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "France, Italy (81 producers), Spain",
+"website": ""
+},
+{
+"company": "Rosenthal Wine Merchant",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "French and Italian growers",
+"website": ""
+},
+{
+"company": "Selected Estates of Europe",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Italian-heavy portfolio",
+"website": ""
+},
+{
+"company": "Siema Wines",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Italian specialist",
+"website": ""
+},
+{
+"company": "Tuscany Wines Import",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Artisanal Italian wines",
+"website": ""
+},
+{
+"company": "Vignaioli Selection",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "47 producers across 10 Italian regions",
+"website": ""
+},
+{
+"company": "Vinifera Imports",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Italian-heavy portfolio",
+"website": ""
+},
+{
+"company": "A. Bertozzi Importing",
+"country": "CA",
+"city": "Etobicoke",
+"segment": "food",
+"focus": "Italian specialty products",
+"website": ""
+},
+{
+"company": "Aurora Importing",
+"country": "CA",
+"city": "",
+"segment": "food",
+"focus": "Authentic Italian foods, national",
+"website": ""
+},
+{
+"company": "BOSA Foods",
+"country": "CA",
+"city": "Vancouver",
+"segment": "food",
+"focus": "Italian and Mediterranean: Parmigiano Reggiano, oil, salumi, tomatoes, rice",
+"website": "bosafoods.com"
+},
+{
+"company": "Elio Importing",
+"country": "CA",
+"city": "Concord",
+"segment": "food",
+"focus": "Traditional Italian products for grocers and bakeries",
+"website": ""
+},
+{
+"company": "Excelsior Foods",
+"country": "CA",
+"city": "Toronto",
+"segment": "food",
+"focus": "Italian food, retail and foodservice",
+"website": ""
+},
+{
+"company": "Favuzzi",
+"country": "CA",
+"city": "",
+"segment": "food",
+"focus": "Premium artisanal Mediterranean foods",
+"website": ""
+},
+{
+"company": "Gigi Importing",
+"country": "CA",
+"city": "Brampton",
+"segment": "food",
+"focus": "Exclusive distributor for many Italian brands",
+"website": ""
+},
+{
+"company": "IRIS Importing and Distributing",
+"country": "CA",
+"city": "Montreal-Nord",
+"segment": "food",
+"focus": "Italian products",
+"website": ""
+},
+{
+"company": "Molisana Imports",
+"country": "CA",
+"city": "Weston",
+"segment": "food",
+"focus": "Represents Italian brands",
+"website": ""
+},
+{
+"company": "MSM Fine Foods",
+"country": "CA",
+"city": "Concord",
+"segment": "food",
+"focus": "Italian specialty foods",
+"website": ""
+},
+{
+"company": "Pasquale Brothers",
+"country": "CA",
+"city": "Toronto",
+"segment": "food",
+"focus": "Olives, oil, vinegar, tomatoes, pasta, charcuterie (IT, ES, FR)",
+"website": "pasqualebros.com"
+},
+{
+"company": "Pristine Fine Foods (ItalianMart)",
+"country": "CA",
+"city": "Toronto",
+"segment": "food",
+"focus": "1,000+ Italian items, 45 years importing",
+"website": "italianmart.ca"
+},
+{
+"company": "Sabrina Wholesale Foods",
+"country": "CA",
+"city": "Vaughan",
+"segment": "food",
+"focus": "Pecorino Romano DOP, Parmigiano Reggiano, Grana Padano, oil, olives",
+"website": "sabrinafoods.com"
+},
+{
+"company": "Tosi & Company",
+"country": "CA",
+"city": "Vancouver",
+"segment": "food",
+"focus": "Italian food specialist",
+"website": ""
+},
+{
+"company": "Valoroso Foods",
+"country": "CA",
+"city": "Kelowna",
+"segment": "food",
+"focus": "Italian and European foods, also parts of US",
+"website": ""
+},
+{
+"company": "Vero Foods",
+"country": "CA",
+"city": "Calgary",
+"segment": "food",
+"focus": "Italian specialty food",
+"website": ""
+},
+{
+"company": "Le Sommelier Inc.",
+"country": "CA",
+"city": "Toronto",
+"segment": "wine",
+"focus": "150+ wineries, strong Brunello, Barolo, Barbaresco",
+"website": "lesommelier.com"
+},
+{
+"company": "Tavo Wines",
+"country": "CA",
+"city": "",
+"segment": "wine",
+"focus": "Ontario agent incl. Piedmont",
+"website": "tavowines.com"
+},
+{
+"company": "Passione Vino",
+"country": "UK",
+"city": "London EC2A",
+"segment": "wine",
+"focus": "Small-producer Italian wine, also olive oil; 2 shops plus wholesale",
+"website": "passionevino.co.uk"
+},
+{
+"company": "Tutto Wines",
+"country": "UK",
+"city": "London",
+"segment": "wine",
+"focus": "Italian wine",
+"website": ""
+},
+{
+"company": "DiVine Importers",
+"country": "UK",
+"city": "Gravesend, Kent",
+"segment": "wine",
+"focus": "Italian food and wine to London and South East hospitality",
+"website": "divineimporters.co.uk"
+},
+{
+"company": "Dalter UK",
+"country": "UK",
+"city": "Clyst St Mary, Exeter",
+"segment": "food",
+"focus": "Parmigiano Reggiano, Grana Padano, Pecorino Romano; UK arm of DalterFood Group",
+"website": "dalter.co.uk"
+},
+{
+"company": "Vallebona",
+"country": "UK",
+"city": "London SW19",
+"segment": "food",
+"focus": "Italian and Japanese deli, cheese room, wine bar",
+"website": "vallebona.co.uk"
+},
+{
+"company": "Saviano Food Import",
+"country": "UK",
+"city": "Leeds LS12",
+"segment": "food",
+"focus": "Prosciutto di Parma, Campania mozzarella, San Marzano; North England and Scotland",
+"website": "savianofoodimportltd.com"
+},
+{
+"company": "Mercanti Imports",
+"country": "UK",
+"city": "Bristol",
+"segment": "food",
+"focus": "Italian food for South West and Wales",
+"website": ""
+},
+{
+"company": "Fischer+Trezza Import GmbH",
+"country": "DE",
+"city": "",
+"segment": "wine",
+"focus": "Italian wine importer",
+"website": "fischertrezza.de"
+},
+{
+"company": "Difonzo Wine & Food Import",
+"country": "DE",
+"city": "",
+"segment": "both",
+"focus": "Italian wine and food importer",
+"website": "difonzo.de"
+},
+{
+"company": "VINISSIMO Weinhandelsgesellschaft",
+"country": "DE",
+"city": "",
+"segment": "wine",
+"focus": "Wine trade with Italian focus",
+"website": "vinissimo.de"
+},
+{
+"company": "GES Sorrentino GmbH & Co. KG",
+"country": "DE",
+"city": "",
+"segment": "food",
+"focus": "Italian food wholesale for gastronomy",
+"website": "ges-sorrentino.de"
+},
+{
+"company": "MARZIALE COOLINARIA GmbH",
+"country": "DE",
+"city": "",
+"segment": "food",
+"focus": "Italian food supplier to gastronomy",
+"website": "marziale.de"
+},
+{
+"company": "Stuppiello GmbH",
+"country": "DE",
+"city": "",
+"segment": "food",
+"focus": "Italian food wholesale",
+"website": "stuppiello.de"
+},
+{
+"company": "Olio Costa e. K.",
+"country": "DE",
+"city": "",
+"segment": "food",
+"focus": "Olive oil import and sale",
+"website": "olio-costa.de"
+},
+{
+"company": "LaSelva Toskana Feinkost Vertriebs GmbH",
+"country": "DE",
+"city": "",
+"segment": "food",
+"focus": "German distribution arm of an organic Tuscan producer",
+"website": "laselva.bio"
+},
+{
+"company": "Gusto Italy Deutschland GmbH",
+"country": "DE",
+"city": "",
+"segment": "food",
+"focus": "Italian food distribution",
+"website": "gustoitaly.de"
+},
+{
+"company": "Freschi&Bufano Wine Merchants",
+"country": "CH",
+"city": "",
+"segment": "wine",
+"focus": "Italian wine merchants",
+"website": "freschibufano.ch"
+},
+{
+"company": "Vini Sacripanti AG",
+"country": "CH",
+"city": "",
+"segment": "wine",
+"focus": "Italian wine importer",
+"website": "vinisacripanti.ch"
+},
+{
+"company": "Padula SA",
+"country": "CH",
+"city": "",
+"segment": "food",
+"focus": "Italian food importer",
+"website": "padulafood.ch"
+},
+{
+"company": "FoodItalia",
+"country": "CH",
+"city": "",
+"segment": "food",
+"focus": "Italian food import and distribution",
+"website": "fooditalia.ch"
+},
+{
+"company": "Ghioldi SA",
+"country": "CH",
+"city": "",
+"segment": "food",
+"focus": "Food distribution, Ticino",
+"website": "ghioldisa.ch"
+},
+{
+"company": "Buonsapore AG",
+"country": "CH",
+"city": "",
+"segment": "food",
+"focus": "Italian specialities",
+"website": "buonsapore.ch"
+},
+{
+"company": "Borgovecchio SA",
+"country": "CH",
+"city": "",
+"segment": "food",
+"focus": "Italian food",
+"website": "borgovecchio.ch"
+},
+{
+"company": "Atalanta Corporation",
+"country": "US",
+"city": "Elizabeth",
+"segment": "food",
+"focus": "Cheeses, dairy, broad specialty",
+"website": "atalantacorp.com"
+},
+{
+"company": "Colavita USA",
+"country": "US",
+"city": "Edison",
+"segment": "food",
+"focus": "Olive oil, pasta, vinegar, sauces; also imports Mulino Bianco, Sperlari",
+"website": "colavita.com"
+},
+{
+"company": "Accardi Foods",
+"country": "US",
+"city": "Medford",
+"segment": "food",
+"focus": "Oils, pasta, tomatoes, sauces, cheese, meats",
+"website": ""
+},
+{
+"company": "Barilla America",
+"country": "US",
+"city": "Northbrook",
+"segment": "food",
+"focus": "Pasta, sauces (large share US-made)",
+"website": ""
+},
+{
+"company": "BMA USA",
+"country": "US",
+"city": "Los Angeles",
+"segment": "food",
+"focus": "Edible oils incl. Italian olive oil, multi-origin",
+"website": "bmausa.com"
+},
+{
+"company": "Catalan Gourmet / Wholesale Cucina",
+"country": "US",
+"city": "New York",
+"segment": "food",
+"focus": "Spanish and Italian food products",
+"website": "catalangourmet.com"
+},
+{
+"company": "Ciuti International",
+"country": "US",
+"city": "Rancho Cucamonga",
+"segment": "food",
+"focus": "Mediterranean olive oil (incl. Italy)",
+"website": "ciuti.com"
+},
+{
+"company": "Encore Specialty Food Importers",
+"country": "US",
+"city": "Hingham",
+"segment": "food",
+"focus": "Mediterranean specialty foods (FR, IT, ES, GR)",
+"website": "encorefoods.com"
+},
+{
+"company": "Euro-American Brands",
+"country": "US",
+"city": "Paramus",
+"segment": "food",
+"focus": "European confections and specialty foods",
+"website": "euroamericanbrands.com"
+},
+{
+"company": "European Imports Ltd.",
+"country": "US",
+"city": "Chicago",
+"segment": "food",
+"focus": "European specialty foods",
+"website": ""
+},
+{
+"company": "Ferraro Foods",
+"country": "US",
+"city": "Piscataway",
+"segment": "food",
+"focus": "Pasta, cheeses, tomatoes, flour; some direct European imports",
+"website": "ferrarofoods.com"
+},
+{
+"company": "Fratelli Beretta USA",
+"country": "US",
+"city": "Mount Olive",
+"segment": "food",
+"focus": "Italian salumi (import and US production)",
+"website": ""
+},
+{
+"company": "George DeLallo Company",
+"country": "US",
+"city": "Mt. Pleasant",
+"segment": "food",
+"focus": "Italian and Mediterranean specialty foods",
+"website": "delallo.com"
+},
+{
+"company": "Gourmet Foods International",
+"country": "US",
+"city": "Atlanta",
+"segment": "food",
+"focus": "Specialty cheese and foods incl. Italian",
+"website": ""
+},
+{
+"company": "Greco and Sons",
+"country": "US",
+"city": "Oak Creek",
+"segment": "food",
+"focus": "Italian specialties, full foodservice line",
+"website": "grecoandsons.com"
+},
+{
+"company": "Island Olive Oil Company",
+"country": "US",
+"city": "Honolulu",
+"segment": "food",
+"focus": "Olive oils, balsamic vinegars",
+"website": "islandoliveoil.com"
+},
+{
+"company": "M5 Corporation",
+"country": "US",
+"city": "San Marcos",
+"segment": "food",
+"focus": "Rice, oils, pasta, vinegars (multi-origin)",
+"website": "m5corporation.com"
+},
+{
+"company": "Mani Imports",
+"country": "US",
+"city": "West Sacramento",
+"segment": "food",
+"focus": "Mediterranean specialty foods",
+"website": "maniimports.com"
+},
+{
+"company": "Manzo Food Sales",
+"country": "US",
+"city": "Miami",
+"segment": "food",
+"focus": "Pasta, olive oil, flour, cheese, tomatoes",
+"website": "manzofood.com"
+},
+{
+"company": "Murray's Cheese",
+"country": "US",
+"city": "New York",
+"segment": "food",
+"focus": "Cheese incl. Italian imports",
+"website": ""
+},
+{
+"company": "Omnipak Import",
+"country": "US",
+"city": "Flushing",
+"segment": "food",
+"focus": "Waters, soft drinks, coffee, pasta, desserts, oil",
+"website": "omnipakimport.com"
+},
+{
+"company": "Perrone and Sons",
+"country": "US",
+"city": "Metairie",
+"segment": "food",
+"focus": "Italian specialty items for restaurants and grocers",
+"website": "perroneandsons.com"
+},
+{
+"company": "Prime Line Distributors",
+"country": "US",
+"city": "Fort Lauderdale",
+"segment": "food",
+"focus": "Specialty foods",
+"website": "primelinedist.com"
+},
+{
+"company": "Roland Foods",
+"country": "US",
+"city": "New York",
+"segment": "food",
+"focus": "International specialty incl. Italian",
+"website": ""
+},
+{
+"company": "Rosa Food Products",
+"country": "US",
+"city": "Philadelphia",
+"segment": "food",
+"focus": "Italian food to supermarkets, foodservice, club",
+"website": "rosafoods.com"
+},
+{
+"company": "Salmartino",
+"country": "US",
+"city": "Philadelphia",
+"segment": "food",
+"focus": "Italian foods for stores, pizzerias, restaurants",
+"website": "salmartino.com"
+},
+{
+"company": "Tama Trading Company",
+"country": "US",
+"city": "Los Angeles",
+"segment": "food",
+"focus": "European foods",
+"website": "tamatrading.com"
+},
+{
+"company": "The Impex Group",
+"country": "US",
+"city": "Tustin",
+"segment": "food",
+"focus": "Food commodities",
+"website": ""
+},
+{
+"company": "V. Formusa Co. (Marconi Foods)",
+"country": "US",
+"city": "Des Plaines",
+"segment": "food",
+"focus": "Italian food products",
+"website": "marconi-foods.com"
+},
+{
+"company": "Valesco Foods",
+"country": "US",
+"city": "South Hackensack",
+"segment": "food",
+"focus": "Mediterranean olives and antipasti (multi-origin)",
+"website": "valescofoods.com"
+},
+{
+"company": "World Import Distributors",
+"country": "US",
+"city": "Mahwah",
+"segment": "food",
+"focus": "Specialty cheeses (FR, ES, IT, NL)",
+"website": "widcheese.com"
+},
+{
+"company": "World's Best Cheeses",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "Imported cheeses incl. Italian",
+"website": ""
+},
+{
+"company": "Corti Brothers",
+"country": "US",
+"city": "Sacramento",
+"segment": "both",
+"focus": "Italian specialties, wine, charcuterie, cheese",
+"website": ""
+},
+{
+"company": "Eataly USA",
+"country": "US",
+"city": "New York",
+"segment": "both",
+"focus": "Full Italian range, own imports",
+"website": ""
+},
+{
+"company": "illy caffe North America",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "Coffee",
+"website": ""
+},
+{
+"company": "Lavazza Premium Coffees Corp.",
+"country": "US",
+"city": "New York",
+"segment": "food",
+"focus": "Coffee roasted in Italy",
+"website": ""
+},
+{
+"company": "Segafredo Zanetti USA",
+"country": "US",
+"city": "",
+"segment": "food",
+"focus": "Coffee",
+"website": ""
+},
+{
+"company": "Banfi Vintners",
+"country": "US",
+"city": "Old Brookville",
+"segment": "wine",
+"focus": "Italian wine import and production (Castello Banfi)",
+"website": ""
+},
+{
+"company": "Kysela Pere et Fils",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Broad European incl. Italian",
+"website": ""
+},
+{
+"company": "M. S. Walker",
+"country": "US",
+"city": "Norwood",
+"segment": "wine",
+"focus": "Wine, sparkling, spirits; import + distribution",
+"website": ""
+},
+{
+"company": "Maze Row Wine Merchant (E. & J. Gallo)",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Argiano, Brancaia, Pieropan, Renato Ratti and others",
+"website": ""
+},
+{
+"company": "Mionetto USA",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Prosecco",
+"website": ""
+},
+{
+"company": "Opici Wines & Spirits",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Italian heritage portfolio",
+"website": ""
+},
+{
+"company": "Palm Bay International",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "50+ producers incl. Italy",
+"website": ""
+},
+{
+"company": "Santa Margherita USA",
+"country": "US",
+"city": "Miami",
+"segment": "wine",
+"focus": "Santa Margherita group wines",
+"website": ""
+},
+{
+"company": "Skurnik Wines",
+"country": "US",
+"city": "New York",
+"segment": "wine",
+"focus": "Broad portfolio incl. Italian",
+"website": ""
+},
+{
+"company": "T. Edward Wines",
+"country": "US",
+"city": "New York",
+"segment": "wine",
+"focus": "Broad portfolio incl. Italian",
+"website": ""
+},
+{
+"company": "Terlato Wine Group",
+"country": "US",
+"city": "Lake Bluff",
+"segment": "wine",
+"focus": "Import and distribution, wine and spirits",
+"website": ""
+},
+{
+"company": "Winebow",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "National importer and regional distributor, strong Italian roots",
+"website": ""
+},
+{
+"company": "Zonin1821 (US arm)",
+"country": "US",
+"city": "",
+"segment": "wine",
+"focus": "Zonin estates",
+"website": ""
+},
+{
+"company": "Aldo Foods",
+"country": "CA",
+"city": "Montreal",
+"segment": "food",
+"focus": "European specialties incl. Italian",
+"website": ""
+},
+{
+"company": "Borrelli Gourmet Foods",
+"country": "CA",
+"city": "Windsor",
+"segment": "food",
+"focus": "Italian food to grocers in six provinces",
+"website": ""
+},
+{
+"company": "Continental Importers",
+"country": "CA",
+"city": "Vancouver",
+"segment": "food",
+"focus": "Mediterranean, Italian, Portuguese",
+"website": ""
+},
+{
+"company": "Italfoods Inc. (Ottawa)",
+"country": "CA",
+"city": "Carp",
+"segment": "food",
+"focus": "Imported and domestic fine foods",
+"website": ""
+},
+{
+"company": "Italian Centre Shop",
+"country": "CA",
+"city": "Edmonton",
+"segment": "food",
+"focus": "Italian groceries",
+"website": ""
+},
+{
+"company": "Legacy Distributors",
+"country": "CA",
+"city": "Woodbridge",
+"segment": "food",
+"focus": "Italian specialties, retail and industrial",
+"website": ""
+},
+{
+"company": "Sardo Foods",
+"country": "CA",
+"city": "Bolton",
+"segment": "food",
+"focus": "Mediterranean and Italian foods",
+"website": ""
+},
+{
+"company": "Scarpone Foods",
+"country": "CA",
+"city": "Calgary",
+"segment": "food",
+"focus": "Italian and Mediterranean, packer",
+"website": ""
+},
+{
+"company": "Italian Chamber of Commerce in Canada (Quebec)",
+"country": "CA",
+"city": "Montreal",
+"segment": "wine",
+"focus": "Acts as wine agent for small Italian producers and matches them with Quebec agents",
+"website": "italchamber.qc.ca"
+},
+{
+"company": "Lifford Wine & Spirits",
+"country": "CA",
+"city": "Toronto",
+"segment": "wine",
+"focus": "Multi-origin incl. Italian",
+"website": ""
+},
+{
+"company": "Michael Andrew Brands",
+"country": "CA",
+"city": "",
+"segment": "wine",
+"focus": "Mixed wine, beer, spirits incl. Italian",
+"website": "michaelandrewbrands.com"
+},
+{
+"company": "Liberty Wines",
+"country": "UK",
+"city": "London SW4",
+"segment": "wine",
+"focus": "2,000+ wines, Italian roots; also EVOO. Owned by Sogrape since 2019",
+"website": "libertywines.co.uk"
+},
+{
+"company": "Carnevale",
+"country": "UK",
+"city": "London N7",
+"segment": "food",
+"focus": "Italian cheeses, cured meats, fresh pasta; also makes cheese in UK; 3,000 imported lines",
+"website": "carnevale.co.uk"
+},
+{
+"company": "Futura Foods UK",
+"country": "UK",
+"city": "Dursley, Gloucestershire",
+"segment": "food",
+"focus": "Mediterranean cheeses incl. Parmigiano Reggiano; PDO feta, halloumi",
+"website": "futura-foods.com"
+},
+{
+"company": "Valvona & Crolla",
+"country": "UK",
+"city": "Edinburgh",
+"segment": "wine",
+"focus": "Italian deli and wine merchant since 1934",
+"website": "valvonacrolla.com"
+},
+{
+"company": "Delicatezza",
+"country": "UK",
+"city": "London N7",
+"segment": "food",
+"focus": "Online Italian grocer, mostly branded goods",
+"website": "delicatezza.co.uk"
+},
+{
+"company": "Natoora",
+"country": "UK",
+"city": "London SE16",
+"segment": "food",
+"focus": "Seasonal produce incl. Italian; UK, US, France, Denmark",
+"website": "natoora.com"
+},
+{
+"company": "Continental Quattro Stagioni",
+"country": "UK",
+"city": "Huddersfield (per directory)",
+"segment": "food",
+"focus": "Italian catering supplies",
+"website": "continental-food.co.uk"
+},
+{
+"company": "Vincenzo Andronaco",
+"country": "DE",
+"city": "",
+"segment": "both",
+"focus": "Italian wholesale and cash-and-carry markets",
+"website": "andronaco.de"
+},
+{
+"company": "Tuscolo",
+"country": "DE",
+"city": "",
+"segment": "food",
+"focus": "Italian food trade",
+"website": "tuscolo.de"
+},
+{
+"company": "Gustini GmbH",
+"country": "DE",
+"city": "",
+"segment": "food",
+"focus": "Online Italian gourmet retailer, own imports",
+"website": "gustini.de"
+},
+{
+"company": "Vinum SA",
+"country": "CH",
+"city": "",
+"segment": "wine",
+"focus": "Wine importer",
+"website": "vinum.swiss"
+},
+{
+"company": "Peperoncini AG",
+"country": "CH",
+"city": "",
+"segment": "food",
+"focus": "Italian food supplier to gastronomy",
+"website": "peperoncini.ch"
+},
+{
+"company": "Comab SA",
+"country": "CH",
+"city": "",
+"segment": "food",
+"focus": "Food import",
+"website": "comab.ch"
+},
+{
+"company": "Maistà Food",
+"country": "CH",
+"city": "",
+"segment": "food",
+"focus": "Italian food",
+"website": "maistafood.ch"
+}
+]
+}

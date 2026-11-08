@@ -134,13 +134,14 @@ CARDS = [
                 "text": L("Once your documents are validated, share a page and QR code that lets your buyer see the shipment has been checked.",
                           "Una volta validati i documenti, condividi una pagina e un codice QR con cui l'acquirente vede che la spedizione è stata verificata."),
                 "example": [L("Pasta, Italy to United Kingdom: documents validated", "Pasta, Italia verso Regno Unito: documenti validati")]}},
-    {"id": "importers", "by": {"kind": "partner", "name": "VeriPura OUTREACH"},
-     "name": L("Find importers and reach them", "Trova importatori e contattali"),
+    {"id": "importers", "by": {"kind": "partner", "name": "VeriPura Connect"},
+     "name": L("Researched importers", "Importatori ricercati"),
+     "today": {"text": L("Browse researched importers of Italian food and wine for your destination. This list is updated regularly.",
+                         "Consulta gli importatori ricercati di prodotti alimentari e vino italiani per la tua destinazione. L'elenco è aggiornato regolarmente.")},
+     "no_tell": True,
      "coming": {"status": "soon",
-                "text": L("A growing list of verified foreign buyers and importers of Italian products, with outreach emails sent from your own address. "
-                          "A proprietary, tested approach, powered by orchestrated AI-Agents, prepares your sending address and paces your emails so they reach the inbox. With VeriPura OUTREACH.",
-                          "Un elenco crescente di acquirenti e importatori esteri verificati di prodotti italiani, con email inviate dal tuo indirizzo. "
-                          "Un metodo proprietario e collaudato, basato su AI-Agents orchestrati, prepara il tuo indirizzo di invio e distribuisce le email perché arrivino in posta in arrivo. Con VeriPura OUTREACH.")}},
+                "text": L("Contact importers through VeriPura Connect.",
+                          "Contatta gli importatori tramite VeriPura Connect.")}},
     {"id": "alerts", "by": {"kind": "miotem"},
      "name": L("Rule changes ahead", "Novità normative in arrivo"),
      "coming": {"status": "soon",
@@ -192,8 +193,8 @@ PUBLIC_TEXT = {  # shorter wording for the public page (no link details, no part
                   "Pacchi per campioni e piccoli ordini, prenotabili con servizi partner. Poi: pallet e container."),
     "label_check": L("Check your label artwork in the VeriPura label validator. Next: the result inside your project, in Italian.",
                      "Verifica la grafica dell'etichetta nel validatore etichette VeriPura. Poi: il risultato dentro il progetto, in italiano."),
-    "importers": L("A growing list of verified foreign buyers and importers of Italian products, with outreach emails sent from your own address.",
-                   "Un elenco crescente di acquirenti e importatori esteri verificati di prodotti italiani, con email inviate dal tuo indirizzo."),
+    "importers": L("Researched importers of Italian food and wine, by destination. The list is updated regularly.",
+                   "Importatori ricercati di prodotti alimentari e vino italiani, per destinazione. L'elenco è aggiornato regolarmente."),
 }
 
 
