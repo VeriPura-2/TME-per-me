@@ -235,3 +235,15 @@ class StepTags(unittest.TestCase):
     def test_ttb_agent_only_for_wine_usa(self):
         from vialibera import tools
         self.assertNotIn("ttb_agent", {c["id"] for c in tools.for_case("pasta", "UK")})
+
+
+class Mode2Card(unittest.TestCase):
+    def test_mode2_is_coming_soon_and_recordable(self):
+        cards = {c["id"]: c for c in tools.for_case("wine", "USA")}
+        self.assertEqual(cards["mode2"]["coming"]["status"], "soon")
+        self.assertNotIn("today", cards["mode2"])
+        self.assertIn("mode2", tools.TOOL_IDS)
+
+    def test_duties_text_says_updated_weekly(self):
+        cards = {c["id"]: c for c in tools.for_case("wine", "USA")}
+        self.assertIn("updated weekly", cards["duties"]["today"]["text"]["en"])

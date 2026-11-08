@@ -42,8 +42,8 @@ CORE = [  # MioTEM's own tools: always shown (no switch for the TEM); "go" is wh
      "today": {"text": L("For your product and market, the documents you need, who prepares each one, and the official source.",
                          "Per il tuo prodotto e mercato, i documenti necessari, chi prepara ciascuno e la fonte ufficiale.")}},
     {"id": "duties", "go": "duties", "name": L("Duties and taxes", "Dazi e imposte"),
-     "today": {"text": L("Customs duties for your product in your destination, from the official tariffs, checked every week.",
-                         "I dazi doganali per il tuo prodotto nel paese di destinazione, dalle tariffe ufficiali, controllati ogni settimana.")}},
+     "today": {"text": L("Customs duties for your product in your destination, from the official tariffs, updated weekly.",
+                         "I dazi doganali per il tuo prodotto nel paese di destinazione, dalle tariffe ufficiali, aggiornati ogni settimana.")}},
     {"id": "library", "go": "docs", "name": L("Document library", "Archivio documenti"),
      "today": {"text": L("All your company documents in one place, filed by project, private to your company.",
                          "Tutti i documenti dell'azienda in un unico posto, archiviati per progetto, riservati alla tua azienda.")}},
@@ -151,6 +151,11 @@ CARDS = [
      "coming": {"status": "soon",
                 "text": L("The status of each shipment in one view, from departure to delivery.",
                           "Lo stato di ogni spedizione in un'unica vista, dalla partenza alla consegna.")}},
+    {"id": "mode2", "by": {"kind": "miotem"},
+     "name": L("Help with a project", "Aiuto per un progetto"),
+     "coming": {"status": "soon",
+                "text": L("Need help with one project, not a long-term arrangement? Soon you will be able to find temporary export managers who offer their services on MioTEM, hire one for a defined project, and pay through MioTEM. Prices and payment: to be decided.",
+                          "Hai bisogno di aiuto per un solo progetto, non per un rapporto continuativo? Presto potrai trovare temporary export manager che offrono i loro servizi su MioTEM, incaricarne uno per un progetto definito e pagare tramite MioTEM. Prezzi e pagamento: da definire.")}},
 ]
 TOOL_IDS = {c["id"] for c in CORE + CARDS} | {"refcheck"}
 STEP = {"label_check": 2, "label_design": 2, "ttb_agent": 3, "shipping": 4}  # the checklist step where the tool helps (1 Company, 2 Product, 3 Destination, 4 Shipment)
