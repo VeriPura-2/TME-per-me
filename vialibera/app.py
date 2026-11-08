@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
+from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
 from .menu import MENU
 from . import plan_prices
 from .secrets import get_secret
@@ -720,6 +720,15 @@ def handle_tools(path, body, who):
         if viewer == "client":
             cards = [x for x in cards if x.get("always") or x["id"] not in tools.CLIENT_OFF]
         return 200, {"cards": cards, "refcheck": True, "viewer": viewer}
+    if path == "/tools/importers":  # researched importers for this project's destination; websites for paid plans only
+        row, err = _case_for(body, who)
+        if err:
+            return err
+        case = db.case_read(c, row["id"])
+        plan = accounts.get_plan(c, who["user"]) or plans.DEFAULT
+        via_tem = bool(tems.firm_of(c, who["user"])) or tools.has_tem(c, row["company_id"])
+        return 200, importers.for_project(case["product"].get("category"), case["market"].get("country"), plan,
+                                          permissions.is_superadmin(who), via_tem)
     if path == "/tools/refcheck":
         out = tools.check_reference(str(body.get("kind") or ""), body.get("value"))
         return (400 if out.get("error") else 200), out

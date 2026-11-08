@@ -201,11 +201,11 @@ const TT = {
        tc_log: "Consultant access log", tem_joined: "You have joined the consultant firm.", c_notes: "Messages from your export consultant", du_t: "Duties and VAT (official source)", du_src: "source", du_read: "read on", du_na: "Duty service unavailable right now. Staff will check.", du_none: "n/a", vs_check: "Check", vs_valid: "VAT number confirmed in VIES (EU). Details filled in.", vs_not: "VAT number not in VIES: fine to continue. Staff will check it.", vs_na: "VIES service unavailable right now: carry on, we will check again.", vs_ok: "VAT confirmed in VIES", vs_no: "VAT not in VIES", vs_pend: "VIES check pending", src_changed: "source changed, to re-verify"},
 };
 const TL = {  // tool cards on the project (tools.py)
-  it: {title: "Strumenti per questo progetto", ask: "Chiedi al mio TEM", ask_other: "Chiedi al mio TEM altri strumenti", ask_other_n: "Per tutto ciò che qui non vedi, senza dover conoscere lo strumento.", ask_note: "Una nota per il TEM (facoltativa)", ask_send: "Invia richiesta", ask_sent: "Richiesta inviata.", ask_seen: "Il TEM la vede nel suo studio. Nessun costo.", link: "Si apre in una nuova scheda", preview: "In sviluppo", soon: "In arrivo", ex: "Esempio", tell: "Avvisami quando è pronto",
+  it: {imp_show: "Mostra gli importatori", imp_hide: "Nascondi", imp_none: "Nessun importatore in elenco per questa destinazione.", imp_nonef: "Nessun importatore in elenco per questa destinazione e questo prodotto.", imp_upd: "Elenco aggiornato regolarmente. Ultimo aggiornamento: {d}", imp_paid: "Il sito web di ogni importatore è disponibile con un piano a pagamento.", imp_n: "{n} importatori", title: "Strumenti per questo progetto", ask: "Chiedi al mio TEM", ask_other: "Chiedi al mio TEM altri strumenti", ask_other_n: "Per tutto ciò che qui non vedi, senza dover conoscere lo strumento.", ask_note: "Una nota per il TEM (facoltativa)", ask_send: "Invia richiesta", ask_sent: "Richiesta inviata.", ask_seen: "Il TEM la vede nel suo studio. Nessun costo.", link: "Si apre in una nuova scheda", preview: "In sviluppo", soon: "In arrivo", ex: "Esempio", tell: "Avvisami quando è pronto",
        told: "Grazie: ti avviseremo quando sarà pronto.", ref_t: "Verifica un riferimento di esportazione", ref_help: "Controlla il formato di un MRN (dichiarazione di esportazione) o di un ARC (e-AD per il vino) prima di usarlo nei documenti.",
        mrn: "MRN", arc: "ARC (e-AD)", check: "Controlla il formato", lookup: "Servizio UE di verifica MRN", steps: "Come funzionerà",
        vis: "Visibile al cliente", today: "Oggi", next: "Poi", miotem: "MioTEM", partner: "Partner", go: "Portami lì", tour: "I tuoi strumenti: cosa fa MioTEM per te", tour_t: "Strumenti di MioTEM e dei partner", count: "Il tuo cliente vede {n} strumenti su {m}. Attiva o disattiva ciascuno qui sotto."},
-  en: {title: "Tools for this project", ask: "Ask my TEM", ask_other: "Ask my TEM about other tools", ask_other_n: "For anything you do not see here, without needing to know the tool.", ask_note: "A note for your TEM (optional)", ask_send: "Send request", ask_sent: "Request sent.", ask_seen: "Your TEM sees it in their workspace. No cost.", link: "Opens in a new tab", preview: "In development", soon: "Coming soon", ex: "Example", tell: "Tell me when it's ready",
+  en: {imp_show: "Show importers", imp_hide: "Hide", imp_none: "No importers listed yet for this destination.", imp_nonef: "No importers listed yet for this destination and product.", imp_upd: "List updated regularly. Last updated: {d}", imp_paid: "Each importer's website is available on a paid plan.", imp_n: "{n} importers", title: "Tools for this project", ask: "Ask my TEM", ask_other: "Ask my TEM about other tools", ask_other_n: "For anything you do not see here, without needing to know the tool.", ask_note: "A note for your TEM (optional)", ask_send: "Send request", ask_sent: "Request sent.", ask_seen: "Your TEM sees it in their workspace. No cost.", link: "Opens in a new tab", preview: "In development", soon: "Coming soon", ex: "Example", tell: "Tell me when it's ready",
        told: "Thank you: we will let you know when it is ready.", ref_t: "Check an export reference", ref_help: "Check the format of an MRN (export declaration) or an ARC (e-AD for wine) before you use it in your documents.",
        mrn: "MRN", arc: "ARC (e-AD)", check: "Check format", lookup: "EU MRN follow-up service", steps: "How it will work",
        vis: "Visible to client", today: "Today", next: "Next", miotem: "MioTEM", partner: "Partner", go: "Take me there", tour: "Your tools: what MioTEM does for you", tour_t: "MioTEM and partner tools", count: "Your client sees {n} of {m} tools. Switch each one on or off below."},
@@ -592,6 +592,24 @@ applyLang();
       f.append(n, " ", send, " ", msg); parent.appendChild(f); n.focus();
     };
   }
+  function importersList(card, cid) {  // researched importers for this project's destination (company level; website for paid plans)
+    const t = TL[lang], b = mk("button", t.imp_show), out = mk("div"); card.appendChild(b); card.appendChild(out);
+    let open = false;
+    b.onclick = async () => {
+      if (open) { out.innerHTML = ""; b.textContent = t.imp_show; open = false; return; }
+      b.disabled = true; const [r, j] = await call("/tools/importers", {case_id: cid}); b.disabled = false; if (!r.ok) return;
+      open = true; b.textContent = t.imp_hide; out.innerHTML = "";
+      if (!j.count) { out.appendChild(mk("div", j.listed ? t.imp_nonef : t.imp_none, "muted")); return; }
+      out.appendChild(mk("div", t.imp_n.replace("{n}", j.count) + " · " + t.imp_upd.replace("{d}", j.updated), "muted"));
+      if (!j.websites) out.appendChild(mk("div", t.imp_paid, "muted"));
+      const box = mk("div"); box.style.cssText = "max-height:320px;overflow:auto;margin-top:6px";
+      j.importers.forEach(i => { const row = mk("div"); row.style.cssText = "padding:4px 0;border-top:1px solid #8883";
+        row.appendChild(mk("strong", i.company)); row.appendChild(document.createTextNode(" " + (i.city ? "(" + i.city + ") " : "")));
+        if (i.website) { const a = mk("a", i.website + " ↗"); a.href = "https://" + i.website; a.target = "_blank"; a.rel = "noopener noreferrer"; row.appendChild(a); }
+        row.appendChild(mk("div", i.focus, "muted")); box.appendChild(row); });
+      out.appendChild(box);
+    };
+  }
   function toolsBox(box, data, cid, tem, title) {  // tem: the TEM's view, with a "Visible to client" switch per card
     const t = TL[lang]; box.innerHTML = ""; const list = data && data.cards; if (!list || (!list.length && !data.refcheck)) return;
     if (title !== "") box.appendChild(mk("h3", title || t.title));
@@ -608,6 +626,7 @@ applyLang();
       card.appendChild(mk("strong", c.name[lang]));
       if (c.today) { const d = mk("div"); d.appendChild(mk("strong", t.today + ": ")); d.appendChild(document.createTextNode(c.today.text[lang])); card.appendChild(d);
         (c.today.links || []).forEach(l => linkTo(card, l)); if (c.today.note) card.appendChild(mk("div", c.today.note[lang], "muted")); }
+      if (c.id === "importers" && cid) importersList(card, cid);
       if (c.go && !tem) { const g = mk("button", t.go); g.onclick = () => goTo(c.go); card.appendChild(g); }
       if (data.tem && !tem) askTem(card, cid, c.id, data.open_requests);
       const n = c.coming;
@@ -615,10 +634,11 @@ applyLang();
         d.appendChild(document.createTextNode(" " + n.text[lang])); card.appendChild(d);
         if (n.example) { card.appendChild(mk("div", t.ex + ":", "muted")); n.example.forEach(x => card.appendChild(mk("div", "· " + x[lang], "muted"))); }
         if (n.steps) { card.appendChild(mk("div", t.steps + ":", "muted")); n.steps.forEach((st, i) => { const r = mk("div"); r.appendChild(mk("strong", (i + 1) + ". " + st.t[lang] + " ")); r.appendChild(mk("span", st.ex[lang], "muted")); card.appendChild(r); }); }
+        if (!c.no_tell) {
         const b = mk("button", t.tell);
         b.onclick = async () => { if (b.disabled) return; b.disabled = true; const [r] = await call("/tools/interest", {case_id: cid, tool: c.id});
           if (r.ok) b.replaceWith(mk("div", t.told, "tick")); else b.disabled = false; };
-        card.appendChild(b);
+        card.appendChild(b); }
       }
       grid.appendChild(card);
     });
