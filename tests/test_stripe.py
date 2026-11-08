@@ -6,7 +6,7 @@ import time
 import unittest
 
 os.environ["DB_PATH"] = ":memory:"
-from vialibera import app, db, invites, stripe_pay
+from vialibera import accounts, app, db, invites, stripe_pay
 from test_journey import make_case, who
 
 
@@ -68,6 +68,8 @@ class ModeTest(unittest.TestCase):
         self.assertFalse(stripe_pay.enabled())
         cid = make_case("s0")
         self.assertEqual(app.handle_pay({"case_id": cid, "selected": ["label_check"]}, who("s0"))[0], 501)
+        self.assertEqual(app.handle_simpay({"case_id": cid, "selected": ["label_check"]}, who("s0"))[0], 402)  # Explore cannot buy checks
+        app.handle_plan({"plan": "parti"}, who("s0"))
         self.assertEqual(app.handle_simpay({"case_id": cid, "selected": ["label_check"]}, who("s0"))[0], 200)
 
 
@@ -102,6 +104,7 @@ class WebhookSignatureTest(unittest.TestCase):
 class ItemPaymentTest(StripeTestBase):
     def test_pay_builds_checkout_with_metadata_and_idempotency(self):
         cid = make_case("p1")
+        accounts.set_plan(app.con(), "p1", "parti")  # paid plans change through Stripe only
         code, out = app.handle_pay({"case_id": cid, "selected": ["label_check"], "lang": "en"}, who("p1"), "example.test")
         self.assertEqual(code, 200)
         self.assertTrue(out["url"].startswith("https://checkout.stripe.com"))
@@ -115,6 +118,7 @@ class ItemPaymentTest(StripeTestBase):
 
     def test_double_click_sends_the_same_idempotency_key(self):
         cid = make_case("p2")
+        accounts.set_plan(app.con(), "p2", "parti")  # paid plans change through Stripe only
         for _ in range(2):
             app.handle_pay({"case_id": cid, "selected": ["label_check"]}, who("p2"), "example.test")
         keys = [c[3] for c in self.fake.calls if c[1] == "/checkout/sessions"]
@@ -170,7 +174,7 @@ class PlanTest(StripeTestBase):
         data = [c for c in self.fake.calls if c[1] == "/checkout/sessions"][0][2]
         self.assertEqual(data["mode"], "subscription")
         self.assertEqual(data["line_items"][0]["price_data"]["recurring"], {"interval": "month"})
-        self.assertEqual(data["line_items"][0]["price_data"]["unit_amount"], 2900)
+        self.assertEqual(data["line_items"][0]["price_data"]["unit_amount"], 25000)
 
     def test_free_plan_is_not_a_checkout(self):
         self.assertEqual(app.handle_plan_checkout({"plan": "esplora"}, who("q2"), "h")[0], 400)

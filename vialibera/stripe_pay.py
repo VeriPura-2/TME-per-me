@@ -9,7 +9,7 @@ What it does:
   - plans: Checkout Session (mode subscription) for monthly plans, prices from the price menu
   - portal: Stripe Customer Portal so the company changes plan, card or cancels itself
   - webhook: signed events confirm payments and keep the company's plan in step with Stripe
-Prices come from sim/prices.py until VeriPura sets the real menu, and are still marked as simulated.
+Plan prices come from plan_prices.py.
 No card data ever touches our server: Stripe hosts the payment page.
 """
 import hashlib
@@ -181,8 +181,8 @@ def checkout_items(con, who, case_id, items, total_cents, credit_cents, base_url
 # ---- checkout for a monthly plan
 
 def plan_price_cents(plan_id):
-    from .sim import prices  # example prices until VeriPura sets the menu
-    return prices.EXAMPLE[plan_id]["monthly"]
+    from . import plan_prices
+    return plan_prices.MENU[plan_id]["monthly"]
 
 
 def checkout_plan(con, who, plan_id, base_url, lang="it", email=None):

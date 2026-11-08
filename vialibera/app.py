@@ -22,6 +22,7 @@ from urllib.parse import parse_qs, urlparse
 
 from . import marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
 from .menu import MENU
+from . import plan_prices
 from .secrets import get_secret
 
 from .terms import TERMS_VERSION  # noqa: E402 (kept here: app.TERMS_VERSION is used across the code and tests)
@@ -591,6 +592,8 @@ def handle_plan(body, who):
         return 400, {"error": "sign-in required"}
     out = {}
     if body.get("plan") in plans.PLANS:
+        if plans.get(body["plan"]).get("audience") == "tem":  # set by staff only
+            return 403, {"error": "forbidden"}
         if not permissions.can(con(), who, "plan"):
             return 403, {"error": "forbidden"}
         if stripe_pay.enabled():  # with payments on, paid plans change only through Stripe
@@ -855,6 +858,8 @@ def handle_simpay(body, who):
     if not sel:
         return 400, {"error": "no items selected"}
     pk = packet.build(sel, plan)["data"]
+    if not pk["items"]:
+        return 402, {"error": "plan_required"}  # the plan cannot buy these items
     ids = sorted(i["id"] for i in pk["items"])
     from datetime import datetime, timezone, timedelta
     since = (datetime.now(timezone.utc) - timedelta(seconds=30)).isoformat(timespec="seconds")
@@ -889,7 +894,8 @@ def _packet(body, row, who):
     sel = [i for i in (body.get("selected") or []) if i in packet.NAMES]
     if not sel:
         return None
-    return packet.build(sel, plan)["data"]
+    pk = packet.build(sel, plan)["data"]
+    return pk if pk["items"] else None
 
 
 def handle_pay(body, who, host=None):
@@ -924,7 +930,7 @@ def handle_plan_checkout(body, who, host=None):
         return 501, {"error": "payments_not_configured"}
     if not permissions.can(con(), who, "plan"):
         return 403, {"error": "forbidden"}
-    if body.get("plan") not in plans.PLANS or not plans.get(body["plan"])["monthly"]:
+    if body.get("plan") not in plans.PLANS or not plans.get(body["plan"])["monthly"] or plans.get(body["plan"]).get("audience") == "tem":
         return 400, {"error": "not a paid plan"}
     try:
         if stripe_pay.has_active_subscription(con(), who["user"]):
@@ -1043,9 +1049,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/plans.json":
             body = plans.public()
             body["stripe"] = stripe_pay.status()
-            if features.is_sim("price_menu"):
-                from .sim import prices
-                body["prices"] = prices.prices()
+            body["prices"] = {"simulated": False, "data": {k: v for k, v in plan_prices.MENU.items() if k in body["plans"]}}
             return self._send(200, body)
         if path == "/features.json":
             return self._send(200, features.public())

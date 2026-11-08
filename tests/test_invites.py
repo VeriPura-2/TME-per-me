@@ -88,7 +88,7 @@ class InviteTest(unittest.TestCase):
         cid = db.create_case(c, 1, owner_sub="b10")
         db.case_write(c, cid, "product", {"category": "wine"}); db.case_write(c, cid, "market", {"needs": "label"}); c.commit()
         out = app.handle_simpay({"case_id": cid, "selected": ["label_check"]}, who("b10"))[1]["payment"]["data"]
-        self.assertEqual((out["total_cents"], out["credit_used_cents"], out["payable_cents"]), (3900, 2000, 1900))
+        self.assertEqual((out["total_cents"], out["credit_used_cents"], out["payable_cents"]), (2900, 2000, 900))
         self.assertEqual(invites.balance(c, "b10"), 0)
 
     def test_accept_endpoint(self):
