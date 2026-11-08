@@ -55,6 +55,11 @@ class StartForm(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertTrue(out["covered"])
 
+    def test_switzerland_is_covered(self):
+        code, out = app.handle_start({"category": "wine", "country": "Switzerland"}, user("start-ch"))
+        self.assertEqual(code, 200)
+        self.assertTrue(out["covered"])
+
     def test_unknown_values_are_ignored_and_empty_form_refused(self):
         who = user("start-c")
         self.assertEqual(app.handle_start({"category": "caviar", "country": "Japan"}, who)[0], 400)
