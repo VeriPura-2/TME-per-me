@@ -343,6 +343,7 @@ applyLang();
   const mk0 = (tag, text, cls) => { const e = document.createElement(tag); if (text) e.textContent = text; if (cls) e.className = cls; return e; };
   function dutiesBox(parent, du) {
     if (!du) return; const tt = TT[lang]; parent.appendChild(mk0("h3", tt.du_t));
+    if (!du.eu) parent.appendChild(mk0("div", lang === "it" ? "I dazi doganali per il tuo prodotto nel paese di destinazione, dalle tariffe ufficiali, aggiornati ogni settimana. Nessun dazio doganale per le destinazioni UE." : "Customs duties for your product in your destination, from the official tariffs, updated weekly. No customs duty for EU destinations.", "muted"));
     if (du.eu) { parent.appendChild(mk0("div", du.note[lang], "muted")); return; }
     if (du.pending || du.unavailable) { parent.appendChild(mk0("div", tt.du_na, "muted")); return; }
     du.groups.forEach(g => { parent.appendChild(mk0("strong", g.description[lang] + " · " + g.code));
