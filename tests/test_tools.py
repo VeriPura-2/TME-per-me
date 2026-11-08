@@ -53,7 +53,8 @@ class ToolCards(unittest.TestCase):
         cards = {x["id"]: x for x in tools.for_case("cheese", "France")}
         self.assertEqual(cards["label_check"]["today"]["links"][0]["url"], "https://label.veripura.com/")
         self.assertEqual(cards["label_check"]["coming"]["status"], "preview")
-        self.assertIn("specification sheet", cards["doc_checks"]["today"]["text"]["en"])
+        self.assertIn("additives banned in the European Union", cards["doc_checks"]["today"]["text"]["en"])
+        self.assertNotIn("VeriPura", cards["doc_checks"]["name"]["en"] + cards["doc_checks"]["today"]["text"]["en"])  # no VeriPura or Core name on the site (8 Nov)
         self.assertEqual(cards["shipping"]["coming"]["status"], "soon")
         self.assertFalse({"pallets", "containers", "label_check_inside", "doc_checks_more"} & set(cards))
 
@@ -177,7 +178,7 @@ class CoreAndGuide(unittest.TestCase):
         self.assertEqual(kinds, sorted(kinds, key=lambda k: k != "miotem"))
         by = {c["id"]: c["by"] for c in cards}
         self.assertEqual(by["checklist"]["kind"], "miotem")
-        self.assertEqual(by["doc_checks"], {"kind": "partner", "name": "VeriPura"})
+        self.assertEqual(by["doc_checks"], {"kind": "partner", "name": ""})
         self.assertEqual(by["label_check"]["name"], "VeriPura")
         self.assertIn("Sendcloud", by["shipping"]["name"])
 
