@@ -92,3 +92,17 @@ class Limits(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UsageTest(unittest.TestCase):
+    def test_usage_for_a_new_account(self):
+        u = limits.usage(app.con(), "usage-new")
+        self.assertEqual(u["plan"], "esplora")
+        self.assertEqual(u["covered"], {"used": 0, "cap": 1})
+        self.assertEqual(u["uncovered"], {"used": 0, "cap": 2})
+        self.assertEqual(u["free_check"], {"allowed": 1, "used": 0})
+
+    def test_handle_account_needs_sign_in(self):
+        self.assertEqual(app.handle_account({}, None)[0], 400)
+        code, out = app.handle_account({}, {"user": "usage-b", "roles": []})
+        self.assertEqual((code, out["plan"]), (200, "esplora"))
