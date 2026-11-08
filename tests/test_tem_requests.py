@@ -101,6 +101,11 @@ class AskMyTemTest(unittest.TestCase):
         self.assertEqual(app.handle_tem("/tem/request_done", {"id": rid}, OUTSIDER)[0], 404)
         self.assertEqual(app.handle_tem("/tem/request_done", {"id": rid}, CLIENT_A)[0], 404)
 
+    def test_overview_gives_documents_progress(self):
+        p = tems.overview(self.c, LEAD)[1]["clients"][0]["projects"][0]
+        self.assertEqual(p["docs"]["total"], p["docs"]["have"] + p["missing"])
+        self.assertGreater(p["docs"]["total"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
