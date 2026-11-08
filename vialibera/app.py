@@ -311,6 +311,7 @@ def handle_start(body, who):
     country = body.get("country") if body.get("country") in START_COUNTRIES else None
     other_product = str(body.get("other_product") or "").strip()[:120] if cat == "other" else ""
     other_country = str(body.get("other_country") or "").strip()[:120] if country == "other" else ""
+    desc = str(body.get("description") or "").strip()[:200]
     raw_vat = str(body.get("vat") or "").strip()[:20]
     if not (cat or country or raw_vat):
         return 400, {"error": "nothing to start with"}
@@ -323,7 +324,7 @@ def handle_start(body, who):
         return refused
     cid = db.create_case(c, path, actor="client", org_id=who.get("org"), owner_sub=who["user"])
     if cat:
-        db.case_write(c, cid, "product", {"category": cat}, actor="client")
+        db.case_write(c, cid, "product", {"category": cat, **({"name_brand": desc} if desc else {})}, actor="client")
     if country:
         db.case_write(c, cid, "market", {"country": country}, actor="client")
     company = permissions.company_of(c, who["user"])
