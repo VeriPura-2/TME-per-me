@@ -381,9 +381,11 @@ def overview(con, who):
                              (c["company_id"],)).fetchall():
             prod, mkt = json.loads(k["product"] or "{}"), json.loads(k["market"] or "{}")
             req = requirements.required(prod.get("category"), mkt.get("country"), have)
-            missing = sum(1 for i in req["data"]["items"] if not i["on_file"] and not i["importer_side"]) if req else None
+            mine = [i for i in req["data"]["items"] if not i["importer_side"]] if req else None
+            missing = sum(1 for i in mine if not i["on_file"]) if req else None
+            docs_n = {"have": len(mine) - missing, "total": len(mine)} if req else None
             projects.append({"id": k["id"], "status": k["status"], "product": prod.get("name_brand") or prod.get("category"),
-                             "category": prod.get("category"), "country": mkt.get("country"), "missing": missing,
+                             "category": prod.get("category"), "country": mkt.get("country"), "missing": missing, "docs": docs_n,
                              "updated_at": k["updated_at"]})
         assigned = [r["user_sub"] for r in con.execute("SELECT user_sub FROM tem_assignments WHERE firm_id=? AND company_id=?",
                                                         (f["firm_id"], c["company_id"])).fetchall()]
