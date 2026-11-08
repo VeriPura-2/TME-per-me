@@ -298,6 +298,13 @@ CREATE TABLE IF NOT EXISTS checklist_confirmations (
   at TEXT NOT NULL,
   PRIMARY KEY (case_id, item_id)
 );
+CREATE TABLE IF NOT EXISTS checklist_marks (   -- ticked by hand by the exporter: not verified by us
+  case_id TEXT NOT NULL,
+  item_id TEXT NOT NULL,
+  marked_by TEXT NOT NULL,
+  at TEXT NOT NULL,
+  PRIMARY KEY (case_id, item_id)
+);
 CREATE TABLE IF NOT EXISTS core_consignments (
   case_id TEXT PRIMARY KEY,
   consignment_id TEXT NOT NULL,        -- VeriPura Core consignment for this project

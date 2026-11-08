@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
+from . import marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
 from .menu import MENU
 from .secrets import get_secret
 
@@ -605,6 +605,20 @@ def handle_invite_accept(body, who):
     return 200, {"status": invites.accept(con(), who["user"], str(body.get("code", ""))[:40])}
 
 
+def handle_mark(body, who):
+    """Tick or untick a checklist item by hand. Needs the write right on the project (reviewers cannot)."""
+    row, err = _case_for(body, who, "write")
+    if err:
+        return err
+    c = con()
+    case = db.case_read(c, row["id"])
+    cat, country = case["product"].get("category"), case["market"].get("country")
+    if not requirements.covers(cat, country):
+        return 400, {"error": "not_covered"}
+    ids = {i["id"] for i in requirements.required(cat, country, set())["data"]["items"]}
+    return marks.mark(c, row["id"], who, body.get("item"), body.get("on", True) is not False, ids)
+
+
 def handle_journey(body, who):
     """Everything the Journey panel shows. Simulated parts are tagged by sim.tag."""
     row, err = _case_for(body, who)
@@ -628,6 +642,7 @@ def handle_journey(body, who):
         tems.apply_confirmations(c, row["id"], out["required_docs"])
         jobs.apply_source_flags(c, row["id"], out["required_docs"])
         vat_check.apply_to_checklist(c, row["company_id"], out["required_docs"])
+        marks.apply(c, row["id"], out["required_docs"])
     out["core"] = core_checks.summary(c, row["id"])
     out["notes"] = tems.notes(c, row["id"], internal=False)
     out["duties"] = duties.for_case(c, case)
@@ -1059,7 +1074,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 traceback.print_exc()  # full details in the server log, not only the error name
                 return self._send(500, {"error": type(e).__name__})
-        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
+        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
                 or self.path.startswith("/core/") or self.path.startswith("/tem/") or self.path.startswith("/tools/")):
             return self._send(404, {})
@@ -1123,6 +1138,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_start(body, who))
             if self.path == "/journey":
                 return self._send(*handle_journey(body, who))
+            if self.path == "/checklist/mark":
+                return self._send(*handle_mark(body, who))
             if self.path.startswith("/tools/"):
                 return self._send(*handle_tools(self.path, body, who))
             host = self.headers.get("X-Forwarded-Host") or self.headers.get("Host")
