@@ -101,7 +101,7 @@ def list_firms(con, who):
         n = con.execute("SELECT COUNT(*) AS n FROM tem_members WHERE firm_id=?", (f["id"],)).fetchone()["n"]
         c = con.execute("SELECT COUNT(*) AS n FROM tem_clients WHERE firm_id=? AND status='active'", (f["id"],)).fetchone()["n"]
         out.append({"id": f["id"], "name": f["name"], "vat": f["vat"], "seats": f["seats"], "members": n, "clients": c,
-                    "status": f["status"]})
+                    "status": f["status"], "project_limit": project_cap(con, f["id"]), "projects": project_count(con, f["id"])})
     return 200, {"firms": out}
 
 
@@ -397,13 +397,48 @@ def overview(con, who):
                                          (f["firm_id"], c["company_id"])).fetchall()]
         clients.append({"id": c["company_id"], "name": c["legal_name"], "vat": c["vat"], "since": c["engaged_at"],
                         "projects": projects, "assigned": assigned if lead else None, "requests": requests})
-    return 200, {"firm": {"id": f["firm_id"], "name": f["name"], "seats": fr["seats"]}, "role": f["role"], "members": members,
+    return 200, {"firm": {"id": f["firm_id"], "name": f["name"], "seats": fr["seats"],
+                          "projects": {"used": project_count(con, f["firm_id"]), "cap": project_cap(con, f["firm_id"])}},
+                 "role": f["role"], "members": members,
                  "clients": clients}
+
+
+def project_cap(con, firm_id):
+    """Active client projects the firm may have: set by staff per firm, otherwise the TEM plan's number."""
+    from . import plans
+    r = con.execute("SELECT max_projects FROM tem_firms WHERE id=?", (firm_id,)).fetchone()
+    v = r["max_projects"] if r else None
+    return int(v) if v not in (None, "") else plans.PLANS["tem"]["max_projects"]
+
+
+def project_count(con, firm_id):
+    return con.execute("SELECT COUNT(*) AS n FROM cases k JOIN tem_clients t ON t.company_id=k.company_id "
+                       "WHERE t.firm_id=? AND t.status='active'", (firm_id,)).fetchone()["n"]
+
+
+def set_project_limit(con, who, firm_id, limit):
+    if not permissions.is_superadmin(who):
+        return 403, {"error": "forbidden"}
+    if not con.execute("SELECT 1 FROM tem_firms WHERE id=?", (firm_id,)).fetchone():
+        return 404, {"error": "no such firm"}
+    try:
+        n = int(limit) if limit not in (None, "") else None
+    except (TypeError, ValueError):
+        return 400, {"error": "limit must be a number"}
+    if n is not None and n < 0:
+        return 400, {"error": "limit must be a number"}
+    con.execute("UPDATE tem_firms SET max_projects=? WHERE id=?", (n, firm_id))
+    con.commit()
+    db.log_event(con, None, who["user"], "tem_project_limit", {"firm": firm_id, "limit": n})
+    return 200, {"ok": True, "limit": project_cap(con, firm_id)}
 
 
 def new_project(con, who, company_id, category=None, country=None, name=None):
     if not has_access(con, who, company_id):
         return 404, {"error": "no such client"}
+    f = firm_of(con, who["user"])
+    if project_count(con, f["firm_id"]) >= project_cap(con, f["firm_id"]):
+        return 409, {"error": "tem_project_limit", "limit": project_cap(con, f["firm_id"])}
     cid = db.create_case(con, 1, owner_sub=who["user"])
     con.execute("UPDATE cases SET company_id=? WHERE id=?", (company_id, cid))
     if category or name:

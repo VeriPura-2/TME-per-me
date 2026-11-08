@@ -106,6 +106,23 @@ class AskMyTemTest(unittest.TestCase):
         self.assertEqual(p["docs"]["total"], p["docs"]["have"] + p["missing"])
         self.assertGreater(p["docs"]["total"], 0)
 
+    def test_firm_project_cap_defaults_to_the_tem_plan_and_is_enforced(self):
+        f = tems.overview(self.c, LEAD)[1]["firm"]
+        self.assertEqual(f["projects"], {"used": 1, "cap": 50})
+        self.assertEqual(tems.set_project_limit(self.c, LEAD, f["id"], 2)[0], 403)  # staff only
+        self.assertEqual(tems.set_project_limit(self.c, ADMIN, f["id"], 2)[0], 200)
+        self.assertEqual(tems.new_project(self.c, LEAD, self.co, "wine", "UK", "Second")[0], 200)
+        code, out = tems.new_project(self.c, LEAD, self.co, "wine", "UK", "Third")
+        self.assertEqual((code, out["error"], out["limit"]), (409, "tem_project_limit", 2))
+        self.assertEqual(tems.set_project_limit(self.c, ADMIN, f["id"], 3)[0], 200)
+        self.assertEqual(tems.new_project(self.c, LEAD, self.co, "wine", "UK", "Third")[0], 200)
+
+    def test_bad_limit_is_refused_and_empty_resets_to_default(self):
+        f = tems.overview(self.c, LEAD)[1]["firm"]
+        self.assertEqual(tems.set_project_limit(self.c, ADMIN, f["id"], "abc")[0], 400)
+        self.assertEqual(tems.set_project_limit(self.c, ADMIN, f["id"], 7)[1]["limit"], 7)
+        self.assertEqual(tems.set_project_limit(self.c, ADMIN, f["id"], "")[1]["limit"], 50)
+
 
 if __name__ == "__main__":
     unittest.main()
