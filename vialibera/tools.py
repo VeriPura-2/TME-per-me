@@ -66,12 +66,12 @@ CARDS = [
      "coming": {"status": "soon",
                 "text": L("Pallets and containers: quotes, booking and container tracking for larger shipments.",
                           "Pallet e container: preventivi, prenotazione e tracciamento container per spedizioni più grandi.")}},
-    {"id": "doc_checks", "by": {"kind": "partner", "name": "VeriPura"},
-     "name": L("Document checks, VeriPura Core", "Verifiche documentali, VeriPura Core"),
-     "today": {"text": L("Upload your documents in the project. VeriPura Core checks the invoice, packing list and transport document against each other, "
-                         "and your product specification sheet (ingredients, additives) and packaging specification against what your destination bans or restricts.",
-                         "Carica i documenti nel progetto. VeriPura Core confronta fattura, packing list e documento di trasporto tra loro, "
-                         "e verifica la scheda tecnica del prodotto (ingredienti, additivi) e la specifica dell'imballaggio rispetto a ciò che la destinazione vieta o limita.")},
+    {"id": "doc_checks", "by": {"kind": "partner", "name": ""},
+     "name": L("Document checks", "Verifiche documentali"),
+     "today": {"text": L("Upload your documents in the project. Checks the invoice, packing list and transport document against each other, "
+                         "and screens ingredients against additives banned in the European Union.",
+                         "Carica i documenti nel progetto. Confronta fattura, packing list e documento di trasporto tra loro, "
+                         "e controlla gli ingredienti rispetto agli additivi vietati nell'Unione europea.")},
      "coming": {"status": "preview",
                 "text": L("Also the export declaration, the e-AD for wine and the US wine certificates.",
                           "Anche la dichiarazione di esportazione, l'e-AD per il vino e i certificati per il vino negli USA."),
@@ -153,6 +153,7 @@ CARDS = [
                           "Lo stato di ogni spedizione in un'unica vista, dalla partenza alla consegna.")}},
 ]
 TOOL_IDS = {c["id"] for c in CORE + CARDS} | {"refcheck"}
+STEP = {"label_check": 2, "label_design": 2, "ttb_agent": 3, "shipping": 4}  # the checklist step where the tool helps (1 Company, 2 Product, 3 Destination, 4 Shipment)
 CLIENT_OFF = {"shipping", "label_check", "importers"}  # hidden from a TEM's client unless the TEM switches them on
 
 
@@ -170,6 +171,8 @@ def for_case(product_category, country):
         if only and not (p in only["products"] and k in only["countries"]):
             continue
         card = copy.deepcopy({kk: v for kk, v in c.items() if kk != "only"})
+        if c["id"] in STEP:
+            card["step"] = STEP[c["id"]]
         if card["id"] == "shipping":
             order = ["shippypro", "sendcloud"] if p in CHILLED else ["sendcloud", "shippypro"]
             card["today"]["links"] = [PARCEL_LINKS[x] for x in order]
@@ -187,7 +190,7 @@ def ai_guide():
              "'GOTO: <key>' where key is one of chat, req, duties, docs, eori, tools. "
              "Never describe how a tool works inside, only what it does for the client."]
     for c in CORE + CARDS:
-        by = "MioTEM" if c["by"]["kind"] == "miotem" else "partner " + c["by"]["name"]
+        by = "MioTEM" if c["by"]["kind"] == "miotem" else ("partner " + c["by"]["name"]).strip()
         where = {"chat": "this chat", "req": "Services, required documents (GOTO: req)", "duties": "Services, duties (GOTO: duties)",
                  "docs": "the Documents button (GOTO: docs)", "eori": "Services, EORI form (GOTO: eori)"}.get(c.get("go"), "Services, tools for this project (GOTO: tools)")
         only = " Only for wine to the United States." if c.get("only") else ""

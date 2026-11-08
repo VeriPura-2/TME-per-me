@@ -53,7 +53,8 @@ class ToolCards(unittest.TestCase):
         cards = {x["id"]: x for x in tools.for_case("cheese", "France")}
         self.assertEqual(cards["label_check"]["today"]["links"][0]["url"], "https://label.veripura.com/")
         self.assertEqual(cards["label_check"]["coming"]["status"], "preview")
-        self.assertIn("specification sheet", cards["doc_checks"]["today"]["text"]["en"])
+        self.assertIn("additives banned in the European Union", cards["doc_checks"]["today"]["text"]["en"])
+        self.assertNotIn("VeriPura", cards["doc_checks"]["name"]["en"] + cards["doc_checks"]["today"]["text"]["en"])  # no VeriPura or Core name on the site (8 Nov)
         self.assertEqual(cards["shipping"]["coming"]["status"], "soon")
         self.assertFalse({"pallets", "containers", "label_check_inside", "doc_checks_more"} & set(cards))
 
@@ -111,7 +112,7 @@ class Frontend(unittest.TestCase):
     def test_tool_cards_are_rendered_in_services(self):
         html = open(os.path.join(os.path.dirname(app.__file__), "static", "index.html"), encoding="utf-8").read()
         self.assertIn('id="j-tools"', html)
-        self.assertIn('toolsBox($("j-tools"), j.tools, cid)', html)
+        self.assertIn('jToolsBoxes(j.tools, cid, t)', html)  # Phase 4a: step tools inside the steps, the rest grouped under More tools
         self.assertIn("/tools/interest", html)
         self.assertRegex(html, re.compile(r"In development"))
 
@@ -177,7 +178,7 @@ class CoreAndGuide(unittest.TestCase):
         self.assertEqual(kinds, sorted(kinds, key=lambda k: k != "miotem"))
         by = {c["id"]: c["by"] for c in cards}
         self.assertEqual(by["checklist"]["kind"], "miotem")
-        self.assertEqual(by["doc_checks"], {"kind": "partner", "name": "VeriPura"})
+        self.assertEqual(by["doc_checks"], {"kind": "partner", "name": ""})
         self.assertEqual(by["label_check"]["name"], "VeriPura")
         self.assertIn("Sendcloud", by["shipping"]["name"])
 
@@ -222,3 +223,15 @@ class ChatBold(unittest.TestCase):
         self.assertIn('if (cls === "bot") richText(d, t); else d.textContent = t;', html)
         self.assertIn('b.textContent = part.slice(2, -2)', html)  # bold text is set as text, never as HTML
         self.assertIn("d.appendChild(document.createTextNode(part))", html)
+
+
+class StepTags(unittest.TestCase):
+    def test_step_tools_for_wine_to_usa(self):
+        from vialibera import tools
+        steps = {c["id"]: c.get("step") for c in tools.for_case("wine", "USA")}
+        self.assertEqual((steps["label_check"], steps["label_design"], steps["ttb_agent"], steps["shipping"]), (2, 2, 3, 4))
+        self.assertIsNone(steps["funding"])
+
+    def test_ttb_agent_only_for_wine_usa(self):
+        from vialibera import tools
+        self.assertNotIn("ttb_agent", {c["id"] for c in tools.for_case("pasta", "UK")})
