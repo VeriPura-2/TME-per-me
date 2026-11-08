@@ -237,6 +237,17 @@ CREATE TABLE IF NOT EXISTS engagement_links (
   company_id TEXT,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS usage_counts (
+  owner_key TEXT NOT NULL,             -- company id, or "u:" plus the user when there is no company
+  kind TEXT NOT NULL,                  -- covered, free_check
+  n INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (owner_key, kind)
+);
+CREATE TABLE IF NOT EXISTS counted_cases (
+  case_id TEXT PRIMARY KEY,
+  owner_key TEXT NOT NULL,
+  kind TEXT NOT NULL                   -- covered or uncovered
+);
 CREATE TABLE IF NOT EXISTS lane_requests (
   id TEXT PRIMARY KEY,
   case_id TEXT,
