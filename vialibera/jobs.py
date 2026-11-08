@@ -108,6 +108,22 @@ def _fetch_all(urls, fetch):
         return dict(pool.map(one, urls))
 
 
+def _read_snapshot(con, url):
+    """The first database read after the downloads. If the connection was dropped meanwhile (4, 5 and 8 Nov 2026),
+    reconnect and try once more; a second failure is raised as before."""
+    sql = "SELECT sha256, page_text FROM source_snapshots WHERE url=?"
+    try:
+        return con.execute(sql, (url,)).fetchone()
+    except Exception as e:
+        if type(e).__name__ not in ("OperationalError", "InterfaceError"):
+            raise
+        try:
+            con.rollback()
+        except Exception:
+            pass
+        return con.execute(sql, (url,)).fetchone()
+
+
 def check_sources(con, fetch=_fetch_text):
     changed = unreachable = 0
     with db.outside_call():  # 20 to 40 s of downloads: no connection held meanwhile
@@ -120,7 +136,7 @@ def check_sources(con, fetch=_fetch_text):
             continue
         text = text[:TEXT_KEEP]
         sha = hashlib.sha256(text.encode()).hexdigest()
-        prev = con.execute("SELECT sha256, page_text FROM source_snapshots WHERE url=?", (url,)).fetchone()
+        prev = _read_snapshot(con, url)
         if prev is None:
             con.execute("INSERT INTO source_snapshots(url, sha256, checked_at, page_text) VALUES (?,?,?,?)", (url, sha, db.now(), text))
         elif prev["page_text"] is None:

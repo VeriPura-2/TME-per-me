@@ -451,6 +451,19 @@ class PGPool:
             self.put(first)
 
     def get(self):
+        """A connection that answers. One the server closed while it sat idle (Cloud SQL, 8 Nov 2026) still looks
+        open to psycopg2 until a query fails on it, so each borrow runs SELECT 1 and swaps a dead one for a new one."""
+        for _ in range(self.pool.maxconn + 1):
+            raw = self.pool.getconn()
+            try:
+                cur = raw.cursor()
+                cur.execute("SELECT 1")
+                cur.close()
+                raw.rollback()  # the check opened a transaction: end it, the request starts clean
+            except Exception:
+                self.pool.putconn(raw, close=True)
+                continue
+            return PG(raw)
         return PG(self.pool.getconn())
 
     def put(self, con, close=False):
