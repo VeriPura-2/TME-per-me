@@ -1,44 +1,46 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MioTEM</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Public+Sans:wght@400;600&display=swap">
 <link rel="icon" href="/favicon.ico?v=3" sizes="any">
 <link rel="icon" type="image/png" href="/favicon.png?v=3">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
-:root{--bg:#fff;--fg:#1a1a1a;--muted:#5f6368;--line:#dadce0;--accent:#0b57d0;--card:#f6f8fc}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121212;--fg:#e8e8e8;--muted:#9aa0a6;--line:#3c4043;--accent:#8ab4f8;--card:#1e1f22}}
-:root[data-theme="dark"]{--bg:#121212;--fg:#e8e8e8;--muted:#9aa0a6;--line:#3c4043;--accent:#8ab4f8;--card:#1e1f22}
+/* Light by default (deck palette: cream, ink, terracotta). Dark only when the user picks it. */
+:root{--bg:#F7F2E8;--fg:#2B2B26;--muted:#5E6459;--line:#DDD3BE;--accent:#B83B1F;--card:#FFFBF3;--head:#1F3A2E;--link:#2F6B55;--bar:#1F3A2E;--bar-fg:#F7F2E8}
+:root[data-theme="dark"]{--bg:#14241C;--fg:#F7F2E8;--muted:#B9C4B8;--line:#3C5A4B;--accent:#B83B1F;--card:#1F3A2E;--head:#F7F2E8;--link:#E9A58F;--bar:#0E1A14;--bar-fg:#F7F2E8}
 /* wide, light scrollbars so they are easy to find */
-:root{--sb-thumb:#8f959d;--sb-track:#e6e9ee}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sb-thumb:#c9ccd1;--sb-track:#2c2d31}}
-:root[data-theme="dark"]{--sb-thumb:#c9ccd1;--sb-track:#2c2d31}
+:root{--sb-thumb:#B9AE96;--sb-track:#EFE8D8}
+:root[data-theme="dark"]{--sb-thumb:#5E7A6B;--sb-track:#1F3A2E}
 ::-webkit-scrollbar{width:18px;height:18px}
 ::-webkit-scrollbar-track{background:var(--sb-track)}
 ::-webkit-scrollbar-thumb{background:var(--sb-thumb);border-radius:9px;border:3px solid var(--sb-track);min-height:48px}
 ::-webkit-scrollbar-thumb:hover{background:var(--fg)}
 @supports not selector(::-webkit-scrollbar){*{scrollbar-width:auto;scrollbar-color:var(--sb-thumb) var(--sb-track)}}
-body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;max-width:720px;margin:0 auto;padding:16px}
-header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 'Public Sans',system-ui,sans-serif;max-width:720px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bar);color:var(--bar-fg);padding:8px 14px;border-radius:12px}
+header h1{color:var(--bar-fg)}header .logo{filter:invert(1)}
+h1,h2,h3{font-family:'Libre Baskerville',Georgia,serif;color:var(--head)}
 h1{margin:0;font-size:1.5rem;display:flex;align-items:center;gap:10px}
 .logo{height:44px;width:44px}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .logo{filter:invert(1)}}
 :root[data-theme="dark"] .logo{filter:invert(1)}
 .bar button{margin-left:6px}
+#lang{margin-left:6px;white-space:nowrap}button.flag{padding:2px;margin:0 0 0 4px;line-height:0;background:none;border:2px solid transparent;border-radius:6px;opacity:.55}button.flag.on{opacity:1;border-color:var(--bar-fg)}button.flag svg{width:36px;height:24px;border-radius:3px}
 button{padding:8px 14px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;cursor:pointer}
-button.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+button.primary{background:var(--accent);color:#FFF8EF;border-color:var(--accent)}
 #log{border:1px solid var(--line);border-radius:8px;padding:12px;min-height:160px;max-height:calc(100vh - 330px);max-height:calc(100dvh - 330px);overflow-y:auto;margin:12px 0;white-space:pre-wrap;background:var(--card)}
 .composer{position:sticky;bottom:0;background:var(--bg);padding:8px 0 12px;border-top:1px solid var(--line)}
-.me{color:var(--accent);margin-bottom:8px}.bot{margin-bottom:12px}
-#opts button{margin:4px 6px 4px 0;border-color:var(--accent);color:var(--accent);background:transparent;border-radius:16px}
+.me{color:var(--link);margin-bottom:8px}.bot{margin-bottom:12px}
+#opts button{margin:4px 6px 4px 0;border-color:var(--link);color:var(--link);background:transparent;border-radius:16px}
 input[type=text]{width:calc(100% - 100px);padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
 .card{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--card);margin:12px 0}
 label{display:block;margin:10px 0}
-a{color:var(--accent)}
+a{color:var(--link)}
 .muted{color:var(--muted);font-size:.9rem}
 .sim{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:10px;border:1px dashed #b26a00;color:#b26a00;margin-left:6px;vertical-align:middle}
 .simnote{font-size:.85rem;color:#b26a00;margin:4px 0 8px}
 .plans{display:flex;gap:8px;flex-wrap:wrap}.plans .card{flex:1 1 150px;margin:0;cursor:pointer}.plans .card.on{border-color:var(--accent);outline:2px solid var(--accent)}
-.plans .card.tool,.card.tool{flex:1 1 240px;cursor:default;margin:6px 0}.card.tool>div{margin:3px 0}.by{font-size:.75em;letter-spacing:.04em;text-transform:uppercase;border:1px solid currentColor;border-radius:4px;padding:0 5px}.by.miotem{color:var(--accent)}.by.partner{color:var(--muted)}
+.plans .card.tool,.card.tool{flex:1 1 240px;cursor:default;margin:6px 0}.card.tool>div{margin:3px 0}.by{font-size:.75em;letter-spacing:.04em;text-transform:uppercase;border:1px solid currentColor;border-radius:4px;padding:0 5px}.by.miotem{color:var(--link)}.by.partner{color:var(--muted)}
 .tick{color:#188038}.todo{color:var(--muted)}.verify{color:#b06000;font-size:.85rem}.core-matched{color:#188038}.core-flagged{color:#b06000}.core-flagged_critical{color:#c5221f}
 footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-height:1.6}footer.legal a{color:inherit}
 </style></head><body>
@@ -50,7 +52,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
     <button id="tbtn" hidden></button>
     <button id="wbtn" hidden></button>
     <button id="sbtn" hidden>Staff</button>
-    <button id="lang" aria-label="Language"></button>
+    <span id="lang" role="group" aria-label="Language"><button type="button" id="b-en" class="flag" title="English" aria-label="English"><svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#1F3A8A"/><path d="M0 0L60 40M60 0L0 40" stroke="#fff" stroke-width="8"/><path d="M0 0L60 40M60 0L0 40" stroke="#C8102E" stroke-width="3"/><path d="M30 0V40M0 20H60" stroke="#fff" stroke-width="13"/><path d="M30 0V40M0 20H60" stroke="#C8102E" stroke-width="8"/></svg></button><button type="button" id="b-it" class="flag" title="Italiano" aria-label="Italiano"><svg viewBox="0 0 60 40"><rect width="20" height="40" fill="#009246"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#CE2B37"/></svg></button></span>
     <button id="abtn" hidden></button>
   </div>
 </header>
@@ -153,7 +155,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <h2 id="landing-h"></h2>
   <p id="landing-t"></p>
   <p id="landing-err" class="muted" hidden></p>
-  <button id="login" class="primary"></button> <a href="#l-how" id="l-how-link"></a> <a href="#l-tools" id="l-tools-link"></a>
+  <button id="login"></button> <a href="#l-how" id="l-how-link"></a> <a href="#l-tools" id="l-tools-link"></a>
   <div id="landing-body"></div>
 </div>
 
@@ -238,7 +240,7 @@ const T = {
     q_which_p: "Quale prodotto?", q_which_c: "Quale paese?",
     q_req: "Grazie. MioTEM non ha ancora una lista di documenti verificata per {what}. Abbiamo registrato la tua richiesta: il nostro team le esamina per decidere quali paesi e prodotti aggiungere. Se vuoi, scrivimi qui quando pensi di spedire, i volumi indicativi e se hai già un acquirente. Posso anche aiutarti con domande generali sull'export, o preparare subito la lista completa per uno dei paesi che copriamo.",
     q_cats: {"pasta": "pasta", "wine": "vino", "olive oil": "olio d'oliva", "cheese and dairy": "formaggi e latticini", "spirits": "distillati", "cured meat": "salumi", "preserves": "conserve", "bakery": "prodotti da forno", "other": "Altro prodotto"},
-    q_countries: {"UK": "Regno Unito", "USA": "Stati Uniti", "Canada": "Canada", "EU": "Unione europea", "other_eu": "Altro Paese UE (non ancora coperto)", "Germany": "Germania", "France": "Francia", "Spain": "Spagna", "Netherlands": "Paesi Bassi", "Belgium": "Belgio", "Austria": "Austria", "Switzerland": "Svizzera", "other": "Altro paese"},
+    q_countries: {"UK": "Regno Unito", "USA": "Stati Uniti", "Canada": "Canada", "EU": "Unione europea", "Austria": "Austria", "Belgium": "Belgio", "Bulgaria": "Bulgaria", "Croatia": "Croazia", "Cyprus": "Cipro", "Czechia": "Cechia", "Denmark": "Danimarca", "Estonia": "Estonia", "Finland": "Finlandia", "France": "Francia", "Germany": "Germania", "Greece": "Grecia", "Hungary": "Ungheria", "Ireland": "Irlanda", "Latvia": "Lettonia", "Lithuania": "Lituania", "Luxembourg": "Lussemburgo", "Malta": "Malta", "Netherlands": "Paesi Bassi", "Poland": "Polonia", "Portugal": "Portogallo", "Romania": "Romania", "Slovakia": "Slovacchia", "Slovenia": "Slovenia", "Spain": "Spagna", "Sweden": "Svezia", "Switzerland": "Svizzera", "other": "Altro paese"},
     w_first: "Esportare per la prima volta", w_market: "Un nuovo mercato per un prodotto che ho già", w_product: "Un nuovo prodotto per un mercato che già servo",
     w_req: "Cosa serve per un prodotto e un paese", w_q: "Ho una domanda", w_continue: "Riprendi la mia pratica", w_new: "Inizia una nuova pratica",
     account_created: "Account azienda creato dalla partita IVA.",
@@ -272,7 +274,7 @@ const T = {
     q_which_p: "Which product?", q_which_c: "Which country?",
     q_req: "Thank you. MioTEM does not yet have a checked document list for {what}. We have recorded your request: our team reviews these requests to decide which countries and products to add next. If you like, write here when you plan to ship, rough volumes and whether you already have a buyer. I can also help with general export questions, or prepare the full checklist right away for any of the countries we cover.",
     q_cats: {"pasta": "pasta", "wine": "wine", "olive oil": "olive oil", "cheese and dairy": "cheese and dairy", "spirits": "spirits", "cured meat": "cured meat", "preserves": "preserves", "bakery": "bakery", "other": "Other product"},
-    q_countries: {"UK": "United Kingdom", "USA": "United States", "Canada": "Canada", "EU": "European Union", "other_eu": "Another EU country (not covered yet)", "Germany": "Germany", "France": "France", "Spain": "Spain", "Netherlands": "Netherlands", "Belgium": "Belgium", "Austria": "Austria", "Switzerland": "Switzerland", "other": "Another country"},
+    q_countries: {"UK": "United Kingdom", "USA": "United States", "Canada": "Canada", "EU": "European Union", "Austria": "Austria", "Belgium": "Belgium", "Bulgaria": "Bulgaria", "Croatia": "Croatia", "Cyprus": "Cyprus", "Czechia": "Czechia", "Denmark": "Denmark", "Estonia": "Estonia", "Finland": "Finland", "France": "France", "Germany": "Germany", "Greece": "Greece", "Hungary": "Hungary", "Ireland": "Ireland", "Latvia": "Latvia", "Lithuania": "Lithuania", "Luxembourg": "Luxembourg", "Malta": "Malta", "Netherlands": "Netherlands", "Poland": "Poland", "Portugal": "Portugal", "Romania": "Romania", "Slovakia": "Slovakia", "Slovenia": "Slovenia", "Spain": "Spain", "Sweden": "Sweden", "Switzerland": "Switzerland", "other": "Another country"},
     w_first: "Exporting for the first time", w_market: "A new market for a product I already have", w_product: "A new product for a market I already serve",
     w_req: "What is needed for one product and country", w_q: "I have a question", w_continue: "Continue my case", w_new: "Start a new case",
     account_created: "Company account created from your VAT number.",
@@ -291,13 +293,13 @@ let theme = store.get("vl_theme", "");
 let ctx = {};
 function applyTheme() {
   if (theme) document.documentElement.setAttribute("data-theme", theme); else document.documentElement.removeAttribute("data-theme");
-  const dark = theme ? theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  const dark = theme === "dark";
   $("theme").textContent = dark ? T[lang].theme[0] : T[lang].theme[1];
 }
 function applyLang() {
   const t = T[lang];
   document.documentElement.lang = lang;
-  $("lang").textContent = lang === "it" ? "EN" : "IT";
+  $("b-en").classList.toggle("on", lang === "en"); $("b-it").classList.toggle("on", lang === "it"); $("b-en").setAttribute("aria-pressed", lang === "en"); $("b-it").setAttribute("aria-pressed", lang === "it");
   $("logout").textContent = t.signout; $("docsbtn").textContent = t.d_btn; $("jbtn").textContent = t.j_btn; $("abtn").textContent = t.a_btn; $("a-title").textContent = t.a_title; $("a-prefs").textContent = t.a_prefs; $("tbtn").textContent = t.t_btn; $("send").textContent = t.send; $("msg").placeholder = t.ph;
   $("landing-h").textContent = t.landing_h; $("landing-t").textContent = t.landing; $("login").textContent = t.signin;
   if (typeof renderLanding === "function") renderLanding();
@@ -306,15 +308,15 @@ function applyLang() {
   if (ctx.email) $("who").textContent = t.signed + ctx.email;
   applyTheme();
 }
-$("lang").onclick = () => { lang = lang === "it" ? "en" : "it"; store.set("vl_lang", lang); applyLang(); if (window.vlRefresh) window.vlRefresh(); };
+["en", "it"].forEach(l => $("b-" + l).onclick = () => { if (lang === l) return; lang = l; store.set("vl_lang", lang); applyLang(); if (window.vlRefresh) window.vlRefresh(); });
 $("theme").onclick = () => {
-  const dark = theme ? theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  const dark = theme === "dark";
   theme = dark ? "light" : "dark"; store.set("vl_theme", theme); applyTheme();
 };
 ["c1", "c2"].forEach(id => $(id).onchange = () => $("accept").disabled = !($("c1").checked && $("c2").checked));
 const LAND = {
   it: {start: "Inizia gratis", how: "Come funziona", tools: "Tutti gli strumenti", forwho: "Per chi è",
-    who: ["Aziende italiane alla prima esportazione di vino, pasta, olio d'oliva o formaggi", "Esportatori di questi prodotti che vogliono entrare in nuovi mercati", "Altri prodotti alimentari in arrivo: dicci cosa esporti e registriamo la tua richiesta", "Temporary Export Manager che seguono i loro clienti e, presto, trovano nuovi clienti", "Verso il Regno Unito, gli Stati Uniti, il Canada, la Svizzera e sei Paesi dell'Unione europea (Germania, Francia, Spagna, Paesi Bassi, Belgio, Austria)"],
+    who: ["Aziende italiane alla prima esportazione di vino, pasta, olio d'oliva o formaggi", "Esportatori di questi prodotti che vogliono entrare in nuovi mercati", "Altri prodotti alimentari in arrivo: dicci cosa esporti e registriamo la tua richiesta", "Temporary Export Manager che seguono i loro clienti e, presto, trovano nuovi clienti", "Verso il Regno Unito, gli Stati Uniti, il Canada, la Svizzera e tutti i Paesi dell'Unione europea"],
     steps: [["Scopri cosa serve", "I documenti necessari, chi prepara ciascuno e la fonte ufficiale. I dazi dalle tariffe ufficiali, aggiornati ogni settimana."], ["Controlla i documenti", "Fattura, packing list e documento di trasporto confrontati tra loro, ingredienti controllati rispetto agli additivi vietati nell'Unione europea."], ["Spedisci", "Pacchi per campioni e piccoli ordini. Pallet e container: in arrivo."]],
     walkh: "Come funziona", walkp: "Un esempio con dati reali dell'app: vino italiano verso gli Stati Uniti. Esempio, non il tuo progetto.",
     w1p: "Il tuo percorso ha 4 tappe: Azienda, Prodotto, Mercato, Spedizione. Alcune voci:", staff: "Da verificare dallo staff",
@@ -325,7 +327,7 @@ const LAND = {
     grp: {live: "Disponibili ora", preview: "Anteprima", soon: "In arrivo"},
     tag: "Compliance document validation, powered by orchestrated AI-Agents. Strumenti MioTEM e dei nostri partner, incluso VeriPura."},
   en: {start: "Start free", how: "How it works", tools: "All tools", forwho: "Who it's for",
-    who: ["Italian companies exporting wine, pasta, olive oil or cheese for the first time", "Exporters of these products looking to enter new markets", "Other food products coming: tell us what you export and we'll record your request", "Temporary export managers who follow their clients and, soon, find new ones", "To the United Kingdom, the United States, Canada, Switzerland and six European Union countries (Germany, France, Spain, the Netherlands, Belgium, Austria)"],
+    who: ["Italian companies exporting wine, pasta, olive oil or cheese for the first time", "Exporters of these products looking to enter new markets", "Other food products coming: tell us what you export and we'll record your request", "Temporary export managers who follow their clients and, soon, find new ones", "To the United Kingdom, the United States, Canada, Switzerland and all European Union countries"],
     steps: [["Find out what you need", "The documents you need, who prepares each one, and the official source. Duties from the official tariffs, updated weekly."], ["Check your documents", "Invoice, packing list and transport document compared with each other, ingredients screened against additives banned in the European Union."], ["Ship", "Parcels for samples and small orders. Pallets and containers: coming soon."]],
     walkh: "How it works", walkp: "An example with real data from the app: Italian wine to the United States. An example, not your project.",
     w1p: "Your path has 4 steps: Company, Product, Destination, Shipment. A few items:", staff: "Staff to verify",
@@ -1011,7 +1013,7 @@ applyLang();
   }
   // ---- TEM workspace (export consultant firms). The server enforces who sees which client.
   const CATS = ["pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other"];
-  const COUNTRIES = ["UK", "USA", "Canada", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria", "Switzerland", "other"];
+  const COUNTRIES = ["UK", "USA", "Canada", "Switzerland", "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden", "other"];
   const sel0 = (opts, cur) => { const s = mk("select"); opts.forEach(o => { const e = mk("option", o); e.value = o; if (o === cur) e.selected = true; s.appendChild(e); }); return s; };
   const linkBox = (parent, url, note) => { const i = mk("input"); i.type = "text"; i.readOnly = true; i.value = url; i.style.width = "70%"; const c = mk("button", TT[lang].ws_copy);
     c.onclick = async () => { try { await navigator.clipboard.writeText(url); } catch (e) { i.select(); } }; parent.append(i, " ", c); if (note) parent.appendChild(mk("div", note, "muted")); };
@@ -1040,7 +1042,7 @@ applyLang();
     const eb = mk("button", tt.ws_engage), eo = mk("div"); eb.onclick = async () => { eo.innerHTML = ""; const [rr, jj] = await call("/tem/engage_link", {});
       if (rr.ok) linkBox(eo, location.origin + "/?engage=" + jj.token, tt.ws_engage_note); else eo.textContent = T[lang].err + (jj.error || rr.status); };
     box.append(eb, eo);
-    if (!j.clients.length) { const em = mk("div", null, "card"); em.style.cssText = "background:#f6f8fb;border:1px dashed #b9cdf0"; em.append(mk("strong", tt.ws_empty_h), mk("br"), tt.ws_empty_p); box.appendChild(em); }
+    if (!j.clients.length) { const em = mk("div", null, "card"); em.style.cssText = "background:var(--card);border:1px dashed var(--line)"; em.append(mk("strong", tt.ws_empty_h), mk("br"), tt.ws_empty_p); box.appendChild(em); }
     j.clients.forEach(c => {
       const cd = mk("div", null, "card"); cd.appendChild(mk("strong", c.name + " (" + c.vat + ")"));
       cd.appendChild(mk("span", " · " + tt.tc_since + " " + sd(c.since), "muted"));
@@ -1060,7 +1062,7 @@ applyLang();
         cd.appendChild(as); }
       box.appendChild(cd);
     });
-    const m2 = mk("div", null, "card"); m2.style.cssText = "background:#f6f8fb;border:1px solid #b9cdf0";
+    const m2 = mk("div", null, "card"); m2.style.cssText = "background:var(--card);border:1px solid var(--line)";
     m2.append(mk("strong", tt.m2_h), " ", mk("span", "MioTEM", "by miotem"), " ", mk("span", tt.m2_soon, "sim"), mk("div", tt.m2_p));
     const nb = mk("button", tt.m2_notify); nb.onclick = async () => { nb.disabled = true; const [r] = await call("/tools/interest", {tool: "mode2"}); if (r.ok) nb.replaceWith(mk("div", TL[lang].told, "tick")); else nb.disabled = false; };
     m2.append(nb, mk("div", tt.m2_n, "muted")); box.appendChild(m2);
@@ -1286,10 +1288,10 @@ applyLang();
   $("msg").onkeydown = e => { if (e.key === "Enter") send(); };
   // Routes with a verified checklist. The server decides for real (requirements.covers); this only shows the notice early.
   const COVERED_PRODUCTS = ["pasta", "wine", "olive oil", "cheese and dairy"];
-  const COVERED_COUNTRIES = ["UK", "USA", "Canada", "Switzerland", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria"];
+  const COVERED_COUNTRIES = ["UK", "USA", "Canada", "Switzerland", "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden"];
   const PICK_PRODUCTS = ["wine", "pasta", "olive oil", "cheese and dairy", "other"];
   const PICK_COUNTRIES = ["UK", "USA", "Canada", "Switzerland", "EU", "other"];
-  const EU_STATES = ["Germany", "France", "Spain", "Netherlands", "Belgium", "Austria", "other_eu"];
+  const EU_STATES = ["Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden"];
   let statusEl = null;  // the chat message that follows the checklist (step, next item, who)
   function quickStart(t) {  // first question: product, optional description, country. Straight into a project, no AI call
     const box = $("w-start"); box.innerHTML = "";

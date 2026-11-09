@@ -50,6 +50,12 @@ class StartForm(unittest.TestCase):
         self.assertFalse(out["covered"])
         self.assertEqual(out["requested"]["country"], "EU: Sweden")
 
+    def test_any_eu_country_by_name_gets_the_checklist(self):
+        for i, c in enumerate(("Sweden", "Poland", "Greece", "Ireland")):
+            code, out = app.handle_start({"category": "wine", "country": c}, user("start-eu%d" % i))
+            self.assertEqual(code, 200)
+            self.assertTrue(out["covered"], c)
+
     def test_covered_eu_state_gets_the_checklist(self):
         code, out = app.handle_start({"category": "wine", "country": "Germany"}, user("start-de"))
         self.assertEqual(code, 200)

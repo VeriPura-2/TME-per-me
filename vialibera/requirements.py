@@ -25,10 +25,25 @@ DESTINATIONS = {"uk": "UK", "united kingdom": "UK", "gb": "UK", "great britain":
                 "belgium": "BE", "belgio": "BE", "belgique": "BE", "belgië": "BE", "belgie": "BE",
                 "austria": "AT", "österreich": "AT", "osterreich": "AT", "oesterreich": "AT",
                 "switzerland": "CH", "svizzera": "CH", "schweiz": "CH", "suisse": "CH"}
+# The other 20 EU countries (added 9 Nov 2026, phase 1): generic EU rules only, country rules still to be checked.
+OTHER_EU = {"BG": ("bulgaria", "българия"), "CY": ("cyprus", "cipro", "κύπρος"),
+            "CZ": ("czechia", "czech republic", "repubblica ceca", "cechia", "česko", "cesko"),
+            "DK": ("denmark", "danimarca", "danmark"), "EE": ("estonia", "eesti"),
+            "EL": ("greece", "grecia", "ελλάδα", "ellada"), "FI": ("finland", "finlandia", "suomi"),
+            "HR": ("croatia", "croazia", "hrvatska"), "HU": ("hungary", "ungheria", "magyarország", "magyarorszag"),
+            "IE": ("ireland", "irlanda", "éire", "eire"), "LT": ("lithuania", "lituania", "lietuva"),
+            "LU": ("luxembourg", "lussemburgo", "luxemburg", "lëtzebuerg"), "LV": ("latvia", "lettonia", "latvija"),
+            "MT": ("malta",), "PL": ("poland", "polonia", "polska"), "PT": ("portugal", "portogallo"),
+            "RO": ("romania", "românia"), "SE": ("sweden", "svezia", "sverige"),
+            "SI": ("slovenia", "slovenija"), "SK": ("slovakia", "slovacchia", "slovensko")}
+for _code, _names in OTHER_EU.items():
+    for _n in _names:
+        DESTINATIONS[_n] = _code
 
 ALL_P = {"pasta", "wine", "oil", "cheese"}
 NON_EU = {"UK", "US", "CA", "CH"}
-EU_D = {"DE", "FR", "ES", "NL", "BE", "AT"}  # other EU countries: no customs, intra-EU VAT and excise rules
+CHECKED_EU_D = {"DE", "FR", "ES", "NL", "BE", "AT"}  # country rules researched
+EU_D = CHECKED_EU_D | set(OTHER_EU)  # EU countries: no customs, intra-EU VAT and excise rules
 ALL_D = NON_EU | EU_D
 
 LAYERS = {1: {"it": "Azienda", "en": "Company"}, 2: {"it": "Prodotto", "en": "Product"},
@@ -213,6 +228,15 @@ ROWS = [
     _r("label_at", 2, "Etichetta con le informazioni obbligatorie in tedesco (Reg. UE 1169/2011, art. 15)",
        "Label with mandatory information in German (EU Reg. 1169/2011, art. 15)", "exporter", "B", dests={"AT"},
        src="eu_fic", doc="label"),
+    _r("label_eu_lang", 2, "Etichetta nella lingua richiesta dal Paese di destinazione (Reg. UE 1169/2011, art. 15)",
+       "Label in the language required by the destination country (EU Reg. 1169/2011, art. 15)", "exporter", "C",
+       dests=set(OTHER_EU), src="eu_fic", doc="label",
+       note_it="La lingua dipende dal Paese: lo staff la verifica per questa destinazione",
+       note_en="The language rule is set by each country: staff check it for this destination"),
+    _r("eu_country_rules", 3, "Regole nazionali di questo Paese UE (imballaggi e registrazione produttore, accisa sul vino, altro)",
+       "National rules of this EU country (packaging producer registration, wine excise, other)", "staff", "C",
+       dests=set(OTHER_EU), src="eu_fic", note_it="Non ancora controllate da MioTEM: verifica dello staff",
+       note_en="Not yet checked by MioTEM: staff verify"),
     _r("label_fr", 2, "Etichetta con le informazioni obbligatorie in francese (legge Toubon, Reg. UE 1169/2011)",
        "Label with mandatory information in French (Toubon law, EU Reg. 1169/2011)", "exporter", "A", dests={"FR"},
        src="fr_lang", doc="label", note_it="Altre lingue ammesse in aggiunta al francese",

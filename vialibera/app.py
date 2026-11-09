@@ -295,7 +295,10 @@ def handle_chat(body, llm=None, who=None):
 
 
 START_CATEGORIES = ("pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other")
-START_COUNTRIES = ("UK", "USA", "Canada", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria", "Switzerland", "other")
+EU_NAMES = ("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland", "France", "Germany",
+            "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", "Portugal",
+            "Romania", "Slovakia", "Slovenia", "Spain", "Sweden")
+START_COUNTRIES = ("UK", "USA", "Canada", "Switzerland") + EU_NAMES + ("other",)
 
 
 def handle_start(body, who):
@@ -1034,8 +1037,9 @@ def render_terms(lang):
     path = os.path.join(os.path.dirname(__file__), "static", f"terms_{name}.md")
     body = markdown.markdown(open(path, encoding="utf-8").read(), extensions=["tables"])
     return ("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
-            "<style>body{font:16px/1.6 system-ui;max-width:760px;margin:0 auto;padding:16px}"
-            "@media(prefers-color-scheme:dark){body{background:#121212;color:#e8e8e8}a{color:#8ab4f8}}</style>"
+            "<link rel=stylesheet href='https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Public+Sans:wght@400;600&display=swap'>"
+            "<style>body{font:16px/1.6 'Public Sans',system-ui,sans-serif;max-width:760px;margin:0 auto;padding:16px;background:#F7F2E8;color:#2B2B26}"
+            "h1,h2,h3{font-family:'Libre Baskerville',Georgia,serif;color:#1F3A2E}a{color:#2F6B55}</style>"
             + body).encode()
 
 
