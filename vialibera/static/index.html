@@ -25,7 +25,7 @@ h1{margin:0;font-size:1.5rem;display:flex;align-items:center;gap:10px}
 .logo{height:44px;width:44px}
 :root[data-theme="dark"] .logo{filter:invert(1)}
 .bar button{margin-left:6px}
-#lang{margin-left:6px;white-space:nowrap}button.flag{padding:2px;margin:0 0 0 4px;line-height:0;background:none;border:2px solid transparent;border-radius:6px;opacity:.55}button.flag.on{opacity:1;border-color:var(--bar-fg)}button.flag svg{width:36px;height:24px;border-radius:3px}
+#lang{margin-left:6px;white-space:nowrap}button.flag{padding:2px;margin:0 0 0 4px;line-height:0;background:none;border:2px solid transparent;border-radius:6px;opacity:.55}button.themebtn{font-size:26px;font-weight:700;line-height:1;color:var(--bar-fg);opacity:1;padding:4px 8px;margin-right:4px}button.flag.on{opacity:1;border-color:var(--bar-fg)}button.flag svg{width:36px;height:24px;border-radius:3px}
 button{padding:8px 14px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;cursor:pointer}
 button.primary{background:var(--accent);color:#FFF8EF;border-color:var(--accent)}
 #log{border:1px solid var(--line);border-radius:8px;padding:12px;min-height:160px;max-height:calc(100vh - 330px);max-height:calc(100dvh - 330px);overflow-y:auto;margin:12px 0;white-space:pre-wrap;background:var(--card)}
@@ -52,7 +52,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
     <button id="tbtn" hidden></button>
     <button id="wbtn" hidden></button>
     <button id="sbtn" hidden>Staff</button>
-    <span id="lang" role="group" aria-label="Language"><button type="button" id="b-en" class="flag" title="English" aria-label="English"><svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#1F3A8A"/><path d="M0 0L60 40M60 0L0 40" stroke="#fff" stroke-width="8"/><path d="M0 0L60 40M60 0L0 40" stroke="#C8102E" stroke-width="3"/><path d="M30 0V40M0 20H60" stroke="#fff" stroke-width="13"/><path d="M30 0V40M0 20H60" stroke="#C8102E" stroke-width="8"/></svg></button><button type="button" id="b-it" class="flag" title="Italiano" aria-label="Italiano"><svg viewBox="0 0 60 40"><rect width="20" height="40" fill="#009246"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#CE2B37"/></svg></button></span>
+    <button type="button" id="theme2" class="flag themebtn" aria-label="Theme"></button><span id="lang" role="group" aria-label="Language"><button type="button" id="b-en" class="flag" title="English" aria-label="English"><svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#1F3A8A"/><path d="M0 0L60 40M60 0L0 40" stroke="#fff" stroke-width="8"/><path d="M0 0L60 40M60 0L0 40" stroke="#C8102E" stroke-width="3"/><path d="M30 0V40M0 20H60" stroke="#fff" stroke-width="13"/><path d="M30 0V40M0 20H60" stroke="#C8102E" stroke-width="8"/></svg></button><button type="button" id="b-it" class="flag" title="Italiano" aria-label="Italiano"><svg viewBox="0 0 60 40"><rect width="20" height="40" fill="#009246"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#CE2B37"/></svg></button></span>
     <button id="abtn" hidden></button>
   </div>
 </header>
@@ -295,6 +295,7 @@ function applyTheme() {
   if (theme) document.documentElement.setAttribute("data-theme", theme); else document.documentElement.removeAttribute("data-theme");
   const dark = theme === "dark";
   $("theme").textContent = dark ? T[lang].theme[0] : T[lang].theme[1];
+  $("theme2").textContent = dark ? "☀" : "☾"; $("theme2").title = $("theme").textContent;
 }
 function applyLang() {
   const t = T[lang];
@@ -309,7 +310,7 @@ function applyLang() {
   applyTheme();
 }
 ["en", "it"].forEach(l => $("b-" + l).onclick = () => { if (lang === l) return; lang = l; store.set("vl_lang", lang); applyLang(); if (window.vlRefresh) window.vlRefresh(); });
-$("theme").onclick = () => {
+$("theme").onclick = $("theme2").onclick = () => {
   const dark = theme === "dark";
   theme = dark ? "light" : "dark"; store.set("vl_theme", theme); applyTheme();
 };
