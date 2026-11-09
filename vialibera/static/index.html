@@ -238,7 +238,7 @@ const T = {
     q_which_p: "Quale prodotto?", q_which_c: "Quale paese?",
     q_req: "Grazie. MioTEM non ha ancora una lista di documenti verificata per {what}. Abbiamo registrato la tua richiesta: il nostro team le esamina per decidere quali paesi e prodotti aggiungere. Se vuoi, scrivimi qui quando pensi di spedire, i volumi indicativi e se hai già un acquirente. Posso anche aiutarti con domande generali sull'export, o preparare subito la lista completa per uno dei paesi che copriamo.",
     q_cats: {"pasta": "pasta", "wine": "vino", "olive oil": "olio d'oliva", "cheese and dairy": "formaggi e latticini", "spirits": "distillati", "cured meat": "salumi", "preserves": "conserve", "bakery": "prodotti da forno", "other": "Altro prodotto"},
-    q_countries: {"UK": "Regno Unito", "USA": "Stati Uniti", "Canada": "Canada", "EU": "Unione europea", "other_eu": "Altro Paese UE (non ancora coperto)", "Germany": "Germania", "France": "Francia", "Spain": "Spagna", "Netherlands": "Paesi Bassi", "Belgium": "Belgio", "Austria": "Austria", "Switzerland": "Svizzera", "other": "Altro paese"},
+    q_countries: {"UK": "Regno Unito", "USA": "Stati Uniti", "Canada": "Canada", "EU": "Unione europea", "Austria": "Austria", "Belgium": "Belgio", "Bulgaria": "Bulgaria", "Croatia": "Croazia", "Cyprus": "Cipro", "Czechia": "Cechia", "Denmark": "Danimarca", "Estonia": "Estonia", "Finland": "Finlandia", "France": "Francia", "Germany": "Germania", "Greece": "Grecia", "Hungary": "Ungheria", "Ireland": "Irlanda", "Latvia": "Lettonia", "Lithuania": "Lituania", "Luxembourg": "Lussemburgo", "Malta": "Malta", "Netherlands": "Paesi Bassi", "Poland": "Polonia", "Portugal": "Portogallo", "Romania": "Romania", "Slovakia": "Slovacchia", "Slovenia": "Slovenia", "Spain": "Spagna", "Sweden": "Svezia", "Switzerland": "Svizzera", "other": "Altro paese"},
     w_first: "Esportare per la prima volta", w_market: "Un nuovo mercato per un prodotto che ho già", w_product: "Un nuovo prodotto per un mercato che già servo",
     w_req: "Cosa serve per un prodotto e un paese", w_q: "Ho una domanda", w_continue: "Riprendi la mia pratica", w_new: "Inizia una nuova pratica",
     account_created: "Account azienda creato dalla partita IVA.",
@@ -272,7 +272,7 @@ const T = {
     q_which_p: "Which product?", q_which_c: "Which country?",
     q_req: "Thank you. MioTEM does not yet have a checked document list for {what}. We have recorded your request: our team reviews these requests to decide which countries and products to add next. If you like, write here when you plan to ship, rough volumes and whether you already have a buyer. I can also help with general export questions, or prepare the full checklist right away for any of the countries we cover.",
     q_cats: {"pasta": "pasta", "wine": "wine", "olive oil": "olive oil", "cheese and dairy": "cheese and dairy", "spirits": "spirits", "cured meat": "cured meat", "preserves": "preserves", "bakery": "bakery", "other": "Other product"},
-    q_countries: {"UK": "United Kingdom", "USA": "United States", "Canada": "Canada", "EU": "European Union", "other_eu": "Another EU country (not covered yet)", "Germany": "Germany", "France": "France", "Spain": "Spain", "Netherlands": "Netherlands", "Belgium": "Belgium", "Austria": "Austria", "Switzerland": "Switzerland", "other": "Another country"},
+    q_countries: {"UK": "United Kingdom", "USA": "United States", "Canada": "Canada", "EU": "European Union", "Austria": "Austria", "Belgium": "Belgium", "Bulgaria": "Bulgaria", "Croatia": "Croatia", "Cyprus": "Cyprus", "Czechia": "Czechia", "Denmark": "Denmark", "Estonia": "Estonia", "Finland": "Finland", "France": "France", "Germany": "Germany", "Greece": "Greece", "Hungary": "Hungary", "Ireland": "Ireland", "Latvia": "Latvia", "Lithuania": "Lithuania", "Luxembourg": "Luxembourg", "Malta": "Malta", "Netherlands": "Netherlands", "Poland": "Poland", "Portugal": "Portugal", "Romania": "Romania", "Slovakia": "Slovakia", "Slovenia": "Slovenia", "Spain": "Spain", "Sweden": "Sweden", "Switzerland": "Switzerland", "other": "Another country"},
     w_first: "Exporting for the first time", w_market: "A new market for a product I already have", w_product: "A new product for a market I already serve",
     w_req: "What is needed for one product and country", w_q: "I have a question", w_continue: "Continue my case", w_new: "Start a new case",
     account_created: "Company account created from your VAT number.",
@@ -314,7 +314,7 @@ $("theme").onclick = () => {
 ["c1", "c2"].forEach(id => $(id).onchange = () => $("accept").disabled = !($("c1").checked && $("c2").checked));
 const LAND = {
   it: {start: "Inizia gratis", how: "Come funziona", tools: "Tutti gli strumenti", forwho: "Per chi è",
-    who: ["Aziende italiane alla prima esportazione di vino, pasta, olio d'oliva o formaggi", "Esportatori di questi prodotti che vogliono entrare in nuovi mercati", "Altri prodotti alimentari in arrivo: dicci cosa esporti e registriamo la tua richiesta", "Temporary Export Manager che seguono i loro clienti e, presto, trovano nuovi clienti", "Verso il Regno Unito, gli Stati Uniti, il Canada, la Svizzera e sei Paesi dell'Unione europea (Germania, Francia, Spagna, Paesi Bassi, Belgio, Austria)"],
+    who: ["Aziende italiane alla prima esportazione di vino, pasta, olio d'oliva o formaggi", "Esportatori di questi prodotti che vogliono entrare in nuovi mercati", "Altri prodotti alimentari in arrivo: dicci cosa esporti e registriamo la tua richiesta", "Temporary Export Manager che seguono i loro clienti e, presto, trovano nuovi clienti", "Verso il Regno Unito, gli Stati Uniti, il Canada, la Svizzera e tutti i Paesi dell'Unione europea"],
     steps: [["Scopri cosa serve", "I documenti necessari, chi prepara ciascuno e la fonte ufficiale. I dazi dalle tariffe ufficiali, aggiornati ogni settimana."], ["Controlla i documenti", "Fattura, packing list e documento di trasporto confrontati tra loro, ingredienti controllati rispetto agli additivi vietati nell'Unione europea."], ["Spedisci", "Pacchi per campioni e piccoli ordini. Pallet e container: in arrivo."]],
     walkh: "Come funziona", walkp: "Un esempio con dati reali dell'app: vino italiano verso gli Stati Uniti. Esempio, non il tuo progetto.",
     w1p: "Il tuo percorso ha 4 tappe: Azienda, Prodotto, Mercato, Spedizione. Alcune voci:", staff: "Da verificare dallo staff",
@@ -325,7 +325,7 @@ const LAND = {
     grp: {live: "Disponibili ora", preview: "Anteprima", soon: "In arrivo"},
     tag: "Compliance document validation, powered by orchestrated AI-Agents. Strumenti MioTEM e dei nostri partner, incluso VeriPura."},
   en: {start: "Start free", how: "How it works", tools: "All tools", forwho: "Who it's for",
-    who: ["Italian companies exporting wine, pasta, olive oil or cheese for the first time", "Exporters of these products looking to enter new markets", "Other food products coming: tell us what you export and we'll record your request", "Temporary export managers who follow their clients and, soon, find new ones", "To the United Kingdom, the United States, Canada, Switzerland and six European Union countries (Germany, France, Spain, the Netherlands, Belgium, Austria)"],
+    who: ["Italian companies exporting wine, pasta, olive oil or cheese for the first time", "Exporters of these products looking to enter new markets", "Other food products coming: tell us what you export and we'll record your request", "Temporary export managers who follow their clients and, soon, find new ones", "To the United Kingdom, the United States, Canada, Switzerland and all European Union countries"],
     steps: [["Find out what you need", "The documents you need, who prepares each one, and the official source. Duties from the official tariffs, updated weekly."], ["Check your documents", "Invoice, packing list and transport document compared with each other, ingredients screened against additives banned in the European Union."], ["Ship", "Parcels for samples and small orders. Pallets and containers: coming soon."]],
     walkh: "How it works", walkp: "An example with real data from the app: Italian wine to the United States. An example, not your project.",
     w1p: "Your path has 4 steps: Company, Product, Destination, Shipment. A few items:", staff: "Staff to verify",
@@ -1011,7 +1011,7 @@ applyLang();
   }
   // ---- TEM workspace (export consultant firms). The server enforces who sees which client.
   const CATS = ["pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other"];
-  const COUNTRIES = ["UK", "USA", "Canada", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria", "Switzerland", "other"];
+  const COUNTRIES = ["UK", "USA", "Canada", "Switzerland", "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden", "other"];
   const sel0 = (opts, cur) => { const s = mk("select"); opts.forEach(o => { const e = mk("option", o); e.value = o; if (o === cur) e.selected = true; s.appendChild(e); }); return s; };
   const linkBox = (parent, url, note) => { const i = mk("input"); i.type = "text"; i.readOnly = true; i.value = url; i.style.width = "70%"; const c = mk("button", TT[lang].ws_copy);
     c.onclick = async () => { try { await navigator.clipboard.writeText(url); } catch (e) { i.select(); } }; parent.append(i, " ", c); if (note) parent.appendChild(mk("div", note, "muted")); };
@@ -1286,10 +1286,10 @@ applyLang();
   $("msg").onkeydown = e => { if (e.key === "Enter") send(); };
   // Routes with a verified checklist. The server decides for real (requirements.covers); this only shows the notice early.
   const COVERED_PRODUCTS = ["pasta", "wine", "olive oil", "cheese and dairy"];
-  const COVERED_COUNTRIES = ["UK", "USA", "Canada", "Switzerland", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria"];
+  const COVERED_COUNTRIES = ["UK", "USA", "Canada", "Switzerland", "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden"];
   const PICK_PRODUCTS = ["wine", "pasta", "olive oil", "cheese and dairy", "other"];
   const PICK_COUNTRIES = ["UK", "USA", "Canada", "Switzerland", "EU", "other"];
-  const EU_STATES = ["Germany", "France", "Spain", "Netherlands", "Belgium", "Austria", "other_eu"];
+  const EU_STATES = ["Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden"];
   let statusEl = null;  // the chat message that follows the checklist (step, next item, who)
   function quickStart(t) {  // first question: product, optional description, country. Straight into a project, no AI call
     const box = $("w-start"); box.innerHTML = "";

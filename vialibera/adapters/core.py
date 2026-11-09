@@ -21,7 +21,11 @@ from .. import db
 from .base import Adapter, AdapterError
 
 COUNTRY = {"UK": "United Kingdom", "US": "United States", "CA": "Canada", "DE": "Germany", "FR": "France", "ES": "Spain", "NL": "Netherlands",
-           "BE": "Belgium", "AT": "Austria", "CH": "Switzerland"}
+           "BE": "Belgium", "AT": "Austria", "CH": "Switzerland",
+           "BG": "Bulgaria", "CY": "Cyprus", "CZ": "Czechia", "DK": "Denmark", "EE": "Estonia", "EL": "Greece",
+           "FI": "Finland", "HR": "Croatia", "HU": "Hungary", "IE": "Ireland", "LT": "Lithuania", "LU": "Luxembourg",
+           "LV": "Latvia", "MT": "Malta", "PL": "Poland", "PT": "Portugal", "RO": "Romania", "SE": "Sweden",
+           "SI": "Slovenia", "SK": "Slovakia"}
 HS = {"pasta": "1902", "wine": "2204", "oil": "1509", "cheese": "0406"}
 PRODUCT = {"pasta": "Dried pasta", "wine": "Wine", "oil": "Olive oil", "cheese": "Cheese"}
 # MioTEM document type -> Core docType. Anything else is left out and Core infers it from the file name.

@@ -295,7 +295,10 @@ def handle_chat(body, llm=None, who=None):
 
 
 START_CATEGORIES = ("pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other")
-START_COUNTRIES = ("UK", "USA", "Canada", "Germany", "France", "Spain", "Netherlands", "Belgium", "Austria", "Switzerland", "other")
+EU_NAMES = ("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland", "France", "Germany",
+            "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", "Portugal",
+            "Romania", "Slovakia", "Slovenia", "Spain", "Sweden")
+START_COUNTRIES = ("UK", "USA", "Canada", "Switzerland") + EU_NAMES + ("other",)
 
 
 def handle_start(body, who):
