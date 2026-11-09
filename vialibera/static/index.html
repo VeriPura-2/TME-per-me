@@ -571,15 +571,15 @@ applyLang();
     };
     box.appendChild(go); box.appendChild(out);
   }
-  async function loadCertReq(cid) {
-    const box = $("j-certreq"), t = T[lang]; box.innerHTML = "";
+  async function loadCertReq(cid, target) {  // target: another container (the Staff page); default is the Project view box
+    const box = target || $("j-certreq"), t = T[lang]; box.innerHTML = "";
     if (!cid) return;
     const [r, d] = await call("/certreq", {case_id: cid, lang});
     if (!r.ok || !d.fields || !d.can_edit) return;
     box.appendChild(mk("h3", t.q_t)); box.appendChild(mk("p", t.q_intro, "muted"));
     if (!d.denomination) { box.appendChild(mk("p", t.q_noden)); return; }
     if (!d.bodies.length) { box.appendChild(mk("p", t.q_nobody)); return; }
-    const reload = () => loadCertReq(cid);
+    const reload = () => loadCertReq(cid, target);
     d.bodies.forEach(b => {
       box.appendChild(mk("h4", b.name + " (" + t.q_asof + " " + b.list_date + ")"));
       if (!b.supported) { box.appendChild(mk("p", t.q_unsup + " " + [b.email, b.web].filter(Boolean).join(" · "), "muted")); return; }
@@ -1076,7 +1076,8 @@ applyLang();
     });
     d.appendChild(mk("h4", "Cases"));
     j.cases.forEach(c => { const row = mk("div", (c.product || "-") + " → " + (c.country || "-") + " · " + c.status + " · " + sd(c.updated_at) + " ", "muted");
-      const cbtn = mk("button", "CORE"), box = mk("div"); cbtn.onclick = () => staffCore(c.id, box); row.appendChild(cbtn); d.appendChild(row); d.appendChild(box); });
+      const cbtn = mk("button", "CORE"), box = mk("div"); cbtn.onclick = () => staffCore(c.id, box); row.appendChild(cbtn);
+      const qbtn = mk("button", "Cert request"), qbox = mk("div"); qbtn.style.marginLeft = "6px"; qbtn.onclick = () => loadCertReq(c.id, qbox); row.appendChild(qbtn); d.appendChild(row); d.appendChild(box); d.appendChild(qbox); });
     d.appendChild(mk("h4", "Recent events"));
     j.events.slice(0, 10).forEach(e => d.appendChild(mk("div", sd(e.at) + " · " + e.actor.slice(-8) + " · " + e.kind, "muted")));
   }
