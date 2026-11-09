@@ -857,13 +857,18 @@ def handle_eori(body, who):
 
 
 def handle_ocqpr(body, who):
-    """Check one VAT number against OCQ PR's public list of certified operators. Only when a person asks."""
+    """Check one VAT number against OCQ PR's public list of certified operators. Only when a person asks.
+    An exporter can check only the company of the case; a TEM firm or staff can check any VAT."""
     row, err = _case_for(body, who)
     if err:
         return err
     from . import ocqpr
     case = db.case_read(con(), row["id"])
-    vat = body.get("vat") or (case.get("company") or {}).get("vat_number")
+    own = (case.get("company") or {}).get("vat_number")
+    anyone = permissions.case_role(con(), row, who) in ("tem", "staff", "support")
+    vat = (body.get("vat") or own) if anyone else own
+    if body.get("info"):
+        return 200, {"mode": "any" if anyone else "own", "vat": ocqpr.normalise_vat(own)}
     return 200, ocqpr.check_vat(vat, "en" if body.get("lang") == "en" else "it")
 
 
