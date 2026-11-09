@@ -872,6 +872,30 @@ def handle_ocqpr(body, who):
     return 200, ocqpr.check_vat(vat, "en" if body.get("lang") == "en" else "it")
 
 
+def handle_certreq(body, who):
+    """Request to a control body (Valoritalia, Kiwa) prepared from the company record. Staff and TEM prepare and track it;
+    everyone with access to the case sees it. The app sends nothing."""
+    action = body.get("action") or "info"
+    row, err = _case_for(body, who, "read" if action == "info" else "write")
+    if err:
+        return err
+    from . import cert_requests
+    lang = "en" if body.get("lang") == "en" else "it"
+    role = permissions.case_role(con(), row, who)
+    can = role in ("staff", "tem")
+    if action == "info":
+        return 200, dict(cert_requests.info(con(), row, lang), can_edit=can)
+    if not can:
+        return 403, {"error": "forbidden"}
+    if action == "prepare":
+        r = cert_requests.prepare(con(), row, who["user"], body.get("body_id"), bool(body.get("consent")))
+    elif action in ("sent", "reply_received"):
+        r = cert_requests.set_state(con(), who, row, body.get("request_id"), action, body.get("doc_id"))
+    else:
+        r = {"error": "unknown action"}
+    return (400 if r.get("error") else 200), r
+
+
 def handle_eori_pdf(body, who):
     """Save the values the person confirmed and return the filled ADM form as PDF bytes."""
     row, err = _case_for(body, who, "write")
@@ -1152,7 +1176,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 traceback.print_exc()  # full details in the server log, not only the error name
                 return self._send(500, {"error": type(e).__name__})
-        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/lane/details", "/account", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/ocqpr", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
+        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/lane/details", "/account", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/ocqpr", "/certreq", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
                 or self.path.startswith("/core/") or self.path.startswith("/tem/") or self.path.startswith("/tools/")):
             return self._send(404, {})
@@ -1197,6 +1221,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_tem(self.path, body, who))
             if self.path == "/eori":
                 return self._send(*handle_eori(body, who))
+            if self.path == "/certreq":
+                return self._send(*handle_certreq(body, who))
             if self.path == "/ocqpr":
                 return self._send(*handle_ocqpr(body, who))
             if self.path == "/eori/pdf":
