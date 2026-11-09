@@ -25,6 +25,17 @@ def test_parse_results():
     assert ocqpr.list_date(RES) == "2026-11-03"
 
 
+def test_list_date_formats():
+    assert ocqpr.list_date("<p>aggiornato al 03 novembre 2026</p>") == "2026-11-03"
+    assert ocqpr.list_date("aggiornato al 3/1/2026") == "2026-01-03"
+
+
+def test_many_productions_one_company():
+    page = RES + RES.replace("c3014", "m329").replace("DOP PARMIGIANO REGGIANO", "ACETO BALSAMICO")
+    r = ocqpr.check_vat(VAT, fetcher=lambda u: DET if "/c3014" in u else page)
+    assert len(r["records"]) == 2 and len(r["companies"]) == 1
+
+
 def test_parse_detail():
     d = ocqpr.parse_detail(DET)
     assert d["vat"] == VAT and d["certificate_no"] == "12/14" and d["issued"] == "23/10/14" and d["valid_from"] == "19/11/13"
@@ -32,7 +43,7 @@ def test_parse_detail():
 
 def test_check_listed_and_mismatch():
     r = ocqpr.check_vat("IT" + VAT, "en", fetcher=fake)
-    assert r["status"] == "listed" and r["records"][0]["confirmed_vat"] is True and r["list_date"] == "2026-11-03"
+    assert r["status"] == "listed" and r["confirmed_vat"] is True and r["companies"] == ["4 MADONNE CASEIFICIO DELL'EMILIA S.C.A."] and r["list_date"] == "2026-11-03"
     assert ocqpr.check_vat("11111111111", fetcher=fake)["status"] == "not_listed"
 
 
