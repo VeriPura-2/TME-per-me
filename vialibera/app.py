@@ -209,7 +209,9 @@ def rollback_current():
 
 
 STATIC_ASSETS = {"/logo-mark.png": "image/png", "/favicon.png": "image/png",
-                 "/favicon.ico": "image/x-icon", "/apple-touch-icon.png": "image/png"}
+                 "/favicon.ico": "image/x-icon", "/apple-touch-icon.png": "image/png",
+                 "/favicon.svg": "image/svg+xml", "/logo-dark.svg": "image/svg+xml",
+                 "/logo-light.svg": "image/svg+xml"}
 
 
 LOAD_TEST_PREFIX = "Load test"  # first words of every load-test message: lets staff find and remove them
