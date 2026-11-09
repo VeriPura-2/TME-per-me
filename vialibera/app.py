@@ -856,6 +856,17 @@ def handle_eori(body, who):
     return 200, eori.describe(db.case_read(con(), row["id"]), "en" if body.get("lang") == "en" else "it")
 
 
+def handle_ocqpr(body, who):
+    """Check one VAT number against OCQ PR's public list of certified operators. Only when a person asks."""
+    row, err = _case_for(body, who)
+    if err:
+        return err
+    from . import ocqpr
+    case = db.case_read(con(), row["id"])
+    vat = body.get("vat") or (case.get("company") or {}).get("vat_number")
+    return 200, ocqpr.check_vat(vat, "en" if body.get("lang") == "en" else "it")
+
+
 def handle_eori_pdf(body, who):
     """Save the values the person confirmed and return the filled ADM form as PDF bytes."""
     row, err = _case_for(body, who, "write")
@@ -1136,7 +1147,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 traceback.print_exc()  # full details in the server log, not only the error name
                 return self._send(500, {"error": type(e).__name__})
-        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/lane/details", "/account", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
+        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/lane/details", "/account", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/ocqpr", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
                 or self.path.startswith("/core/") or self.path.startswith("/tem/") or self.path.startswith("/tools/")):
             return self._send(404, {})
@@ -1181,6 +1192,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_tem(self.path, body, who))
             if self.path == "/eori":
                 return self._send(*handle_eori(body, who))
+            if self.path == "/ocqpr":
+                return self._send(*handle_ocqpr(body, who))
             if self.path == "/eori/pdf":
                 code, out = handle_eori_pdf(body, who)
                 if code == 200:
