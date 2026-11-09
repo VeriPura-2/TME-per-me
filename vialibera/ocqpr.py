@@ -16,7 +16,7 @@ HOST = "www.ocqpr.it"
 SEARCH = "https://www.ocqpr.it/aziende-certificate/itemlist/filter?moduleId=178&Itemid=327&searchword6="
 USER_AGENT = "MioTEM/1.0 (+https://veripura.com; contact thomas@veripura.com)"
 MAX_BYTES = 600_000
-MAX_RECORDS = 5
+MAX_RECORDS = 40
 TTL = 3600
 _cache = {}
 
@@ -78,9 +78,16 @@ def parse_results(page):
     return out
 
 
+_MONTHS = {m: i + 1 for i, m in enumerate("gennaio febbraio marzo aprile maggio giugno luglio agosto settembre ottobre novembre dicembre".split())}
+
+
 def list_date(page):
-    """'aggiornato al dd/mm/yyyy' as ISO date, or None."""
-    m = re.search(r"aggiornat[oa]\s+al\s+(\d{1,2})/(\d{1,2})/(\d{4})", _text(page), re.I)
+    """'aggiornato al 03 novembre 2026' (or dd/mm/yyyy) as ISO date, or None."""
+    t = _text(page)
+    m = re.search(r"aggiornat[oa]\s+al\s+(\d{1,2})\s+([a-z]+)\s+(\d{4})", t, re.I)
+    if m and m.group(2).lower() in _MONTHS:
+        return "%s-%02d-%02d" % (m.group(3), _MONTHS[m.group(2).lower()], int(m.group(1)))
+    m = re.search(r"aggiornat[oa]\s+al\s+(\d{1,2})/(\d{1,2})/(\d{4})", t, re.I)
     return "%s-%02d-%02d" % (m.group(3), int(m.group(2)), int(m.group(1))) if m else None
 
 
@@ -111,18 +118,20 @@ def check_vat(raw, lang="it", fetcher=None, now=None):
     try:
         page = fetcher(search_url(vat))
         recs = parse_results(page)[:MAX_RECORDS]
-        for r in recs:
-            r["confirmed_vat"] = None
-            if r.get("detail"):
-                try:
-                    d = parse_detail(fetcher("https://" + HOST + r["detail"]))
-                    r.update({k: v for k, v in d.items() if v and k != "vat"})
-                    r["confirmed_vat"] = d["vat"] == vat if d["vat"] else None
-                except Exception:
-                    pass
-        recs = [r for r in recs if r["confirmed_vat"] is not False]
-        res = dict(base, status="listed" if recs else "not_listed", records=recs, list_date=list_date(page),
-                   checked=time.strftime("%Y-%m-%d", time.gmtime(now)))
+        # one search can return many productions of the same company: confirm the VAT once, on the first detail page
+        confirmed, cert = None, {}
+        if recs and recs[0].get("detail"):
+            try:
+                d = parse_detail(fetcher("https://" + HOST + recs[0]["detail"]))
+                confirmed = (d["vat"] == vat) if d["vat"] else None
+                cert = {k: v for k, v in d.items() if v and k != "vat"}
+            except Exception:
+                pass
+        if confirmed is False:
+            recs = []
+        names = list(dict.fromkeys(r["name"] for r in recs))
+        res = dict(base, status="listed" if recs else "not_listed", records=recs, companies=names, confirmed_vat=confirmed,
+                   first_certificate=cert, list_date=list_date(page), checked=time.strftime("%Y-%m-%d", time.gmtime(now)))
     except Exception:
         return dict(base, status="unavailable", records=[])
     if fetcher is fetch:

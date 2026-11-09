@@ -549,10 +549,14 @@ applyLang();
         if (d.status === "invalid") out.appendChild(mk("p", t.o_bad));
         else if (d.status === "unavailable") out.appendChild(mk("p", t.o_down));
         else if (d.status === "not_listed") out.appendChild(mk("p", t.o_none));
-        else d.records.forEach(x => {
-          out.appendChild(mk("p", t.o_listed + ": " + x.name + (x.municipality ? " (" + x.municipality + ")" : "")));
-          out.appendChild(mk("p", [x.chain, x.activity, x.validity_status, x.certificate_no ? t.o_cert + " " + x.certificate_no : "", x.confirmed_vat === null ? t.o_unconf : ""].filter(Boolean).join(" · "), "muted"));
-        });
+        else {
+          out.appendChild(mk("p", t.o_listed + ": " + d.companies.join(", ") + (d.records[0].municipality ? " (" + d.records[0].municipality + ")" : "")));
+          const ul = document.createElement("ul");
+          d.records.forEach(x => ul.appendChild(mk("li", [x.chain, x.activity, x.validity_status].filter(Boolean).join(" · "))));
+          out.appendChild(ul);
+          if (d.first_certificate && d.first_certificate.certificate_no) out.appendChild(mk("p", t.o_cert + " " + d.first_certificate.certificate_no + " (" + d.records[0].chain + ")", "muted"));
+          if (d.confirmed_vat === null) out.appendChild(mk("p", t.o_unconf, "muted"));
+        }
         if (d.status === "listed") out.appendChild(mk("p", [d.list_date ? t.o_asof + " " + d.list_date : "", t.o_chk + " " + d.checked].filter(Boolean).join(" · "), "muted"));
         if (d.status !== "invalid") { out.appendChild(mk("p", d.note, "muted")); const p = mk("p"), a = mk("a", d.source.label); a.href = d.source.url; a.target = "_blank"; a.rel = "noopener"; p.appendChild(a); out.appendChild(p); }
       } finally { go.disabled = false; }
