@@ -58,3 +58,25 @@ def test_host_restricted():
     import pytest
     with pytest.raises(ValueError):
         ocqpr.fetch("https://example.com/")
+
+
+
+
+def test_exporter_only_own_vat_tem_any(monkeypatch):
+    import os
+    os.environ.setdefault("DB_PATH", ":memory:")
+    from vialibera import app, db, permissions
+    from test_journey import who
+    c = app.con()
+    cid = db.create_case(c, 1, owner_sub="oq1")
+    db.case_write(c, cid, "company", {"legal_name": "Rossi", "vat_number": "IT01234567890"})
+    c.commit()
+    seen = []
+    monkeypatch.setattr(ocqpr, "check_vat", lambda v, lang="it": seen.append(v) or {"status": "not_listed"})
+    assert app.handle_ocqpr({"case_id": cid, "info": True}, who("oq1"))[1] == {"mode": "own", "vat": "01234567890"}
+    app.handle_ocqpr({"case_id": cid, "vat": "99999999999"}, who("oq1"))
+    assert seen == ["IT01234567890"]
+    monkeypatch.setattr(permissions, "case_role", lambda *a: "tem")
+    assert app.handle_ocqpr({"case_id": cid, "info": True}, who("oq1"))[1]["mode"] == "any"
+    app.handle_ocqpr({"case_id": cid, "vat": "99999999999"}, who("oq1"))
+    assert seen[-1] == "99999999999"
