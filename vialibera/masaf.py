@@ -445,6 +445,20 @@ def lookup(name, data=None):
     return [r for r in data["rows"] if q and q in _fold(r["denomination"])]
 
 
+def describe(name, data=None, limit=3):
+    """Lookup result for the AI tool and the helper: who MASAF lists as control body for a name, with contact, list date and
+    the disclaimer. Empty 'found' when MASAF has no match (the caller then says so and flags staff)."""
+    data = data or load()
+    found = []
+    for r in lookup(name, data)[:limit]:
+        b = (data.get("bodies") or {}).get(r.get("body_id")) or {}
+        found.append({"denomination": r["denomination"], "category": r["category"], "sector": r["sector"],
+                      "control_body": r.get("body_name"), "body_id": r.get("body_id"), "email": b.get("email"),
+                      "pec": b.get("pec"), "web": b.get("web"), "list_date": r.get("list_date")})
+    return {"query": name, "found": found, "refreshed": data.get("refreshed"), "note": data.get("note"),
+            "source": "MASAF registers of authorised control bodies"}
+
+
 if __name__ == "__main__":
     import argparse
     import datetime
