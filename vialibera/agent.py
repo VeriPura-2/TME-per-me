@@ -5,7 +5,7 @@ and every write goes through db.py and gates.py, which enforce the rules.
 """
 import json
 
-from . import ai_usage, db, docs, fields, gates, personas
+from . import ai_usage, db, docs, fields, gates, masaf, personas
 
 MODEL = "claude-sonnet-5-5"
 
@@ -62,6 +62,8 @@ The page has a Documents button (top right). Clients upload their commonly used 
 library and in projects. When a client mentions a document or file, point them to that button. You cannot open or
 read the files yourself yet; you only see their names and filing, listed below. VeriPura staff and CORE review them later.
 Never say you cannot receive files. Propose services only with propose_item, using menu codes.
+Certification: when the client says the product is DOP, IGP, DOCG, DOC or IGT, follow the CERTIFICATION line of the case note. A certification
+stays "claimed" until staff or CORE have seen the certificate; never call it verified or confirmed yourself.
 Tariff, label and compliance answers must come from tools, never from memory. If a tool is
 unavailable, say so once, flag the item for VeriPura staff, and move on with the interview."""
 
@@ -85,6 +87,10 @@ TOOLS = [
          "volume": {"type": "string", "description": "rough first-shipment or yearly volume, in their words"},
          "buyer": {"type": "string", "description": "yes, no, or the buyer's situation, in their words"},
          "notes": {"type": "string"}}}},
+    {"name": "control_body",
+     "description": "Look up which control body MASAF lists for a protected product name (DOP, IGP, DOCG, DOC, IGT, STG). "
+                    "Says who may control the name, not that the client is certified. Quote the list date and say so.",
+     "input_schema": {"type": "object", "properties": {"denomination": {"type": "string"}}, "required": ["denomination"]}},
     {"name": "propose_item", "description": "Propose a menu item for the client by code. Price comes from the menu.",
      "input_schema": {"type": "object", "properties": {"code": {"type": "string"}},
                       "required": ["code"]}},
@@ -105,6 +111,8 @@ def run_tool(con, case_id, menu, name, args):
         if name == "lane_request":
             from . import lane_requests
             return lane_requests.record(con, case_id, None, args, source="chat")
+        if name == "control_body":
+            return masaf.describe(args["denomination"])
         if name == "propose_item":
             iid = gates.add_item(con, case_id, args["code"], menu)
             return {"item_id": iid, "state": "proposed"}

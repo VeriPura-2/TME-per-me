@@ -47,7 +47,20 @@ REQUIRED = [
 ]
 
 
-EXTRA = [("market", "importer_name", "Importer or buyer name", "free text", None)]
+EXTRA = [
+    ("market", "importer_name", "Importer or buyer name", "free text", None),
+    ("product", "denomination", "Protected name of the product (DOP, IGP, DOCG, DOC or IGT), only if it carries one", "free text, for example Parmigiano Reggiano or Barolo", None),
+    ("company", "cert_control_body", "Control body the client names for that certification", "free text, as the client says it", None),
+    ("company", "cert_status", "Certification status; you may only record claimed (the client says they hold it)", "claimed", None),
+]
+
+# cert_status has three steps. The agent may set only the first; the other two are set by staff or Core after a
+# document or a control body has been seen, never from what the client says.
+CERT_CLAIMED = "claimed"
+CERT_UPLOADED = "certificate uploaded and read"
+CERT_CONFIRMED = "confirmed by control body"
+CERT_STATUSES = (CERT_CLAIMED, CERT_UPLOADED, CERT_CONFIRMED)
+PROTECTED_WORDS = ("dop", "pdo", "igp", "pgi", "docg", "doc", "igt", "stg", "tsg")
 
 
 def allowed_keys():
@@ -65,6 +78,10 @@ def check_write(section, fields):
         return {}, f"section must be one of: {', '.join(sorted(allowed))}"
     ok = {k: v for k, v in (fields or {}).items() if k in allowed[section]}
     bad = [k for k in (fields or {}) if k not in allowed[section]]
+    if section == "company" and "cert_status" in ok and _norm(ok["cert_status"]) != CERT_CLAIMED:
+        del ok["cert_status"]
+        return ok, ("cert_status not saved: you may only record \"claimed\". Uploaded and confirmed statuses are set by "
+                    "VeriPura staff or CORE after a document or the control body has been seen.")
     if not bad:
         return ok, None
     hints = []
@@ -122,7 +139,38 @@ def status(case):
     return answered, len(items), missing, unknowns
 
 
+def mentions_protected_name(case):
+    """True when the client says the product is DOP/IGP/DOCG/DOC/IGT/STG (claims or certifications)."""
+    import re
+    text = " ".join(str(v) for v in (case["company"].get("certifications"), case["product"].get("claims"),
+                                     case["product"].get("appellation")) if v)
+    return bool(re.search(r"\b(" + "|".join(PROTECTED_WORDS) + r")\b", text.lower())) or bool(case["product"].get("denomination"))
+
+
+def cert_note(case):
+    """Follow-up instruction for the certification topic, or '' when it does not apply or is done."""
+    if not mentions_protected_name(case):
+        return ""
+    p, c = case["product"], case["company"]
+    if str(c.get("cert_status", "")).strip().lower() == CERT_CLAIMED and c.get("cert_control_body"):
+        return ""
+    steps = []
+    if not p.get("denomination"):
+        steps.append("ask which protected name the product carries (product.denomination), as a free answer")
+    else:
+        steps.append("call control_body with that name and tell the client which control body MASAF lists for it, with the list date, "
+                     "adding that this says who may control the name and is not proof of their certification")
+        steps.append("ask which control body certifies THEM (company.cert_control_body), with the MASAF body as the first option")
+        steps.append("ask them to upload their certificate with the Documents button, and record company.cert_status=claimed")
+    return (" CERTIFICATION (one step per message, only after the current checklist question, never two questions at once, "
+            "skippable): " + "; then ".join(steps) + ". Never say the certification is verified, valid or confirmed.")
+
+
 def prompt_note(case):
+    return _prompt_note(case) + cert_note(case)
+
+
+def _prompt_note(case):
     answered, total, missing, unknowns = status(case)
     fresh = [m for m in missing if not m[4]]
     deferred = [m for m in missing if m[4]]
