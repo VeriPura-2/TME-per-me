@@ -533,6 +533,7 @@ applyLang();
     parent.appendChild(mk("div", payload.note[lang], "simnote"));
   }
   let jsel = null;
+  let openEori = false;  // set by the EORI checklist row: open the prefilled form when it has loaded
   async function loadEori(status, cid) {
     const box = $("j-eori"), t = T[lang]; box.innerHTML = "";
     if (!cid) return;
@@ -563,6 +564,7 @@ applyLang();
       } finally { dl.disabled = false; }
     };
     det.appendChild(dl);
+    if (openEori) { openEori = false; det.open = true; setTimeout(() => box.scrollIntoView({behavior: "smooth"}), 50); }
     [[d.links.form_page, t.e_adm], [d.links.check, t.e_check]].forEach(([u, l]) => { const p = mk("p"), a = mk("a", l); a.href = u; a.target = "_blank"; a.rel = "noopener"; p.appendChild(a); det.appendChild(p); });
     box.appendChild(det);
     if (d.excise) {
@@ -787,6 +789,7 @@ applyLang();
           else if (!i.on_file && !i.importer_side) { const mb = mk("a", " " + t.j_mark); mb.href = "#"; mb.style.marginLeft = "6px"; mb.onclick = setMark(true); row.appendChild(mb); }
           if (!i.on_file && !i.marked && !i.importer_side) { const up = mk("a", " " + t.j_upload); up.href = "#"; up.style.marginLeft = "6px";
             up.onclick = e => { e.preventDefault(); const p = $("docs"); if (p.hidden) $("docsbtn").click(); $("d-file").click(); }; row.appendChild(up); }
+          if (i.id === "eori") { const ef = mk("a", " " + t.e_open); ef.href = "#"; ef.style.marginLeft = "6px"; ef.onclick = e => { e.preventDefault(); openEori = true; goTo("eori"); }; row.appendChild(ef); }
           rq.appendChild(row); });
         const stepCards = ((j.tools && j.tools.cards) || []).filter(c => c.step === l);
         if (stepCards.length) { const sb = mk("div"); sb.style.cssText = "margin:8px 0 0 12px"; rq.appendChild(sb); toolsBox(sb, {cards: stepCards, refcheck: false, tem: j.tools && j.tools.tem, open_requests: j.tools && j.tools.open_requests}, cid, false, t.tl_step); }
