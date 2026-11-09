@@ -276,6 +276,24 @@ CREATE TABLE IF NOT EXISTS lane_requests (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS cert_requests (
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  company_id TEXT,
+  body_id TEXT NOT NULL,               -- control body id from the MASAF table
+  body_name TEXT,
+  denomination TEXT NOT NULL,
+  state TEXT NOT NULL,                 -- prepared, sent or reply_received
+  consent INTEGER NOT NULL,            -- 1 when the producer agreed to the request
+  doc_id TEXT,                         -- the uploaded reply, when there is one
+  prepared_by TEXT,
+  sent_by TEXT,
+  reply_by TEXT,
+  created_at TEXT NOT NULL,
+  sent_at TEXT,
+  reply_at TEXT,
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tool_interest (
   id TEXT PRIMARY KEY,
   case_id TEXT,
