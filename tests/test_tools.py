@@ -34,6 +34,17 @@ class ToolCards(unittest.TestCase):
         self.assertNotIn("ttb_agent", ids("wine", "UK"))
         self.assertNotIn("ttb_agent", ids("pasta", "USA"))
 
+    def test_certification_card_is_narrow_and_in_the_public_list(self):
+        card = {x["id"]: x for x in tools.for_case("cheese", "France")}["cert_evidence"]
+        for lg in ("en", "it"):
+            text = card["today"]["text"][lg] + card["coming"]["text"][lg]
+            self.assertNotIn(EM_DASH, text)
+            for word in ("verified", "automatic", "traceability", "AI-powered"):
+                self.assertNotIn(word, text)
+        self.assertIn("claimed", card["today"]["text"]["en"])
+        self.assertIn("cert_evidence", {x["id"] for x in tools.public_catalog()})
+        self.assertIn("Certification evidence", tools.ai_guide())
+
     def test_every_card_states_today_or_coming_in_both_languages(self):
         for c in tools.for_case("wine", "USA"):
             self.assertTrue(c["name"]["en"] and c["name"]["it"], c["id"])

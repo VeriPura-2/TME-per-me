@@ -101,6 +101,19 @@ CARDS = [
                      "ex": L("Matches your label and invoice. Confirm?", "Coerente con etichetta e fattura. Confermi?")},
                     {"t": L("Done", "Fatto"),
                      "ex": L("Confirmed by you, recorded in the project history.", "Confermato da te, registrato nella cronologia del progetto.")}]}},
+    {"id": "cert_evidence", "by": {"kind": "miotem"},
+     "name": L("Certification evidence", "Prove delle certificazioni"),
+     "today": {"text": L("Tell us which protected name your product carries (DOP, IGP, DOCG) and which control body certifies you. "
+                         "We show the body the Ministry of Agriculture (MASAF) lists for that name, with the list date. "
+                         "Upload your certificate in Documents: until our staff or VeriPura CORE have seen it, the status stays claimed. "
+                         "For Parmigiano Reggiano, an exporter can also check its own VAT number against the public list of OCQ PR.",
+                         "Indica quale denominazione protetta ha il tuo prodotto (DOP, IGP, DOCG) e quale organismo di controllo ti certifica. "
+                         "Ti mostriamo l'organismo che il Ministero dell'agricoltura (MASAF) indica per quel nome, con la data dell'elenco. "
+                         "Carica il certificato in Documenti: finché il nostro staff o VeriPura CORE non lo hanno visto, lo stato resta «dichiarato». "
+                         "Per il Parmigiano Reggiano l'esportatore può anche controllare la propria partita IVA nell'elenco pubblico di OCQ PR.")},
+     "coming": {"status": "preview",
+                "text": L("Request to the control body: with your consent, your TEM or VeriPura staff prepare a request for an extract or a verification (Valoritalia, Kiwa Cermet), send it, and file the reply in Documents.",
+                          "Richiesta all'organismo di controllo: con il tuo consenso, il tuo TEM o lo staff VeriPura preparano una richiesta di estratto o di verifica (Valoritalia, Kiwa Cermet), la inviano e archiviano la risposta in Documenti.")}},
     {"id": "label_design", "by": {"kind": "partner", "name": "Food Label Maker, GoVisually"},
      "name": L("Label design", "Progettazione etichette"),
      "today": {"text": L("Create nutrition panels and labels with these partner tools. GoVisually is free, and Food Label Maker has a free trial label. Then upload the label here.",
