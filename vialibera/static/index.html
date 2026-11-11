@@ -355,7 +355,8 @@ function renderLanding() {
   box.innerHTML = "";
   const fork = el("div", null, null, "margin:8px 0 16px"); fork.append(el("strong", L.roleh));
   const fr = el("div", null, null, "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px");
-  const bExp = el("button", L.r_exp, "primary"), bTem = el("button", L.r_tem), bLook = el("button", L.r_look);
+  const bExp = el("button", L.r_exp), bTem = el("button", L.r_tem), bLook = el("button", L.r_look);
+  const markRole = (role) => { [[bExp, "exporter"], [bTem, "tem"], [bLook, "looking"]].forEach(([b, r]) => { b.className = r === role ? "primary" : ""; b.setAttribute("aria-pressed", r === role ? "true" : "false"); }); };
   fr.append(bExp, bTem, bLook); fork.appendChild(fr);
   // the landing conversation: the AI finds out who the visitor is, then asks questions that fit
   let vid = null; try { vid = localStorage.getItem("vl_visitor"); } catch (e) {}
@@ -373,7 +374,7 @@ function renderLanding() {
     try {
       const r = await fetch("/public/chat", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({visitor: vid, message: text, lang})});
       const j = await r.json().catch(() => ({}));
-      if (j.role) { try { localStorage.setItem("vl_role", j.role); } catch (e) {} }
+      if (j.role) { markRole(j.role); try { localStorage.setItem("vl_role", j.role); } catch (e) {} }
       if (r.status === 429) toSignin(L.lc_cap);
       else if (!r.ok) toSignin(L.lc_busy);
       else {
@@ -388,8 +389,8 @@ function renderLanding() {
   csend.onclick = () => clientSend(); cin.onkeydown = e => { if (e.key === "Enter") clientSend(); };
   chat.append(clog, copts, cin, csend);
   const openChat = (text) => { if (chat.hidden) { chat.hidden = false; cadd("bot", L.lc_open); } if (text) clientSend(text); else cin.focus(); };
-  bExp.onclick = () => openChat(L.r_exp);
-  bTem.onclick = () => openChat(L.r_tem);
+  bExp.onclick = () => { markRole("exporter"); openChat(L.r_exp); };
+  bTem.onclick = () => { markRole("tem"); openChat(L.r_tem); };
   bLook.onclick = () => { const t = $("l-tools"); if (t) t.scrollIntoView({behavior: "smooth"}); };
   const leave = el("a", L.lc_leave, null, "display:inline-block;margin-top:8px;font-size:14px;cursor:pointer;text-decoration:underline");
   leave.onclick = () => { tf.hidden = !tf.hidden; if (!tf.hidden) fFirm.focus(); };
