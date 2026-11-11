@@ -28,7 +28,7 @@ COUNTRY_WORDS = {"USA": ("usa", "us", "united states", "america", "stati uniti")
                  "Netherlands": ("netherlands", "olanda", "holland", "paesi bassi"), "Switzerland": ("switzerland", "svizzera"),
                  "Belgium": ("belgium", "belgio"), "Canada": ("canada",)}
 QUIET_TOOLS = ("set_role", "save_answer", "show_signin", "show_preview", "offer_preview")
-SIGNIN_MENTION = re.compile(r"sign[- ]?in button|button (is )?below|below[^.]{0,40}sign[- ]?in|pulsante[^.]{0,40}(accedi|sotto)|accedi[^.]{0,40}sotto", re.I)
+SIGNIN_MENTION = re.compile(r"sign[- ]?(in|up) button|button (is )?below|below[^.]{0,40}sign[- ]?in|pulsante[^.]{0,40}(accedi|sotto)|accedi[^.]{0,40}sotto", re.I)
 VISITOR = re.compile(r"^[a-f0-9]{16,64}$")
 ROLES = ("exporter", "tem", "looking")
 CATEGORIES = ("pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other")
@@ -97,11 +97,11 @@ not now, carry on with the implication question. The page builds the preview fro
 first messages, and never invent example products or countries: use only what the visitor said. If the tool answers with an error,
 simply ask your next question. Then continue with the implication or need-payoff question.
 
-Only say the preview is below if you called show_preview and it answered ok in this conversation. Only say the Sign in button is
+Only say the preview is below if you called show_preview and it answered ok in this conversation. Only say the sign-up button is
 below if you called show_signin in that same response.
 
 When you invite the visitor to sign in, or they say they want to, call show_signin in that same response and say the
-Sign in button is below your message. Never describe a link or a page you cannot show.
+sign-up button is below your message. Never describe a link or a page you cannot show.
 
 Rules:
 - Never state tariffs, taxes, legal requirements, prices or deadlines. If asked, say MioTEM checks these against
@@ -130,7 +130,7 @@ TOOLS = [
     {"name": "offer_preview", "description": "Record that you are asking the visitor whether they want to see the preview. Call it in the same "
      "response as the question. show_preview only works in a LATER message, after the visitor has said yes.",
      "input_schema": {"type": "object", "properties": {}}},
-    {"name": "show_signin", "description": "Make the page show a Sign in button under your reply. Call it whenever you invite the "
+    {"name": "show_signin", "description": "Make the page show the sign-up button under your reply. Call it whenever you invite the "
      "visitor to sign in, and whenever they say they want to sign in. In your reply say the button is below.",
      "input_schema": {"type": "object", "properties": {}}},
     {"name": "yearly_estimate", "description": "Work out the visitor's own yearly paperwork time and cost from their numbers. "
