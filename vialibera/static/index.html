@@ -55,6 +55,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
     <button id="tbtn" hidden></button>
     <button id="wbtn" hidden></button>
     <button id="sbtn" hidden>Staff</button>
+    <button id="hlogin" hidden></button>
     <button type="button" id="theme2" class="flag themebtn" aria-label="Theme"></button><span id="lang" role="group" aria-label="Language"><button type="button" id="b-en" class="flag" title="English" aria-label="English"><svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#1F3A8A"/><path d="M0 0L60 40M60 0L0 40" stroke="#fff" stroke-width="8"/><path d="M0 0L60 40M60 0L0 40" stroke="#C8102E" stroke-width="3"/><path d="M30 0V40M0 20H60" stroke="#fff" stroke-width="13"/><path d="M30 0V40M0 20H60" stroke="#C8102E" stroke-width="8"/></svg></button><button type="button" id="b-it" class="flag" title="Italiano" aria-label="Italiano"><svg viewBox="0 0 60 40"><rect width="20" height="40" fill="#009246"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#CE2B37"/></svg></button></span>
     <button id="abtn" hidden></button>
     <button id="logout" hidden></button>
@@ -158,7 +159,6 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   </div>
 </div>
 <div id="landing" hidden class="card">
-  <div class="landing-logo"><img class="ll-light" src="/logo-light.svg?v=5" alt="MioTEM" height="72"><img class="ll-dark" src="/logo-dark.svg?v=5" alt="MioTEM" height="72"></div>
   <h2 id="landing-h"></h2>
   <p id="landing-t"></p>
   <p id="landing-err" class="muted" hidden></p>
@@ -224,7 +224,7 @@ const T = {
     signin: "Accedi / Registrati", signout: "Esci", send: "Invia", ph: "Racconta il tuo prodotto e il mercato",
     own_pending: "La tua titolarità dell'azienda è in verifica da parte dello staff VeriPura (di solito entro un giorno lavorativo). Nel frattempo puoi lavorare; inviti ai colleghi e invio dei documenti alla validazione attendono la conferma.",
     verify_email: "Conferma la tua email: ti abbiamo inviato un link (controlla anche lo spam). Poi accedi di nuovo.", login_refused: "Accesso non riuscito: ",
-    signed: "Accesso come ", landing_h: "MioTEM. Il tuo Export Manager AI.", landing: "Vuoi vendere all'estero ma non hai mai esportato? MioTEM ti dice quali documenti servono per il tuo prodotto e il tuo paese, chi prepara ciascuno, quali dazi paghi, e ti aiuta a controllare i documenti prima di spedire.",
+    signed: "Accesso come ", landing_h: "MioTEM. Il tuo Export Manager AI.", landing: "Vendi cibo italiano all'estero? MioTEM ti dice quali documenti servono per il tuo prodotto e il tuo paese, chi prepara ciascuno, quali dazi paghi, e ti aiuta a controllare i documenti prima di spedire. I consulenti export (TEM) hanno uno spazio di lavoro per seguire ogni cliente.",
     gateIntro: "Prima di iniziare, leggi e accetta le condizioni.",
     c1: 'Ho letto e accetto le <a href="/terms?lang=it" target="_blank">Condizioni del servizio</a> e l\'<a href="/terms?lang=it#privacy" target="_blank">Informativa sulla privacy</a>.',
     c2: "Approvo specificamente, ai sensi degli artt. 1341 e 1342 c.c., le clausole indicate nelle Condizioni (limitazione di responsabilità, sospensione e cessazione, modifiche unilaterali, legge applicabile e foro competente).",
@@ -258,7 +258,7 @@ const T = {
     signin: "Sign in / Sign up", signout: "Sign out", send: "Send", ph: "Tell us about your product and market",
     own_pending: "VeriPura staff are confirming that you own this company (usually within one working day). Meanwhile you can work; inviting colleagues and sending documents for validation wait for that confirmation.",
     verify_email: "Please confirm your email: we sent you a link (check spam too). Then sign in again.", login_refused: "Sign-in failed: ",
-    signed: "Signed in as ", landing_h: "MioTEM. Your AI Export Manager.", landing: "Want to sell abroad but have never exported? MioTEM tells you which documents your product needs for your country, who prepares each one, which duties you pay, and helps you check your documents before you ship.",
+    signed: "Signed in as ", landing_h: "MioTEM. Your AI Export Manager.", landing: "Selling Italian food abroad? MioTEM tells you which documents your product needs for your country, who prepares each one, which duties you pay, and helps you check your documents before you ship. Export consultants (TEMs) get a workspace to run it for every client.",
     gateIntro: "Before we start, please read and accept the terms.",
     c1: 'I have read and accept the <a href="/terms?lang=en" target="_blank">Terms of Service</a> and the <a href="/terms?lang=en#privacy" target="_blank">Privacy Notice</a>.',
     c2: "I specifically approve, under Articles 1341 and 1342 of the Italian Civil Code, the clauses listed in the Terms (limitation of liability, suspension and ending, changes to the terms, governing law and courts).",
@@ -309,7 +309,7 @@ function applyLang() {
   document.documentElement.lang = lang;
   $("b-en").classList.toggle("on", lang === "en"); $("b-it").classList.toggle("on", lang === "it"); $("b-en").setAttribute("aria-pressed", lang === "en"); $("b-it").setAttribute("aria-pressed", lang === "it");
   $("logout").textContent = t.signout; $("docsbtn").textContent = t.d_btn; $("jbtn").textContent = t.j_btn; $("abtn").textContent = t.a_btn; $("a-title").textContent = t.a_title; $("a-prefs").textContent = t.a_prefs; $("tbtn").textContent = t.t_btn; $("send").textContent = t.send; $("msg").placeholder = t.ph;
-  $("landing-h").textContent = t.landing_h; $("landing-t").textContent = t.landing; $("login").textContent = t.signin;
+  $("landing-h").textContent = t.landing_h; $("landing-t").textContent = t.landing; $("login").textContent = t.signin; $("hlogin").textContent = t.signin;
   if (typeof renderLanding === "function") renderLanding();
   $("gate-intro").textContent = t.gateIntro; $("c1t").innerHTML = t.c1; $("c2t").textContent = t.c2;
   $("gate-ai").textContent = t.ai; $("accept").textContent = t.accept;
@@ -474,7 +474,7 @@ applyLang();
     history.replaceState({}, "", "/");
   }
   if (!(await client.isAuthenticated())) {
-    $("landing").hidden = false;
+    $("landing").hidden = false; $("hlogin").hidden = false; $("hlogin").onclick = () => $("login").click();
     $("login").onclick = () => client.loginWithRedirect({authorizationParams: {ui_locales: lang}});
     return;
   }
