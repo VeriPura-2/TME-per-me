@@ -169,6 +169,19 @@ class LandingChat(unittest.TestCase):
         self.assertIn("48 h", json.loads(row["answers"])["estimate"][0])
         self.assertIn("their own numbers", json.loads(row["answers"])["estimate"][0])
 
+    def test_ranges_come_back_as_a_range_with_working_weeks(self):
+        st = {"answers": {}}
+        out = landing_chat.run_tool(st, "yearly_estimate", {"hours_per_shipment": 5, "hours_per_shipment_max": 10,
+                                                            "shipments_per_year": 6, "shipments_per_year_max": 12})
+        self.assertEqual((out["hours_per_year"], out["hours_per_year_max"]), (30.0, 120.0))
+        self.assertEqual((out["work_weeks"], out["work_weeks_max"]), (0.75, 3.0))
+        self.assertIn("never as one invented midpoint", out["instruction"])
+        self.assertIn("weeks of your (or your team's) time every year", out["instruction"])
+        self.assertIn("30 h to 120 h", st["answers"]["estimate"][0])
+        exact = landing_chat.run_tool({"answers": {}}, "yearly_estimate", {"hours_per_shipment": 4, "shipments_per_year": 12})
+        self.assertNotIn("hours_per_year_max", exact)
+        self.assertEqual(exact["work_weeks"], 1.25)
+
     def test_estimate_rejects_nonsense(self):
         st = {"role": None, "answers": {}}
         self.assertEqual(landing_chat.run_tool(st, "yearly_estimate", {"hours_per_shipment": "x", "shipments_per_year": 3})["error"], "numbers_needed")

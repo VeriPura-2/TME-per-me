@@ -75,7 +75,9 @@ If the role is exporter (about 8 questions in this order, fewer if the visitor i
 4. Problem, in money: what they pay per shipment to a forwarder, broker or consultant for the documents (ranges as quick
    choices in euros, or an exact figure if they offer one). A first-time exporter is asked what they expect to spend.
 5. Once you have hours and shipments (and fees if given), call yearly_estimate and tell them the result as THEIR estimate:
-   "By your own numbers, that is about X hours and Y euros a year." Never present it as a MioTEM figure.
+   "By your own numbers, that is between about X and Z hours a year, that is N weeks of your (or your team's) time every year, and Y euros." When they gave
+   ranges, quote the range the tool returns and the weeks (40 hour weeks, as a number or fraction). Never one invented midpoint.
+   Never present it as a MioTEM figure.
 6. Implication: ask what that does to them (margin, lead time, a delayed shipment, a rejected label, a lost buyer). Ask,
    do not tell. Never state figures, fines or deadlines yourself.
 7. Need-payoff: ask what it would mean to know the exact documents and duties for their route before they ship.
@@ -166,9 +168,11 @@ TOOLS = [
      "visitor to sign in, and whenever they say they want to sign in. In your reply say the button is below.",
      "input_schema": {"type": "object", "properties": {}}},
     {"name": "yearly_estimate", "description": "Work out the visitor's own yearly paperwork time and cost from their numbers. "
-     "Use midpoints for ranges (for an open top range such as 'over 10' use the lower bound and say 'at least'). Returns the totals to quote as THEIR estimate.",
+     "For a range pass the low end in the plain field and the high end in the _max field (for an open top range such as 'over 10' pass only the lower bound and say 'at least'). Never use midpoints. Returns totals and working weeks to quote as THEIR estimate.",
      "input_schema": {"type": "object", "properties": {"hours_per_shipment": {"type": "number"}, "shipments_per_year": {"type": "number"},
-                                                       "cost_per_shipment_eur": {"type": "number"}}, "required": ["hours_per_shipment", "shipments_per_year"]}},
+                                                       "cost_per_shipment_eur": {"type": "number"}, "hours_per_shipment_max": {"type": "number"},
+                                                       "shipments_per_year_max": {"type": "number"}, "cost_per_shipment_eur_max": {"type": "number"}},
+                      "required": ["hours_per_shipment", "shipments_per_year"]}},
     {"name": "save_answer", "description": "Record one thing the visitor told you, in their words, short. For topic product "
      "also give value: one of the product categories. For topic destination also give value: one of the countries.",
      "input_schema": {"type": "object", "properties": {"topic": {"type": "string", "enum": list(TOPICS)},
@@ -283,15 +287,28 @@ def run_tool(state, name, args):
         try:
             h, n = float(args.get("hours_per_shipment")), float(args.get("shipments_per_year"))
             c = float(args.get("cost_per_shipment_eur") or 0)
+            h2 = float(args.get("hours_per_shipment_max") or h)
+            n2 = float(args.get("shipments_per_year_max") or n)
+            c2 = float(args.get("cost_per_shipment_eur_max") or c)
         except (TypeError, ValueError):
             return {"error": "numbers_needed"}
-        if not (0 <= h <= 1000 and 0 <= n <= 100000 and 0 <= c <= 1000000):
+        if not (0 <= h <= h2 <= 1000 and 0 <= n <= n2 <= 100000 and 0 <= c <= c2 <= 1000000):
             return {"error": "out_of_range"}
-        out = {"hours_per_year": round(h * n, 1), "cost_per_year_eur": round(c * n)}
-        state["answers"]["estimate"] = [f"their own numbers: {h:g} h per shipment x {n:g} shipments"
-                                        + (f", EUR {c:g} per shipment" if c else "") + f" = {out['hours_per_year']:g} h"
-                                        + (f", EUR {out['cost_per_year_eur']:,} a year" if c else " a year")]
-        return {**out, "note": "the visitor's own estimate, not a MioTEM figure"}
+        lo_h, hi_h, lo_c, hi_c = round(h * n, 1), round(h2 * n2, 1), round(c * n), round(c2 * n2)
+        wk = lambda x: round(x / 40 * 4) / 4  # work weeks of 40 hours, in quarters
+        rng = (lo_h, lo_c) != (hi_h, hi_c)
+        out = {"hours_per_year": lo_h, "cost_per_year_eur": lo_c}
+        if rng:
+            out.update({"hours_per_year_max": hi_h, "cost_per_year_eur_max": hi_c})
+        out.update({"work_weeks": wk(lo_h)} | ({"work_weeks_max": wk(hi_h)} if rng else {}))
+        txt = f"{lo_h:g} h" + (f" to {hi_h:g} h" if rng else "")
+        state["answers"]["estimate"] = [f"their own numbers: {h:g}-{h2:g} h per shipment x {n:g}-{n2:g} shipments".replace("-" + f"{h2:g} h", "" if h == h2 else "-" + f"{h2:g} h")
+                                        + (f", EUR {c:g} per shipment" if c else "") + f" = {txt}"
+                                        + (f", EUR {lo_c:,}" + (f" to {hi_c:,}" if rng and hi_c != lo_c else "") + " a year" if c else " a year")]
+        return {**out, "note": "the visitor's own estimate, not a MioTEM figure",
+                "instruction": "Say it as a range when both ends are given, never as one invented midpoint: for example 'between about 30 and 120 hours "
+                "a year, that is 3/4 to 3 weeks of your (or your team's) time every year'. Give the weeks as a fraction or a number of 40 hour weeks. For an open top "
+                "range say 'at least'. Quote the numbers returned, do no arithmetic of your own."}
     if name == "save_answer" and args.get("topic") in TOPICS:
         state["answers"].setdefault(args["topic"], []).append(str(args.get("text") or "")[:300])
         state["answers"][args["topic"]] = state["answers"][args["topic"]][-3:]
