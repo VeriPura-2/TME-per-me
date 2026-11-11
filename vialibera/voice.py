@@ -25,8 +25,8 @@ from . import db, personas, storage
 from .secrets import get_secret
 
 MAX_REPLY_CHARS = 700
-INTRO = {"it": "Sono {name}, un export manager con intelligenza artificiale.",
-         "en": "I am {name}, an AI export manager."}
+INTRO = {"it": "Sono {name}, un assistente export agentico con intelligenza artificiale.",
+         "en": "I am {name}, an agentic AI export assistant."}
 _KEY = None
 
 
@@ -82,12 +82,12 @@ def voice_for(persona_id):
 
 
 INTRO_SCRIPT = {
-    "it": ("Ciao, sono {name}, un export manager con intelligenza artificiale. Ti aiuto a capire come esportare i tuoi "
+    "it": ("Ciao, sono {name}, un assistente export agentico con intelligenza artificiale. Ti aiuto a capire come esportare i tuoi "
            "prodotti alimentari: quali regole, documenti, etichette e dazi servono per un mercato, e ti preparo un "
            "pacchetto di servizi con prezzi chiari. Ti faccio una domanda alla volta, puoi saltarne quante vuoi, e non "
            "paghi nulla finché non approvi. Questa è una dimostrazione: alcune funzioni sono simulate e lo vedrai "
            "indicato. Da qui in avanti continuiamo per iscritto. Scegli da dove iniziare."),
-    "en": ("Hello, I am {name}, an AI export manager. I help you work out how to export your food products: which rules, "
+    "en": ("Hello, I am {name}, an agentic AI export assistant. I help you work out how to export your food products: which rules, "
            "documents, labels and duties apply to a market, and I prepare a package of services with clear prices. I ask "
            "one question at a time, you can skip as many as you like, and you pay nothing until you approve. This is a "
            "demonstration: some features are simulated and marked as such. From here on we continue in writing. "
