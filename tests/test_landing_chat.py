@@ -171,6 +171,11 @@ class LandingChat(unittest.TestCase):
                        "as THEIR estimate", "Never present it as a MioTEM figure", "exact number"):
             self.assertIn(phrase, p)
 
+    def test_script_answers_the_cost_of_signing_in(self):
+        p = " ".join(landing_chat.SYSTEM.split())
+        for phrase in ("Signing in is free", "free Explore plan", "trial workspace is free", "Do not quote the price of any paid"):
+            self.assertIn(phrase, p)
+
     def test_prompt_rules(self):
         p = landing_chat.SYSTEM
         self.assertNotIn(EM_DASH, p)
