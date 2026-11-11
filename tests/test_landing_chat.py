@@ -47,6 +47,22 @@ class LandingChat(unittest.TestCase):
         self.assertEqual(row["role"], "tem")
         self.assertEqual(json.loads(row["answers"])["clients"], ["12 exporters"])
 
+    def test_empty_reply_gets_one_more_call_and_never_the_opening_line(self):
+        loud = [tool("yearly_estimate", {"hours_per_shipment": 1, "shipments_per_year": 3}, f"t{i}") for i in range(4)]
+        c = Script(*[[x] for x in loud], [text("Thanks. What would that cost you in margin?")])
+        code, out = say(c, "Under 100 euros")
+        self.assertEqual(code, 200)
+        self.assertEqual(out["reply"], "Thanks. What would that cost you in margin?")
+        self.assertEqual(c.calls[-1]["tool_choice"], {"type": "none"})
+        self.assertNotIn(landing_chat.OPENER["en"], out["reply"])
+
+    def test_if_the_extra_call_also_says_nothing_the_reply_is_a_neutral_line(self):
+        c = Script([], [])
+        code, out = say(c, "hello")
+        self.assertEqual(out["reply"], landing_chat.FALLBACK["en"])
+        roles = [m["role"] for m in json.loads(app.con().execute("SELECT history FROM anon_chats WHERE visitor_id=?", (V1,)).fetchone()["history"])]
+        self.assertTrue(all(a != b for a, b in zip(roles, roles[1:])), roles)
+
     def test_history_alternates_after_tool_results(self):
         say(Script([tool("set_role", {"role": "exporter"}), text("What do you export?")]), "I export")
         c = Script([text("And to which country?")])
