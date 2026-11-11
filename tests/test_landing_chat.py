@@ -136,6 +136,41 @@ class LandingChat(unittest.TestCase):
         self.assertEqual(landing_chat.CATEGORIES, app.START_CATEGORIES)
         self.assertEqual(set(landing_chat.COUNTRIES), set(app.START_COUNTRIES))
 
+    def test_yearly_estimate_uses_their_own_numbers_and_comes_back_to_the_ai(self):
+        c = Script([tool("yearly_estimate", {"hours_per_shipment": 4, "shipments_per_year": 12, "cost_per_shipment_eur": 150})],
+                   [text("By your own numbers, that is about 48 hours and 1800 euros a year. What does that do to your margin?")])
+        code, out = say(c, "4 hours, 12 shipments, 150 euros")
+        self.assertEqual(code, 200)
+        self.assertIn("48 hours", out["reply"])
+        result = c.calls[1]["messages"][-1]["content"][0]["content"]
+        self.assertIn('"hours_per_year": 48.0', result)
+        self.assertIn('"cost_per_year_eur": 1800', result)
+        row = app.con().execute("SELECT answers FROM anon_chats WHERE visitor_id=?", (V1,)).fetchone()
+        self.assertIn("48 h", json.loads(row["answers"])["estimate"][0])
+        self.assertIn("their own numbers", json.loads(row["answers"])["estimate"][0])
+
+    def test_estimate_rejects_nonsense(self):
+        st = {"role": None, "answers": {}}
+        self.assertEqual(landing_chat.run_tool(st, "yearly_estimate", {"hours_per_shipment": "x", "shipments_per_year": 3})["error"], "numbers_needed")
+        self.assertEqual(landing_chat.run_tool(st, "yearly_estimate", {"hours_per_shipment": 5000, "shipments_per_year": 3})["error"], "out_of_range")
+        self.assertNotIn("estimate", st["answers"])
+
+    def test_new_topics_are_saved_and_reach_the_project_note(self):
+        c = Script([tool("set_role", {"role": "exporter"}), tool("save_answer", {"topic": "handling", "text": "a freight forwarder"}, "t2"),
+                    tool("save_answer", {"topic": "time", "text": "5 to 10 hours per shipment"}, "t3"),
+                    tool("save_answer", {"topic": "cost", "text": "300 to 500 euros per shipment"}, "t4"), text("ok")])
+        say(c, "forwarder")
+        landing_chat.claim(app.con(), "user-9", V1)
+        note = landing_chat.note_for(app.con(), "user-9")
+        self.assertIn("a freight forwarder", note)
+        self.assertIn("5 to 10 hours", note)
+
+    def test_script_asks_about_handling_time_and_money(self):
+        p = landing_chat.SYSTEM
+        for phrase in ("how they handle the export documents today", "hours the paperwork takes per shipment", "pay per shipment",
+                       "as THEIR estimate", "Never present it as a MioTEM figure", "exact number"):
+            self.assertIn(phrase, p)
+
     def test_prompt_rules(self):
         p = landing_chat.SYSTEM
         self.assertNotIn(EM_DASH, p)
