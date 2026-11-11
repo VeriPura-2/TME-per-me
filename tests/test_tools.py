@@ -265,7 +265,8 @@ class CoreAndGuide(unittest.TestCase):
     def test_frontend_has_goto_and_tour(self):
         html = open(os.path.join(os.path.dirname(app.__file__), "static", "index.html"), encoding="utf-8").read()
         self.assertIn('last.startsWith("GOTO:")', html)
-        self.assertNotIn('id="w-tools"', html)  # tool list left the welcome screen (Phase 2); tools show in steps (Phase 3)
+        self.assertIn('id="w-tools"', html)  # 11 Nov: a first sign-in sees every tool and what it does; later visits do not (welcomeTools)
+        self.assertIn("if (me.latest_case) return;", html)
         self.assertIn("MioTEM. Your Agentic Export Assistant.", html)
         self.assertIn("MioTEM. Il tuo Assistente Export Agentico.", html)
 

@@ -258,6 +258,16 @@ class LandingChat(unittest.TestCase):
         self.assertIn("I agree to be contacted about a TEM introduction", html)
         self.assertIn('kind === "tem_intro" ? L.nt_ic : L.nt_consent', html)
 
+    def test_the_prompt_lists_every_public_tool_with_what_it_does(self):
+        from vialibera import tools
+        for x in tools.public_catalog():
+            self.assertIn(x["name"]["en"], landing_chat.SYSTEM)
+        self.assertIn("(coming soon)", landing_chat.SYSTEM)
+        self.assertNotIn("{TOOLS}", landing_chat.SYSTEM)
+        low = landing_chat._tool_lines().lower()
+        for bad in ("saas", "traceability", "ai-powered", "sendcloud", "shippypro"):
+            self.assertNotIn(bad, low)
+
     def test_the_prompt_never_mentions_a_preview_before_it_is_offered(self):
         self.assertIn("no \"the preview above\"", landing_chat.SYSTEM)
 
