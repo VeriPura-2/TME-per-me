@@ -41,6 +41,9 @@ TOPICS = ("product", "destination", "situation", "handling", "time", "volume", "
 OPENER = {"it": "Ciao. Esporti cibo italiano, oppure sei un TEM o consulente export?",
           "en": "Hello. Do you export Italian food, or are you a TEM or export consultant?"}
 
+FALLBACK = {"it": "Grazie, ho preso nota. Vuoi dirmi altro, oppure registrarti gratis per continuare?",
+            "en": "Thanks, noted. Would you like to tell me more, or sign up free to continue?"}
+
 SYSTEM = """You are the MioTEM guide on the public landing page. MioTEM is an AI Trade Export Manager for Italian food
 companies: it prepares the document checklist, duties and next steps for exporting Italian food. The visitor has not
 signed in yet. You speak plainly, warmly and briefly (two to four short sentences per message).
@@ -291,9 +294,27 @@ def message(con, body, ip, client):
     except Exception:
         ai_usage.record(con, None, "visitor", usage, MODEL)
         return 503, {"error": "ai_unavailable", "role": state["role"]}  # history not saved: the message counts as not sent
+    if not reply:
+        # the AI ended without a word (only tools, or nothing): ask once more for the spoken reply, never fall back to the opening line
+        try:
+            if history[-1]["role"] == "assistant":
+                history.pop()  # an empty turn: drop it so roles keep alternating
+            with db.outside_call():
+                resp = client.messages.create(
+                    model=MODEL, max_tokens=MAX_TOKENS, tools=TOOLS, tool_choice={"type": "none"},
+                    messages=history[-24:] + [{"role": "user", "content": "Now reply to the visitor in words: acknowledge their last answer and ask the next question."}],
+                    system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}},
+                            {"type": "text", "text": _note(state, lang, left)}])
+            ai_usage.add(usage, getattr(resp, "usage", None))
+            reply = "".join(b.text for b in resp.content if b.type == "text").strip()
+            if reply:
+                history.append({"role": "assistant", "content": [{"type": "text", "text": reply}]})
+        except Exception:
+            reply = ""
     ai_usage.record(con, None, "visitor", usage, MODEL)
     if not reply:
-        reply = OPENER[lang]
+        reply = FALLBACK[lang]
+        history.append({"role": "assistant", "content": [{"type": "text", "text": reply}]})
     now = db.now()
     fields = (state["role"], json.dumps(history[-24:]), json.dumps(state["answers"], ensure_ascii=False), state["messages"] + 1, now)
     if row:
