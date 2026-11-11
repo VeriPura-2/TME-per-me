@@ -28,6 +28,7 @@ COUNTRY_WORDS = {"USA": ("usa", "us", "united states", "america", "stati uniti")
                  "Netherlands": ("netherlands", "olanda", "holland", "paesi bassi"), "Switzerland": ("switzerland", "svizzera"),
                  "Belgium": ("belgium", "belgio"), "Canada": ("canada",)}
 QUIET_TOOLS = ("set_role", "save_answer", "show_signin", "show_preview")
+SIGNIN_MENTION = re.compile(r"sign[- ]?in button|button (is )?below|below[^.]{0,40}sign[- ]?in|pulsante[^.]{0,40}(accedi|sotto)|accedi[^.]{0,40}sotto", re.I)
 VISITOR = re.compile(r"^[a-f0-9]{16,64}$")
 ROLES = ("exporter", "tem", "looking")
 CATEGORIES = ("pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other")
@@ -88,6 +89,9 @@ and which products and countries, call show_preview, say the preview is below, a
 builds it from real MioTEM data. NEVER call show_preview on the first messages, and never invent example products or countries:
 use only what the visitor said. If the tool answers with an error, simply ask your next question.
 Then continue with the implication or need-payoff question.
+
+Only say the preview is below if you called show_preview and it answered ok in this conversation. Only say the Sign in button is
+below if you called show_signin in that same response.
 
 When you invite the visitor to sign in, or they say they want to, call show_signin in that same response and say the
 Sign in button is below your message. Never describe a link or a page you cannot show.
@@ -281,7 +285,7 @@ def message(con, body, ip, client):
     else:
         con.execute("INSERT INTO anon_chats(visitor_id, ip_hash, role, history, answers, messages, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
                     (visitor, h, state["role"], fields[1], fields[2], fields[3], now, now))
-    return 200, {"reply": reply, "role": state["role"], "left": left, "signin": left <= 0, "offer_signin": bool(state.get("offer_signin")),
+    return 200, {"reply": reply, "role": state["role"], "left": left, "signin": left <= 0, "offer_signin": bool(state.get("offer_signin")) or bool(SIGNIN_MENTION.search(reply)),
                 "offer_preview": bool(state.get("offer_preview"))}
 
 
