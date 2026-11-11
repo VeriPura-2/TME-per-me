@@ -211,7 +211,7 @@ def claim(con, user_sub, visitor):
     a = json.loads(row["answers"])
     first = lambda k: (a.get(k) or [""])[-1] if isinstance(a.get(k), list) else ""
     return {"claimed": True, "role": row["role"], "category": a.get("category"), "country": a.get("country"),
-            "product": first("product"), "destination": first("destination")}
+            "product": first("product"), "destination": first("destination"), "firm": first("firm"), "contact": first("contact")}
 
 
 def note_for(con, user_sub):

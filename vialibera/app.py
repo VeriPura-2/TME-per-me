@@ -438,6 +438,15 @@ def handle_tem(path, body, who):
     case_id = str(body.get("case_id") or "")
     if path == "/tem/me":
         return tems.overview(c, who)
+    if path == "/tem/trial":  # a signed-in TEM opens a trial workspace (1 seat, 2 clients, 5 client projects)
+        if not consent_ok(who):
+            return 403, {"error": "consent_required"}
+        note = ""
+        v = str(body.get("visitor") or "")
+        if landing_chat.VISITOR.match(v):
+            r = c.execute("SELECT answers FROM anon_chats WHERE visitor_id=? AND user_sub=?", (v, who["user"])).fetchone()
+            note = r["answers"] if r else ""
+        return tems.create_trial_firm(c, who, body.get("firm_name"), body.get("email"), note)
     if path == "/tem/ask":  # a client asks their TEM; the client signs in as an ordinary user
         if not consent_ok(who):
             return 403, {"error": "consent_required"}

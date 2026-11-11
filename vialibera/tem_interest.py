@@ -37,5 +37,5 @@ def record(con, data):
 
 def listing(con):
     rows = [dict(r) for r in con.execute(
-        "SELECT firm_name, email, clients, lang, created_at FROM tem_interest ORDER BY created_at DESC LIMIT 200").fetchall()]
+        "SELECT firm_name, email, clients, lang, created_at, source, note FROM tem_interest ORDER BY created_at DESC LIMIT 200").fetchall()]
     return {"total": len(rows), "requests": rows}
