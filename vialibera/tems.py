@@ -93,6 +93,47 @@ def create_firm(con, who, name, vat=None, seats=None):
     return 200, {"firm": fid, "lead_token": token}
 
 
+TRIAL = {"seats": 1, "max_clients": 2, "max_projects": 5}
+
+
+def create_trial_firm(con, who, name, email=None, note=None):
+    """A signed-in TEM opens a trial workspace without waiting for staff: 1 seat, 2 clients, 5 client projects, no time
+    limit. Staff get a lead record and raise the limits when the TEM signs up. Paid checks stay locked: a TEM cannot pay,
+    and Core checks are sent by staff."""
+    if not who:
+        return 400, {"error": "sign-in required"}
+    if permissions.is_staff(who):
+        return 403, {"error": "staff_cannot_join"}
+    if firm_of(con, who["user"]):
+        return 409, {"error": "already_in_firm"}
+    if permissions.company_of(con, who["user"]):
+        return 409, {"error": "has_company"}  # one role per account: an exporter company member does not also lead a TEM firm
+    name = str(name or "").strip()[:160]
+    if not name:
+        return 400, {"error": "name required"}
+    fid = str(uuid.uuid4())
+    con.execute("INSERT INTO tem_firms(id, name, seats, max_projects, max_clients, trial, created_by, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                (fid, name, TRIAL["seats"], TRIAL["max_projects"], TRIAL["max_clients"], "1", who["user"], db.now()))
+    con.execute("INSERT INTO tem_members(firm_id, user_sub, role, created_at) VALUES (?,?,?,?)", (fid, who["user"], "lead", db.now()))
+    em = str(email or "").strip().lower()[:254]
+    con.execute("INSERT INTO tem_interest(id, firm_name, email, clients, lang, created_at, source, note, user_sub) VALUES (?,?,?,?,?,?,?,?,?)",
+                (str(uuid.uuid4()), name, em or "unknown", "", "", db.now(), "trial", str(note or "")[:1500], who["user"]))
+    con.commit()
+    db.log_event(con, None, who["user"], "tem_trial_firm", {"firm": fid})
+    return 200, {"firm": fid}
+
+
+def client_cap(con, firm_id):
+    """Active clients a firm may have: set for trial firms, otherwise not limited."""
+    r = con.execute("SELECT max_clients FROM tem_firms WHERE id=?", (firm_id,)).fetchone()
+    v = r["max_clients"] if r else None
+    return int(v) if v not in (None, "") else None
+
+
+def client_count(con, firm_id):
+    return con.execute("SELECT COUNT(*) AS n FROM tem_clients WHERE firm_id=? AND status='active'", (firm_id,)).fetchone()["n"]
+
+
 def list_firms(con, who):
     if not permissions.is_staff(who):
         return 403, {"error": "forbidden"}
@@ -191,6 +232,9 @@ def engage_link(con, who):
     f = firm_of(con, who["user"]) if who else None
     if not f:
         return 403, {"error": "forbidden"}
+    cap = client_cap(con, f["firm_id"])
+    if cap is not None and client_count(con, f["firm_id"]) >= cap:
+        return 409, {"error": "tem_client_limit", "limit": cap}
     token = secrets.token_urlsafe(24)
     con.execute("INSERT INTO engagement_links(token, firm_id, created_by, expires_at, created_at) VALUES (?,?,?,?,?)",
                 (token, f["firm_id"], who["user"], _exp(LINK_DAYS), db.now()))
@@ -244,6 +288,13 @@ def engage_accept(con, who, token, body, terms_version):
     vat, err = vat_check.italian(body.get("vat"))
     if err:
         return 400, {"error": "invalid_vat", "detail": err}
+    cap = client_cap(con, r["firm_id"])  # trial firms: checked before anything is created
+    if cap is not None and client_count(con, r["firm_id"]) >= cap:
+        co0 = con.execute("SELECT id FROM companies WHERE vat=?", (vat,)).fetchone()
+        again = co0 and con.execute("SELECT 1 FROM tem_clients WHERE firm_id=? AND company_id=? AND status='active'",
+                                    (r["firm_id"], co0["id"])).fetchone()
+        if not again:
+            return 409, {"error": "tem_client_limit", "limit": cap}
     name = str(body.get("legal_name") or "").strip()[:200]
     sig = {"name": str(body.get("signatory_name") or "").strip()[:120], "role": str(body.get("signatory_role") or "").strip()[:80],
            "email": str(body.get("email") or "").strip()[:160]}
