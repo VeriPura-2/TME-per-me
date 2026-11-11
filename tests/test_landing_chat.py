@@ -303,7 +303,26 @@ class LandingChat(unittest.TestCase):
                     text("Would you like to see a preview?")],
                    [text("There is no checked list for this route yet.")])
         code, out = say(c, "apples to Canada")
-        self.assertEqual(out["reply"], "There is no checked list for this route yet.")
+        self.assertTrue(out["reply"].endswith("There is no checked list for this route yet."))
+        self.assertNotIn("preview", out["reply"].lower().replace("no checked list", ""))
+
+    def test_an_uncovered_route_is_said_at_once_and_only_once(self):
+        c = Script([tool("set_role", {"role": "exporter"}), tool("save_answer", {"topic": "product", "text": "hazelnut butter", "value": "preserves"}, "t2"),
+                    tool("save_answer", {"topic": "destination", "text": "the UK", "value": "UK"}, "t3"), text("How do you handle the documents?")])
+        code, out = say(c, "hazelnut butter to the UK")
+        self.assertTrue(out["reply"].startswith("MioTEM has no checked list for hazelnut butter to the UK yet."))
+        self.assertTrue(out["reply"].endswith("How do you handle the documents?"))
+        self.assertEqual((out["offer_notify"], out["notify_kind"]), (True, "route"))
+        code, out = say(Script([tool("save_answer", {"topic": "handling", "text": "myself"}), text("How many hours?")]), "myself")
+        self.assertEqual(out["reply"], "How many hours?")  # not repeated
+
+    def test_a_covered_route_gets_no_early_notice(self):
+        code, out = say(self._exporter("pasta", "Germany"), "pasta to Germany")
+        self.assertNotIn("no checked list", out["reply"])
+
+    def test_the_prompt_asks_for_plain_text_and_knows_the_route_note(self):
+        self.assertIn("no asterisks, no markdown", landing_chat.SYSTEM)
+        self.assertIn("route_noted", landing_chat.SYSTEM)
 
     def test_offer_preview_tells_the_ai_when_there_is_no_list(self):
         c = Script([tool("set_role", {"role": "exporter"}), tool("save_answer", {"topic": "product", "text": "apples", "value": "other"}, "t2"),
