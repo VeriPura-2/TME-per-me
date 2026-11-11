@@ -264,6 +264,12 @@ class LandingChat(unittest.TestCase):
         code, out = say(Script([tool("show_preview", {}), text("Your route is below.")]), "yes")  # after the yes
         self.assertTrue(out["offer_preview"])
 
+    def test_script_handles_role_buttons_and_uncovered_countries(self):
+        p = " ".join(landing_chat.SYSTEM.split())
+        self.assertIn("without repeating the opening line", p)
+        self.assertIn("does not have a checked list for that country yet", p)
+        self.assertIn("Never guess documents or rules for it", p)
+
     def test_script_asks_before_showing_the_preview(self):
         p = " ".join(landing_chat.SYSTEM.split())
         self.assertIn("Call offer_preview", p)

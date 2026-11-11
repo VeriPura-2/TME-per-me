@@ -356,10 +356,11 @@ function renderLanding() {
   const fork = el("div", null, null, "margin:8px 0 16px"); fork.append(el("strong", L.roleh));
   const fr = el("div", null, null, "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px");
   const bExp = el("button", L.r_exp), bPlan = el("button", L.r_plan), bTem = el("button", L.r_tem), bLook = el("button", L.r_look);
-  let planPicked = false, signBtn = null;
+  let planPicked = false, signBtn = null, leaveLink = null;
   const markRole = (role) => { [[planPicked ? bPlan : bExp, "exporter"], [bTem, "tem"], [bLook, "looking"]].forEach(([b, r]) => { b.className = r === role ? "primary" : ""; b.setAttribute("aria-pressed", r === role ? "true" : "false"); });
     (planPicked ? bExp : bPlan).className = ""; (planPicked ? bExp : bPlan).setAttribute("aria-pressed", "false");
-    if (signBtn) signBtn.textContent = role === "tem" ? L.lc_signup_tem : L.lc_signup; };
+    if (signBtn) signBtn.textContent = role === "tem" ? L.lc_signup_tem : L.lc_signup;
+    if (leaveLink) leaveLink.hidden = role === "exporter"; };  // the leave-your-details form is for TEMs and visitors just looking
   fr.append(bExp, bPlan, bTem, bLook); fork.appendChild(fr);
   // the landing conversation: the AI finds out who the visitor is, then asks questions that fit
   let vid = null; try { vid = localStorage.getItem("vl_visitor"); } catch (e) {}
@@ -424,7 +425,7 @@ function renderLanding() {
     cstate.busy = false; };
   csend.onclick = () => clientSend(); cin.onkeydown = e => { if (e.key === "Enter") clientSend(); };
   chat.append(clog, copts, cin, csend, bIn);
-  const openChat = (text) => { if (chat.hidden) { chat.hidden = false; cadd("bot", L.lc_open);
+  const openChat = (text) => { if (chat.hidden) { chat.hidden = false; if (!text) cadd("bot", L.lc_open);
       // a new page view starts a new conversation (the id then stays the same through the sign-in redirect)
       vid = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("vl_visitor", vid); } catch (e) {} }
     if (text) clientSend(text); else cin.focus(); };
@@ -433,7 +434,7 @@ function renderLanding() {
   bTem.onclick = () => { markRole("tem"); openChat(L.r_tem); };
   bLook.onclick = () => { const t = $("l-tools"); if (t) t.scrollIntoView({behavior: "smooth"}); };
   const leave = el("a", L.lc_leave, null, "display:inline-block;margin-top:8px;font-size:14px;cursor:pointer;text-decoration:underline");
-  leave.onclick = () => { tf.hidden = !tf.hidden; if (!tf.hidden) fFirm.focus(); };
+  leaveLink = leave; leave.onclick = () => { tf.hidden = !tf.hidden; if (!tf.hidden) fFirm.focus(); };
   fork.append(chat);
   const tf = el("div", null, "card", "margin-top:12px"); tf.hidden = true; tf.append(el("strong", L.tf_h), el("div", L.tf_p, "muted", "font-size:14px;margin:4px 0 8px"));
   const fld = (ph) => { const i = document.createElement("input"); i.type = "text"; i.placeholder = ph; i.style.cssText = "width:100%;margin:4px 0"; tf.appendChild(i); return i; };
