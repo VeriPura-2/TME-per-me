@@ -66,6 +66,9 @@ If the role is exporter (about 8 questions in this order, fewer if the visitor i
 1. Situation: what they export and to which country (product and destination).
 2. Situation: how they handle the export documents today, or how they plan to if they have not exported yet:
    OPTIONS: Myself or my team | A freight forwarder | A customs broker | A TEM or consultant | Not decided yet
+   If they say they work with a TEM or consultant, the hours question in step 3 becomes: about how many hours a month they spend
+   gathering and sending documents to their TEM (same quick ranges). Afterwards say MioTEM prepares and checks the documents
+   beforehand, so that time shrinks.
 3. Problem, in numbers: roughly how many hours the paperwork takes per shipment, and how many shipments a year they expect.
    Offer ranges as quick choices, for example OPTIONS: Under 2 hours | 2 to 5 hours | 5 to 10 hours | Over 10 hours. If they
    type an exact number, use that instead. Ask the shipments per year the same way.
@@ -76,6 +79,9 @@ If the role is exporter (about 8 questions in this order, fewer if the visitor i
 6. Implication: ask what that does to them (margin, lead time, a delayed shipment, a rejected label, a lost buyer). Ask,
    do not tell. Never state figures, fines or deadlines yourself.
 7. Need-payoff: ask what it would mean to know the exact documents and duties for their route before they ship.
+   If they handle exports themselves or have not decided, and they seem unsure or stretched, you may ask once: "Would you like an
+   introduction to a TEM who works on MioTEM?" On a yes call offer_tem_intro. Never promise a match or a date: say a short form below
+   lets them leave an email so MioTEM can be in touch, and that TEMs are joining soon. On a no, carry on.
 8. Offer to sign in so MioTEM prepares the checklist and duties for their route, and say a preview of their route can be
    shown (when it is offered, the page will show it).
 Save every answer with save_answer: product, destination, handling, time, volume, cost, problem, implication, need.
@@ -153,6 +159,9 @@ TOOLS = [
     {"name": "note_uncovered", "description": "Call it when the visitor (exporter or TEM) names a destination country that is not in the covered "
      "list. Give the countries as they said them. The page then shows an optional notify-me form.",
      "input_schema": {"type": "object", "properties": {"countries": {"type": "string"}}, "required": ["countries"]}},
+    {"name": "offer_tem_intro", "description": "Call it when an exporter says yes to an introduction to a TEM. The page then shows an optional "
+     "contact form. Records interest only, no match is promised.",
+     "input_schema": {"type": "object", "properties": {}}},
     {"name": "show_signin", "description": "Make the page show the sign-up button under your reply. Call it whenever you invite the "
      "visitor to sign in, and whenever they say they want to sign in. In your reply say the button is below.",
      "input_schema": {"type": "object", "properties": {}}},
@@ -189,7 +198,7 @@ def _row(con, visitor):
 
 def _said(state):
     """Everything the visitor told us, as one lowercase text: only their saved answers, never the AI's own examples."""
-    skip = ("examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered", "vague_products")
+    skip = ("examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered", "vague_products", "tem_intro")
     return " ".join(" ".join(v) for k, v in state["answers"].items() if k not in skip and isinstance(v, list)).lower()
 
 
@@ -209,6 +218,14 @@ def run_tool(state, name, args):
         state["offer_notify"] = True  # the page shows the notify-me form
         return {"ok": True, "instruction": "Say plainly that MioTEM has no checked list for those countries yet, that a short form below lets "
                 "them leave an email to be told when they are ready (optional), then carry on with your next question."}
+    if name == "offer_tem_intro":
+        if state.get("role") != "exporter":
+            return {"error": "only for an exporter"}
+        state["answers"]["tem_intro"] = ["yes"]
+        state["offer_notify"] = True
+        state["notify_kind"] = "tem_intro"
+        return {"ok": True, "instruction": "Say a short form below lets them leave an email so MioTEM can be in touch about a TEM introduction "
+                "(optional), that no match is promised yet, then carry on with your next question or the sign-up offer."}
     if name == "offer_preview":
         a = state["answers"]
         if state.get("role") != "tem" and a.get("category") and a.get("country") and state.get("con") is not None \
@@ -377,7 +394,8 @@ def message(con, body, ip, client):
         con.execute("INSERT INTO anon_chats(visitor_id, ip_hash, role, history, answers, messages, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
                     (visitor, h, state["role"], fields[1], fields[2], fields[3], now, now))
     return 200, {"reply": reply, "role": state["role"], "left": left, "signin": left <= 0, "offer_signin": bool(state.get("offer_signin")) or bool(SIGNIN_MENTION.search(reply)),
-                "offer_preview": bool(state.get("offer_preview")), "offer_notify": bool(state.get("offer_notify"))}
+                "offer_preview": bool(state.get("offer_preview")), "offer_notify": bool(state.get("offer_notify")),
+                "notify_kind": state.get("notify_kind") or "route"}
 
 
 def listing(con):

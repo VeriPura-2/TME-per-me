@@ -234,6 +234,16 @@ class LandingChat(unittest.TestCase):
     def _offer(self):
         return say(Script([tool("offer_preview", {})], [text("Would you like to see a preview of your route?")]), "ok that is my estimate")[1]
 
+    def test_the_tem_introduction_offer_shows_the_contact_form_and_only_for_exporters(self):
+        say(self._exporter("wine", "Germany"), "wine to Germany")
+        code, out = say(Script([tool("offer_tem_intro", {})], [text("A short form below lets you leave an email.")]), "yes please")
+        self.assertEqual((out["offer_notify"], out["notify_kind"]), (True, "tem_intro"))
+        self.assertIn("tem_intro", app.con().execute("SELECT answers FROM anon_chats WHERE visitor_id=?", (V1,)).fetchone()["answers"])
+
+    def test_the_prompt_asks_tem_users_about_document_time_and_offers_an_introduction(self):
+        self.assertIn("gathering and sending documents to their TEM", landing_chat.SYSTEM)
+        self.assertIn("offer_tem_intro", landing_chat.SYSTEM)
+
     def test_exporter_preview_is_the_real_route_data(self):
         self._talk_exporter()
         code, out = say(Script([tool("show_preview", {}), text("Your route is below.")]), "go on")
