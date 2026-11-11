@@ -187,10 +187,19 @@ class LandingChat(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertFalse(out["offer_signin"])
 
+    def test_button_is_shown_when_the_reply_mentions_it_even_without_the_tool(self):
+        code, out = say(Script([text("The Sign in button is below. Our conversation continues there.")]), "ok")
+        self.assertTrue(out["offer_signin"])
+        code, out = say(Script([text("Pulsante Accedi qui sotto.")]), "ok", v=V2)
+        self.assertTrue(out["offer_signin"])
+        code, out = say(Script([text("What do you export?")]), "hi", v="e" * 32)
+        self.assertFalse(out["offer_signin"])
+
     def test_script_tells_the_ai_to_show_the_button(self):
         p = " ".join(landing_chat.SYSTEM.split())
         self.assertIn("call show_signin", p)
         self.assertIn("Never describe a link or a page you cannot show", p)
+        self.assertIn("Only say the preview is below if you called show_preview", p)
 
     def _exporter(self, product="pasta", country="Germany"):
         return Script([tool("set_role", {"role": "exporter"}),

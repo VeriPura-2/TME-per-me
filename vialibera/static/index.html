@@ -386,8 +386,10 @@ function renderLanding() {
         j.clients.forEach(c => card.appendChild(routeCard(c, c.name))); }
       if (card) { card.appendChild(el("div", L.pv_locked, "muted", "font-size:13px;margin-top:6px")); clog.appendChild(card); clog.scrollTop = clog.scrollHeight; }
     } catch (e) {} };
-  const toSignin = (msg) => { cstate.off = true; copts.innerHTML = ""; cin.disabled = csend.disabled = true; if (msg) cadd("bot", msg);
-    const b = el("button", L.lc_signin, "primary"); b.onclick = () => $("login").click(); copts.appendChild(b); };
+  // a Sign in button is always in the chat panel; it is highlighted when the AI invites sign-in or the chat is over
+  const bIn = el("button", L.lc_signin, null, "margin-left:6px"); bIn.onclick = () => $("login").click();
+  const hiIn = () => { bIn.className = "primary"; };
+  const toSignin = (msg) => { cstate.off = true; copts.innerHTML = ""; cin.disabled = csend.disabled = true; if (msg) cadd("bot", msg); hiIn(); };
   const clientSend = async (text) => {
     text = (text || cin.value).trim(); if (!text || cstate.busy || cstate.off) return;
     cin.value = ""; copts.innerHTML = ""; cadd("me", text);
@@ -406,13 +408,16 @@ function renderLanding() {
         else cadd("bot", j.reply);
         if (j.offer_preview) await showPreview();
         if (j.signin) toSignin(null);
-        else if (j.offer_signin) { const b = el("button", L.lc_signin, "primary"); b.onclick = () => $("login").click(); copts.appendChild(b); }
+        else if (j.offer_signin) hiIn();
       }
     } catch (e) { toSignin(L.lc_busy); }
     cstate.busy = false; };
   csend.onclick = () => clientSend(); cin.onkeydown = e => { if (e.key === "Enter") clientSend(); };
-  chat.append(clog, copts, cin, csend);
-  const openChat = (text) => { if (chat.hidden) { chat.hidden = false; cadd("bot", L.lc_open); } if (text) clientSend(text); else cin.focus(); };
+  chat.append(clog, copts, cin, csend, bIn);
+  const openChat = (text) => { if (chat.hidden) { chat.hidden = false; cadd("bot", L.lc_open);
+      // a new page view starts a new conversation (the id then stays the same through the sign-in redirect)
+      vid = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("vl_visitor", vid); } catch (e) {} }
+    if (text) clientSend(text); else cin.focus(); };
   bExp.onclick = () => { markRole("exporter"); openChat(L.r_exp); };
   bTem.onclick = () => { markRole("tem"); openChat(L.r_tem); };
   bLook.onclick = () => { const t = $("l-tools"); if (t) t.scrollIntoView({behavior: "smooth"}); };
