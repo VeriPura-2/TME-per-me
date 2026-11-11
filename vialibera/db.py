@@ -302,6 +302,16 @@ CREATE TABLE IF NOT EXISTS tem_interest (   -- a TEM or export consultant asks t
   lang TEXT,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS route_interest (   -- a landing visitor asks to be told when a route we do not cover yet is ready
+  id TEXT PRIMARY KEY,
+  visitor_id TEXT,
+  product TEXT,                        -- in the visitor's own words
+  country TEXT,
+  email TEXT NOT NULL,
+  name TEXT,
+  lang TEXT,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS anon_chats (   -- a landing page conversation before sign-in
   visitor_id TEXT PRIMARY KEY,
   ip_hash TEXT NOT NULL,

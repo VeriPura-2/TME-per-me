@@ -225,10 +225,10 @@ class LandingChat(unittest.TestCase):
     def _talk_exporter(self, product="pasta", country="Germany"):
         say(self._exporter(product, country), f"{product} to {country}")
         say(Script([tool("save_answer", {"topic": "handling", "text": "a freight forwarder"}), text("How many hours?")]), "forwarder")
-        self._offer()
+        return self._offer()
 
     def _offer(self):
-        say(Script([tool("offer_preview", {}), text("Would you like to see a preview of your route?")]), "ok that is my estimate")
+        return say(Script([tool("offer_preview", {}), text("Would you like to see a preview of your route?")]), "ok that is my estimate")[1]
 
     def test_exporter_preview_is_the_real_route_data(self):
         self._talk_exporter()
@@ -240,11 +240,29 @@ class LandingChat(unittest.TestCase):
         self.assertEqual(pv["documents"], sum(len(l["items"]) for l in pv["layers"]))
         self.assertTrue(pv["duties"]["eu"])
 
-    def test_uncovered_route_preview_says_so(self):
-        self._talk_exporter("spirits", "Germany")
-        say(Script([tool("show_preview", {}), text("below")]), "go")
+    def test_uncovered_route_gets_the_notify_form_not_a_preview(self):
+        out = self._talk_exporter("spirits", "Germany")
+        self.assertTrue(out["offer_notify"])
+        code, out = say(Script([tool("show_preview", {}), text("below")]), "yes")  # never offered, so refused
+        self.assertFalse(out["offer_preview"])
+        self.assertEqual(landing_chat.preview(app.con(), V1)["kind"], None)
+
+    def test_covered_route_is_offered_the_preview_not_the_form(self):
+        out = self._talk_exporter()
+        self.assertFalse(out["offer_notify"])
+
+    def test_offer_preview_tells_the_ai_when_there_is_no_list(self):
+        c = Script([tool("set_role", {"role": "exporter"}), tool("save_answer", {"topic": "product", "text": "apples", "value": "other"}, "t2"),
+                    tool("save_answer", {"topic": "destination", "text": "Canada", "value": "Canada"}, "t3"), tool("offer_preview", {}, "t4")],
+                   [text("No list yet.")])
+        code, out = say(c, "apples to Canada")
+        self.assertTrue(out["offer_notify"])
+        results = {r["tool_use_id"]: json.loads(r["content"]) for r in c.calls[-1]["messages"][-1]["content"]}
+        result = results["t4"]
+        self.assertFalse(result["covered"])
+        self.assertIn("Do NOT offer a preview", result["instruction"])
         pv = landing_chat.preview(app.con(), V1)
-        self.assertEqual((pv["kind"], pv["covered"]), ("route", False))
+        self.assertEqual(pv["kind"], None)  # no preview_ok: nothing is shown
 
     def test_preview_is_refused_on_the_first_message(self):
         c = Script([tool("set_role", {"role": "exporter"}), tool("save_answer", {"topic": "product", "text": "pasta", "value": "pasta"}, "t2"),
