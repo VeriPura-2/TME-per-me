@@ -98,7 +98,8 @@ for their route, shows who prepares each document, and checks the documents befo
 message. Step B, only after the visitor says yes in a later message: call show_preview, and say in one or two sentences what to look
 for (which documents are theirs to prepare, which belong to the carrier, forwarder or tax warehouse, and which are marked for staff
 to verify; for a TEM: one checked list per client project). Say the preview is below and do not describe its contents. If they say
-not now, carry on with the implication question. The page builds the preview from real MioTEM data. NEVER call show_preview on the
+not now, carry on with the implication question. If offer_preview answers that the route is not covered, follow its
+instruction: no preview, say it plainly, point to the form, and ask no other question. The page builds the preview from real MioTEM data. NEVER call show_preview on the
 first messages, and never invent example products or countries: use only what the visitor said. If the tool answers with an error,
 simply ask your next question. Then continue with the implication or need-payoff question.
 
@@ -189,8 +190,15 @@ def run_tool(state, name, args):
         state["role"] = args["role"]
         return {"ok": True}
     if name == "offer_preview":
+        a = state["answers"]
+        if state.get("role") != "tem" and a.get("category") and a.get("country") and state.get("con") is not None \
+                and not requirements.covers(a["category"], a["country"]):
+            state["offer_notify"] = True  # the page shows the notify-me form; no preview is offered for a route without a list
+            return {"covered": False, "instruction": "MioTEM has no checked list for this route yet. Do NOT offer a preview. Say so plainly and "
+                    "warmly, say a short form below lets them leave an email to be told when it is ready (optional), and that signing up free "
+                    "lets them look at routes that are covered. Ask no other question in this message."}
         state["answers"]["preview_offered"] = [str(state.get("messages_so_far", 0))]
-        return {"ok": True}
+        return {"ok": True, "covered": True}
     if name == "show_preview":
         offered = state["answers"].get("preview_offered")
         if not offered or int(offered[0]) >= state.get("messages_so_far", 0):
@@ -271,6 +279,7 @@ def message(con, body, ip, client):
                        (h, _since(24))).fetchone()["n"]
     if mine >= IP_DAILY_CAP or used_today(con) >= DAILY_CEILING:
         return 503, {"error": "busy", "role": state["role"]}
+    state["con"] = con
     state["messages_so_far"] = state["messages"] + 1  # this message included
     left = MESSAGE_CAP - state["messages"] - 1
     history = state["history"]
@@ -330,7 +339,7 @@ def message(con, body, ip, client):
         con.execute("INSERT INTO anon_chats(visitor_id, ip_hash, role, history, answers, messages, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
                     (visitor, h, state["role"], fields[1], fields[2], fields[3], now, now))
     return 200, {"reply": reply, "role": state["role"], "left": left, "signin": left <= 0, "offer_signin": bool(state.get("offer_signin")) or bool(SIGNIN_MENTION.search(reply)),
-                "offer_preview": bool(state.get("offer_preview"))}
+                "offer_preview": bool(state.get("offer_preview")), "offer_notify": bool(state.get("offer_notify"))}
 
 
 def listing(con):
@@ -408,5 +417,7 @@ def preview(con, visitor):
             return {"kind": None}
         return {"kind": "workspace", "clients": [dict(_route(con, c, k), name="Example client " + "AB"[n]) for n, (c, k) in enumerate(pairs)]}
     if row["role"] == "exporter" and a.get("category") and a.get("country"):
-        return dict(_route(con, a["category"], a["country"]), kind="route")
+        first = lambda k: (a.get(k) or [""])[0] if isinstance(a.get(k), list) else (a.get(k) or "")
+        label = (first("product") or a["category"]) + " → " + (first("destination") or a["country"])  # their own words
+        return dict(_route(con, a["category"], a["country"]), kind="route", label=label)
     return {"kind": None}

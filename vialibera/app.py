@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tem_interest, landing_chat, tems, voice
+from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, voice
 from .menu import MENU
 from . import plan_prices
 from .secrets import get_secret
@@ -811,6 +811,10 @@ def handle_admin(path, body, who):
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
         return 200, tem_interest.listing(c)
+    if path == "/admin/route_interest":
+        if not permissions.is_staff(who):
+            return 403, {"error": "forbidden"}
+        return 200, route_interest.listing(c)
     if path == "/admin/tool_interest":
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
@@ -1218,6 +1222,14 @@ class Handler(BaseHTTPRequestHandler):
                 if n > 4096:
                     return self._send(413, {})
                 return self._send(*tem_interest.record(con(), json.loads(self.rfile.read(n) or b"{}")))
+            except (ValueError, TypeError):
+                return self._send(400, {"error": "bad_request"})
+        if self.path.split("?")[0] == "/public/route_interest":  # public landing form: no sign-in, small and guarded
+            try:
+                n = int(self.headers.get("Content-Length", 0))
+                if n > 4096:
+                    return self._send(413, {})
+                return self._send(*route_interest.record(con(), json.loads(self.rfile.read(n) or b"{}")))
             except (ValueError, TypeError):
                 return self._send(400, {"error": "bad_request"})
         if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/lane/details", "/account", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/ocqpr", "/certreq", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook", "/landing/claim")
