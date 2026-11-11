@@ -258,6 +258,9 @@ class LandingChat(unittest.TestCase):
         self.assertIn("I agree to be contacted about a TEM introduction", html)
         self.assertIn('kind === "tem_intro" ? L.nt_ic : L.nt_consent', html)
 
+    def test_the_prompt_never_mentions_a_preview_before_it_is_offered(self):
+        self.assertIn("no \"the preview above\"", landing_chat.SYSTEM)
+
     def test_the_prompt_asks_tem_users_about_document_time_and_offers_an_introduction(self):
         self.assertIn("gathering and sending documents to their TEM", landing_chat.SYSTEM)
         self.assertIn("offer_tem_intro", landing_chat.SYSTEM)
