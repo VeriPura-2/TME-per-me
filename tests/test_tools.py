@@ -266,8 +266,8 @@ class CoreAndGuide(unittest.TestCase):
         html = open(os.path.join(os.path.dirname(app.__file__), "static", "index.html"), encoding="utf-8").read()
         self.assertIn('last.startsWith("GOTO:")', html)
         self.assertNotIn('id="w-tools"', html)  # tool list left the welcome screen (Phase 2); tools show in steps (Phase 3)
-        self.assertIn("MioTEM. Your AI Export Manager.", html)
-        self.assertIn("MioTEM. Il tuo Export Manager AI.", html)
+        self.assertIn("MioTEM. Your Agentic Export Assistant.", html)
+        self.assertIn("MioTEM. Il tuo Assistente Export Agentico.", html)
 
 
 class ChatBold(unittest.TestCase):
