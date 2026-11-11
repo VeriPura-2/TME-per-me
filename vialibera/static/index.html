@@ -367,16 +367,18 @@ function renderLanding() {
   const clog = el("div", null, null, "max-height:72vh;min-height:240px;overflow:auto"), copts = el("div", null, null, "margin:6px 0");
   const cin = document.createElement("input"); cin.type = "text"; cin.placeholder = L.lc_ph; cin.maxLength = 1000; cin.style.cssText = "width:70%;margin:4px 6px 4px 0";
   const csend = el("button", L.lc_send, "primary"), cstate = {busy: false, off: false};
-  const cadd = (cls, t) => { const d = el("div", t, cls); d.style.whiteSpace = "pre-wrap"; clog.appendChild(d); if (cls === "bot") clog.lastBot = d; clog.scrollTop = clog.scrollHeight; };
+  const cadd = (cls, t) => { const d = el("div", t, cls); d.style.whiteSpace = "pre-wrap"; clog.appendChild(d); if (cls === "bot") clog.lastBot = d; clog.scrollTop = clog.scrollHeight; return d; };
   const routeCard = (r, withTitle) => {
     const box = el("div", null, "card", "margin:8px 0;font-size:14px");
     box.append(el("strong", (withTitle ? withTitle + ": " : "") + r.category + " → " + r.country));
     if (!r.covered) { box.appendChild(el("div", L.pv_unc, "muted", "margin-top:6px")); return box; }
     box.appendChild(el("div", r.documents + " " + L.pv_docs + (r.staff_verify ? " · " + r.staff_verify + " " + L.pv_verify : ""), "muted", "margin:4px 0"));
-    r.layers.forEach(l => { box.appendChild(el("div", l.name[lang], "muted", "margin-top:8px;font-size:12px"));
+    const list = el("div", null, null, "max-height:240px;overflow:auto");  // a long checklist scrolls inside its card, so the explanation and the closing question stay in view
+    r.layers.forEach(l => { list.appendChild(el("div", l.name[lang], "muted", "margin-top:8px;font-size:12px"));
       l.items.forEach(i => { const row = el("div", null, null, "padding:4px 0;border-top:1px solid var(--line)"); row.append(i[lang]);
         if (!i.verified) row.append(" ", el("span", L.pv_verify, "verify"));
-        row.appendChild(el("div", i.who[lang] + (i.only_if ? " · " + i.only_if[lang] : ""), "muted", "font-size:12px")); box.appendChild(row); }); });
+        row.appendChild(el("div", i.who[lang] + (i.only_if ? " · " + i.only_if[lang] : ""), "muted", "font-size:12px")); list.appendChild(row); }); });
+    box.appendChild(list);
     const d = r.duties;
     box.appendChild(el("div", d && d.eu ? d.note[lang] : d && d.groups ? L.pv_duty + ": " + d.groups.map(g => g.code + " " + g.lines.map(x => x.label[lang] + " " + x.value).join(", ")).join(" · ") : L.pv_duty_pending, "muted", "margin-top:8px;font-size:13px"));
     return box; };
@@ -410,8 +412,10 @@ function renderLanding() {
           last.slice(8).split("|").map(x => x.trim()).filter(Boolean).forEach(o => { const b = el("button", o); b.onclick = () => clientSend(o); copts.appendChild(b); }); }
         // a preview sits between the AI's introduction and its closing question, so the question is the last thing on screen
         const parts = body.trim().split(/\n\s*\n/);
-        if (j.offer_preview && parts.length > 1) { cadd("bot", parts.slice(0, -1).join("\n\n")); await showPreview(); cadd("bot", parts[parts.length - 1]); }
-        else { cadd("bot", body); if (j.offer_preview) await showPreview(); }
+        if (j.offer_preview && parts.length > 1) { const intro = cadd("bot", parts.slice(0, -1).join("\n\n")); await showPreview(); cadd("bot", parts[parts.length - 1]);
+          // start at the explanation, not the bottom of the list; the browser stops at the end if everything fits
+          clog.scrollTop += intro.getBoundingClientRect().top - clog.getBoundingClientRect().top - 4; }
+        else { const d = cadd("bot", body); if (j.offer_preview) { await showPreview(); clog.scrollTop += d.getBoundingClientRect().top - clog.getBoundingClientRect().top - 4; } }
         if (j.signin) toSignin(null);
         else if (j.offer_signin) hiIn();
       }
