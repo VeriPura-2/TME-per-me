@@ -192,6 +192,58 @@ class LandingChat(unittest.TestCase):
         self.assertIn("call show_signin", p)
         self.assertIn("Never describe a link or a page you cannot show", p)
 
+    def _exporter(self, product="pasta", country="Germany"):
+        return Script([tool("set_role", {"role": "exporter"}),
+                       tool("save_answer", {"topic": "product", "text": product, "value": product}, "t2"),
+                       tool("save_answer", {"topic": "destination", "text": country, "value": country}, "t3"), text("ok")])
+
+    def test_exporter_preview_is_the_real_route_data(self):
+        say(self._exporter(), "pasta to Germany")
+        code, out = say(Script([tool("show_preview", {}), text("Your route is below.")]), "go on")
+        self.assertTrue(out["offer_preview"])
+        pv = landing_chat.preview(app.con(), V1)
+        self.assertEqual((pv["kind"], pv["covered"], pv["category"], pv["country"]), ("route", True, "pasta", "Germany"))
+        self.assertGreater(pv["documents"], 0)
+        self.assertEqual(pv["documents"], sum(len(l["items"]) for l in pv["layers"]))
+        self.assertTrue(pv["duties"]["eu"])
+
+    def test_uncovered_route_preview_says_so(self):
+        say(self._exporter("spirits", "Germany"), "spirits")
+        say(Script([tool("show_preview", {}), text("below")]), "go")
+        pv = landing_chat.preview(app.con(), V1)
+        self.assertEqual((pv["kind"], pv["covered"]), ("route", False))
+
+    def test_preview_needs_product_and_destination_first(self):
+        code, out = say(Script([tool("set_role", {"role": "exporter"}), tool("show_preview", {}, "t2"), text("What do you export?")]), "hi")
+        self.assertFalse(out["offer_preview"])
+        self.assertEqual(landing_chat.preview(app.con(), V1)["kind"], None)
+
+    def test_tem_preview_is_a_sample_workspace_with_two_labelled_clients(self):
+        c = Script([tool("set_role", {"role": "tem"}),
+                    tool("show_preview", {"examples": [{"category": "wine", "country": "USA"}, {"category": "pasta", "country": "UK"},
+                                                       {"category": "oil", "country": "Mars"}]}, "t2"), text("Your workspace is below.")])
+        code, out = say(c, "I am a TEM")
+        self.assertTrue(out["offer_preview"])
+        pv = landing_chat.preview(app.con(), V1)
+        self.assertEqual(pv["kind"], "workspace")
+        self.assertEqual([x["name"] for x in pv["clients"]], ["Example client A", "Example client B"])
+        self.assertEqual([(x["category"], x["country"]) for x in pv["clients"]], [("wine", "USA"), ("pasta", "UK")])
+
+    def test_tem_preview_ignores_invalid_examples(self):
+        c = Script([tool("set_role", {"role": "tem"}), tool("show_preview", {"examples": [{"category": "rockets", "country": "Mars"}]}, "t2"), text("ok")])
+        code, out = say(c, "TEM")
+        self.assertFalse(out["offer_preview"])
+        self.assertEqual(landing_chat.preview(app.con(), V1)["kind"], None)
+
+    def test_preview_for_an_unknown_visitor_is_empty(self):
+        self.assertEqual(landing_chat.preview(app.con(), "d" * 32), {"kind": None})
+        self.assertEqual(landing_chat.preview(app.con(), "nope"), {"kind": None})
+
+    def test_script_tells_the_ai_to_call_show_preview(self):
+        p = " ".join(landing_chat.SYSTEM.split())
+        self.assertIn("call show_preview", p)
+        self.assertIn("do not describe what it contains", p)
+
     def test_prompt_rules(self):
         p = landing_chat.SYSTEM
         self.assertNotIn(EM_DASH, p)
