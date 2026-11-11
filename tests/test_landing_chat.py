@@ -228,7 +228,7 @@ class LandingChat(unittest.TestCase):
         return self._offer()
 
     def _offer(self):
-        return say(Script([tool("offer_preview", {}), text("Would you like to see a preview of your route?")]), "ok that is my estimate")[1]
+        return say(Script([tool("offer_preview", {})], [text("Would you like to see a preview of your route?")]), "ok that is my estimate")[1]
 
     def test_exporter_preview_is_the_real_route_data(self):
         self._talk_exporter()
@@ -250,6 +250,15 @@ class LandingChat(unittest.TestCase):
     def test_covered_route_is_offered_the_preview_not_the_form(self):
         out = self._talk_exporter()
         self.assertFalse(out["offer_notify"])
+
+    def test_the_ai_reads_the_offer_result_before_it_speaks(self):
+        # the first message (an offer written before the check) must not reach the visitor when the result says no list
+        c = Script([tool("set_role", {"role": "exporter"}), tool("save_answer", {"topic": "product", "text": "apples", "value": "other"}, "t2"),
+                    tool("save_answer", {"topic": "destination", "text": "Canada", "value": "Canada"}, "t3"), tool("offer_preview", {}, "t4"),
+                    text("Would you like to see a preview?")],
+                   [text("There is no checked list for this route yet.")])
+        code, out = say(c, "apples to Canada")
+        self.assertEqual(out["reply"], "There is no checked list for this route yet.")
 
     def test_offer_preview_tells_the_ai_when_there_is_no_list(self):
         c = Script([tool("set_role", {"role": "exporter"}), tool("save_answer", {"topic": "product", "text": "apples", "value": "other"}, "t2"),
@@ -277,7 +286,7 @@ class LandingChat(unittest.TestCase):
         say(Script([tool("save_answer", {"topic": "handling", "text": "myself"}), text("ok")]), "myself")
         code, out = say(Script([tool("show_preview", {}), text("below")]), "go")  # never asked
         self.assertFalse(out["offer_preview"])
-        code, out = say(Script([tool("offer_preview", {}), tool("show_preview", {}, "t2"), text("Want to see it?")]), "ok")  # asked and shown at once
+        code, out = say(Script([tool("offer_preview", {}), tool("show_preview", {}, "t2")], [text("Want to see it?")]), "ok")  # asked and shown at once
         self.assertFalse(out["offer_preview"])
         code, out = say(Script([tool("show_preview", {}), text("Your route is below.")]), "yes")  # after the yes
         self.assertTrue(out["offer_preview"])
@@ -285,8 +294,11 @@ class LandingChat(unittest.TestCase):
     def test_script_handles_role_buttons_and_uncovered_countries(self):
         p = " ".join(landing_chat.SYSTEM.split())
         self.assertIn("without repeating the opening line", p)
-        self.assertIn("does not have a checked list for that country yet", p)
-        self.assertIn("Never guess documents or rules for it", p)
+        self.assertIn("note_uncovered", p)
+        self.assertIn("Never guess documents or rules for an uncovered country", p)
+        self.assertIn("pasta, wine, olive oil, cheese", p)
+        self.assertIn("Canada", p)
+        self.assertIn("could not load", p)
 
     def test_script_asks_before_showing_the_preview(self):
         p = " ".join(landing_chat.SYSTEM.split())
@@ -304,6 +316,27 @@ class LandingChat(unittest.TestCase):
         say(Script([tool("save_answer", {"topic": "clients", "text": "about 8 exporters"}),
                     tool("save_answer", {"topic": "situation", "text": said}, "t2"), text("Where does the time go?")]), said)
         self._offer()
+
+    def test_tem_who_is_vague_is_asked_for_examples_before_any_offer(self):
+        say(Script([tool("set_role", {"role": "tem"}), text("How many exporter clients do you serve?")]), "I am a TEM")
+        say(Script([tool("save_answer", {"topic": "clients", "text": "10 exporters"}),
+                    tool("save_answer", {"topic": "situation", "text": "all kinds of food to France, UK, Germany, USA and UAE"}, "t2"),
+                    text("Which products?")]), "all kinds of food to France, UK, Germany, USA and UAE")
+        c = Script([tool("offer_preview", {})], [text("Which typical clients?")])
+        code, out = say(c, "ok")
+        res = json.loads(c.calls[-1]["messages"][-1]["content"][0]["content"])
+        self.assertFalse(res["ready"])
+        self.assertIn("typical clients", res["instruction"])
+        code, out = say(Script([tool("show_preview", {"examples": [{"category": "wine", "country": "USA"}]}), text("below")]), "yes")
+        self.assertFalse(out["offer_preview"])
+
+    def test_tem_naming_an_uncovered_country_gets_the_notify_form(self):
+        say(Script([tool("set_role", {"role": "tem"}), text("How many clients?")]), "I am a TEM")
+        c = Script([tool("note_uncovered", {"countries": "UAE"})], [text("No list for UAE yet. Which products?")])
+        code, out = say(c, "France, UK and UAE")
+        self.assertTrue(out["offer_notify"])
+        row = app.con().execute("SELECT answers FROM anon_chats WHERE visitor_id=?", (V1,)).fetchone()
+        self.assertEqual(json.loads(row["answers"])["uncovered"], ["UAE"])
 
     def test_tem_preview_is_a_sample_workspace_with_two_labelled_clients(self):
         self._talk_tem()

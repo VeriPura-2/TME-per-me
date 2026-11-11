@@ -29,6 +29,12 @@ class RouteInterest(unittest.TestCase):
         row = app.con().execute("SELECT product, country, email, name FROM route_interest").fetchone()
         self.assertEqual((row["product"], row["country"], row["email"], row["name"]), ("apples", "Canada", "buyer@example.com", "Rossi Srl"))
 
+    def test_a_tem_asking_about_uncovered_countries_is_recorded_in_their_words(self):
+        app.con().execute("UPDATE anon_chats SET role='tem', answers=? WHERE visitor_id=?", (json.dumps({"uncovered": ["UAE"]}), V))
+        self.ask()
+        row = app.con().execute("SELECT product, country FROM route_interest").fetchone()
+        self.assertEqual((row["product"], row["country"]), ("TEM clients", "UAE"))
+
     def test_consent_and_a_real_email_are_required(self):
         self.assertEqual(self.ask(consent=False)[0], 400)
         self.assertEqual(self.ask(consent="yes")[0], 400)

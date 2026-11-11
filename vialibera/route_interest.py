@@ -16,6 +16,11 @@ EMAIL = re.compile(r"^[^@\s]{1,64}@[^@\s]{1,190}\.[^@\s]{2,}$")
 VISITOR = re.compile(r"^[a-f0-9]{16,64}$")
 
 
+def row_role_is_tem(con, visitor):
+    r = con.execute("SELECT role FROM anon_chats WHERE visitor_id=?", (visitor,)).fetchone()
+    return bool(r and r["role"] == "tem")
+
+
 def record(con, data):
     """Returns (status, body). A filled trap field looks like success so bots learn nothing."""
     if str(data.get("website") or "").strip():
@@ -33,6 +38,10 @@ def record(con, data):
             a = json.loads(row["answers"])
             product = (a.get("product") or [None])[0] if isinstance(a.get("product"), list) else a.get("product")
             country = (a.get("destination") or [None])[0] if isinstance(a.get("destination"), list) else a.get("destination")
+            if a.get("uncovered"):
+                country = a["uncovered"][0]  # a TEM (or exporter) named countries without a list: keep their words
+            if not product and row_role_is_tem(con, visitor):
+                product = "TEM clients"
     product = str(product or "")[:150] or None
     country = str(country or "")[:150] or None
     now = datetime.now(timezone.utc)
