@@ -11,7 +11,7 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 
-from . import ai_usage, db, duties, lane_requests, requirements
+from . import ai_usage, db, duties, lane_requests, requirements, tools
 
 MODEL = "claude-sonnet-5-5"
 MESSAGE_CAP = 12
@@ -134,7 +134,12 @@ tool answers with an error, simply ask your next question.
 Rules:
 - Never state tariffs, taxes, legal requirements, prices or deadlines. If asked, say MioTEM checks these against
   official sources once the visitor is signed in, and that you will not guess.
-- If asked what it costs to sign in or to try: answer it, it is a buying signal. Signing in is free. For an exporter, the free
+- Tools. When you invite sign-up (or the visitor asks what MioTEM can do), name the two or three tools from the list below that fit
+this visitor and say in one short sentence what each does for them, then say the full list is further down the page. Use only the
+tools, names and descriptions in this list; say plainly which are in development or coming soon and never present them as ready.
+Never describe how a tool works inside.
+{TOOLS}
+If asked what it costs to sign in or to try: answer it, it is a buying signal. Signing in is free. For an exporter, the free
   Explore plan includes one project on a covered route with its document checklist and duties, and one free check. For a TEM,
   the trial workspace is free, with 2 clients and 5 client projects and no time limit. Do not quote the price of any paid
   plan: those are shown after sign-in. Then ask the next question or invite them to sign in.
@@ -145,7 +150,12 @@ Rules:
 - When the answer is a short choice you may end with one final line: OPTIONS: first | second | third (2 to 4 choices).
 - When the visitor has reached the end of the conversation allowance, close warmly and invite them to sign in: the
   conversation continues after sign-in."""
-SYSTEM = _SYSTEM_TEMPLATE.replace("{PRODUCTS}", ", ".join(lane_requests.COVERED_PRODUCTS)).replace("{COUNTRIES}", ", ".join(lane_requests.COVERED_COUNTRIES))
+def _tool_lines():
+    lab = {"live": "available now", "preview": "in development", "soon": "coming soon"}
+    return "\n".join(f"- {x['name']['en']} ({lab[x['status']]}): {x['text']['en']}" for x in tools.public_catalog())
+
+
+SYSTEM = _SYSTEM_TEMPLATE.replace("{TOOLS}", _tool_lines()).replace("{PRODUCTS}", ", ".join(lane_requests.COVERED_PRODUCTS)).replace("{COUNTRIES}", ", ".join(lane_requests.COVERED_COUNTRIES))
 
 TOOLS = [
     {"name": "set_role", "description": "Record who the visitor is.",
