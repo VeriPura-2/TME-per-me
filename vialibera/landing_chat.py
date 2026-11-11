@@ -11,7 +11,7 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 
-from . import ai_usage, db, duties, requirements
+from . import ai_usage, db, duties, lane_requests, requirements
 
 MODEL = "claude-sonnet-5-5"
 MESSAGE_CAP = 12
@@ -27,7 +27,7 @@ COUNTRY_WORDS = {"USA": ("usa", "us", "united states", "america", "stati uniti")
                  "Germany": ("germany", "germania", "deutschland"), "France": ("france", "francia"), "Spain": ("spain", "spagna"),
                  "Netherlands": ("netherlands", "olanda", "holland", "paesi bassi"), "Switzerland": ("switzerland", "svizzera"),
                  "Belgium": ("belgium", "belgio"), "Canada": ("canada",)}
-QUIET_TOOLS = ("set_role", "save_answer", "show_signin", "show_preview", "offer_preview")
+QUIET_TOOLS = ("set_role", "save_answer", "show_signin", "show_preview")  # offer_preview and note_uncovered answer with an instruction: the AI must read it before it speaks
 SIGNIN_MENTION = re.compile(r"sign[- ]?(in|up) button|button (is )?below|below[^.]{0,40}sign[- ]?in|pulsante[^.]{0,40}(accedi|sotto)|accedi[^.]{0,40}sotto", re.I)
 VISITOR = re.compile(r"^[a-f0-9]{16,64}$")
 ROLES = ("exporter", "tem", "looking")
@@ -44,7 +44,7 @@ OPENER = {"it": "Ciao. Esporti cibo italiano, oppure sei un TEM o consulente exp
 FALLBACK = {"it": "Grazie, ho preso nota. Vuoi dirmi altro, oppure registrarti gratis per continuare?",
             "en": "Thanks, noted. Would you like to tell me more, or sign up free to continue?"}
 
-SYSTEM = """You are the MioTEM guide on the public landing page. MioTEM is an AI Trade Export Manager for Italian food
+_SYSTEM_TEMPLATE = """You are the MioTEM guide on the public landing page. MioTEM is an AI Trade Export Manager for Italian food
 companies: it prepares the document checklist, duties and next steps for exporting Italian food. The visitor has not
 signed in yet. You speak plainly, warmly and briefly (two to four short sentences per message).
 
@@ -109,10 +109,15 @@ below if you called show_signin in that same response.
 When you invite the visitor to sign in, or they say they want to, call show_signin in that same response and say the
 sign-up button is below your message. Never describe a link or a page you cannot show.
 
-Coverage: the visitor's destination may be a country MioTEM does not cover yet (the saved value is "other"). Say so plainly and
-warmly: MioTEM does not have a checked list for that country yet, their interest is noted, and ask whether they also consider
-the UK, the USA or an EU country. Never guess documents or rules for it. If the product is clearly not food (or not Italian),
-ask politely what Italian product they mean before saving it. Keep going with the questions either way.
+Coverage: MioTEM has checked lists for these products: {PRODUCTS}; and these countries: {COUNTRIES}. If the visitor
+(exporter or TEM) names a destination country outside that list, or an exporter's destination is saved as "other", say so plainly and
+warmly for that country, call note_uncovered with the countries as they said them (the page then shows an optional form to be told when
+they are ready), and ask whether a covered country also fits. Never guess documents or rules for an uncovered country. If the product is
+clearly not food (or not Italian), ask politely what Italian product they mean before saving it. Keep going with the questions either way.
+
+If a TEM answers vaguely ("all kinds of food", "everything"), ask for two or three typical clients with a product and a country each
+(for example wine to the USA, pasta to the UK) before moving on. Never tell the visitor that something "could not load" or failed: if a
+tool answers with an error, simply ask your next question.
 
 Rules:
 - Never state tariffs, taxes, legal requirements, prices or deadlines. If asked, say MioTEM checks these against
@@ -128,6 +133,7 @@ Rules:
 - When the answer is a short choice you may end with one final line: OPTIONS: first | second | third (2 to 4 choices).
 - When the visitor has reached the end of the conversation allowance, close warmly and invite them to sign in: the
   conversation continues after sign-in."""
+SYSTEM = _SYSTEM_TEMPLATE.replace("{PRODUCTS}", ", ".join(lane_requests.COVERED_PRODUCTS)).replace("{COUNTRIES}", ", ".join(lane_requests.COVERED_COUNTRIES))
 
 TOOLS = [
     {"name": "set_role", "description": "Record who the visitor is.",
@@ -141,6 +147,9 @@ TOOLS = [
     {"name": "offer_preview", "description": "Record that you are asking the visitor whether they want to see the preview. Call it in the same "
      "response as the question. show_preview only works in a LATER message, after the visitor has said yes.",
      "input_schema": {"type": "object", "properties": {}}},
+    {"name": "note_uncovered", "description": "Call it when the visitor (exporter or TEM) names a destination country that is not in the covered "
+     "list. Give the countries as they said them. The page then shows an optional notify-me form.",
+     "input_schema": {"type": "object", "properties": {"countries": {"type": "string"}}, "required": ["countries"]}},
     {"name": "show_signin", "description": "Make the page show the sign-up button under your reply. Call it whenever you invite the "
      "visitor to sign in, and whenever they say they want to sign in. In your reply say the button is below.",
      "input_schema": {"type": "object", "properties": {}}},
@@ -177,7 +186,7 @@ def _row(con, visitor):
 
 def _said(state):
     """Everything the visitor told us, as one lowercase text: only their saved answers, never the AI's own examples."""
-    skip = ("examples", "estimate", "category", "country", "preview_ok", "preview_offered")
+    skip = ("examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered")
     return " ".join(" ".join(v) for k, v in state["answers"].items() if k not in skip and isinstance(v, list)).lower()
 
 
@@ -189,6 +198,14 @@ def run_tool(state, name, args):
     if name == "set_role" and args.get("role") in ROLES:
         state["role"] = args["role"]
         return {"ok": True}
+    if name == "note_uncovered":
+        where = str(args.get("countries") or "").strip()[:150]
+        if not where:
+            return {"error": "name the countries"}
+        state["answers"]["uncovered"] = [where]
+        state["offer_notify"] = True  # the page shows the notify-me form
+        return {"ok": True, "instruction": "Say plainly that MioTEM has no checked list for those countries yet, that a short form below lets "
+                "them leave an email to be told when they are ready (optional), then carry on with your next question."}
     if name == "offer_preview":
         a = state["answers"]
         if state.get("role") != "tem" and a.get("category") and a.get("country") and state.get("con") is not None \
@@ -197,6 +214,13 @@ def run_tool(state, name, args):
             return {"covered": False, "instruction": "MioTEM has no checked list for this route yet. Do NOT offer a preview. Say so plainly and "
                     "warmly, say a short form below lets them leave an email to be told when it is ready (optional), and that signing up free "
                     "lets them look at routes that are covered. Ask no other question in this message."}
+        if state.get("role") == "tem":
+            said = _said(state)
+            if not a.get("clients") or not any(_mentioned(said, w) for w in PRODUCT_WORDS.values()) \
+                    or not any(_mentioned(said, w) for w in COUNTRY_WORDS.values()):
+                return {"ready": False, "instruction": "Do NOT offer the preview yet: the visitor has not named a product and a country. Ask for two "
+                        "or three typical clients, a product and a country each (for example wine to the USA, pasta to the UK), and the number of "
+                        "clients if you do not have it. Then offer the preview."}
         state["answers"]["preview_offered"] = [str(state.get("messages_so_far", 0))]
         return {"ok": True, "covered": True}
     if name == "show_preview":
