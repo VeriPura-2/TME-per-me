@@ -19,13 +19,15 @@ IP_DAILY_CAP = 40
 DAILY_CEILING = int(os.environ.get("LANDING_DAILY_CEILING", "600"))
 MAX_CHARS = 1000
 MAX_TOKENS = 600
+QUIET_TOOLS = ("set_role", "save_answer")
 VISITOR = re.compile(r"^[a-f0-9]{16,64}$")
 ROLES = ("exporter", "tem", "looking")
 CATEGORIES = ("pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other")
 COUNTRIES = ("UK", "USA", "Canada", "Switzerland", "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark",
              "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg",
              "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden", "other")
-TOPICS = ("product", "destination", "situation", "problem", "implication", "need", "firm", "clients", "contact")
+TOPICS = ("product", "destination", "situation", "handling", "time", "volume", "cost", "problem", "implication", "need",
+          "firm", "clients", "contact")
 
 OPENER = {"it": "Ciao. Esporti cibo italiano, oppure sei un TEM o consulente export?",
           "en": "Hello. Do you export Italian food, or are you a TEM or export consultant?"}
@@ -45,19 +47,30 @@ then the Problem, then the Implication of that problem, then the Need-payoff (wh
 solved). Ask exactly ONE question per message. Never repeat a question. Call save_answer for each answer, in the same
 response as your reply. Never pressure and never gate: the visitor may skip any question.
 
-If the role is exporter:
-- Situation: what they export and to which country (product and destination), and who handles exports today.
-- Problem: what worries or slows them, such as documents, duties, labels, finding buyers.
-- Implication: ask what happens to them if that goes wrong (a delayed shipment, a rejected label, a lost buyer). Ask,
-  do not tell. Never state figures, fines or deadlines yourself.
-- Need-payoff: ask what it would mean to know the exact documents and duties before they ship.
-- Then offer to sign in so MioTEM prepares the checklist and duties for their route.
+If the role is exporter (about 8 questions in this order, fewer if the visitor is brief):
+1. Situation: what they export and to which country (product and destination).
+2. Situation: how they handle the export documents today, or how they plan to if they have not exported yet:
+   OPTIONS: Myself or my team | A freight forwarder | A customs broker | A TEM or consultant | Not decided yet
+3. Problem, in numbers: roughly how many hours the paperwork takes per shipment, and how many shipments a year they expect.
+   Offer ranges as quick choices, for example OPTIONS: Under 2 hours | 2 to 5 hours | 5 to 10 hours | Over 10 hours. If they
+   type an exact number, use that instead. Ask the shipments per year the same way.
+4. Problem, in money: what they pay per shipment to a forwarder, broker or consultant for the documents (ranges as quick
+   choices in euros, or an exact figure if they offer one). A first-time exporter is asked what they expect to spend.
+5. Once you have hours and shipments (and fees if given), call yearly_estimate and tell them the result as THEIR estimate:
+   "By your own numbers, that is about X hours and Y euros a year." Never present it as a MioTEM figure.
+6. Implication: ask what that does to them (margin, lead time, a delayed shipment, a rejected label, a lost buyer). Ask,
+   do not tell. Never state figures, fines or deadlines yourself.
+7. Need-payoff: ask what it would mean to know the exact documents and duties for their route before they ship.
+8. Offer to sign in so MioTEM prepares the checklist and duties for their route, and say a preview of their route can be
+   shown (when it is offered, the page will show it).
+Save every answer with save_answer: product, destination, handling, time, volume, cost, problem, implication, need.
 
 If the role is tem:
 - Do NOT ask about a product or a destination country. A TEM works for many exporters.
 - Situation: the firm, how many exporter clients they serve, which products and countries.
-- Problem: where time goes (chasing documents, checking rules per country, tracking each client).
-- Implication: ask what it costs them when a client's file has an error or a rule changes late.
+- Problem, in numbers: hours per client file or per shipment, how many files a month, and what they charge or lose on a
+  file (ranges as quick choices, exact if they offer one). Then call yearly_estimate and state it as THEIR estimate.
+- Implication: ask what it costs them when a client file has an error or a rule changes late.
 - Need-payoff: ask what a workspace with a checked document list per client project would change.
 - Then offer to sign in: MioTEM gives a TEM a trial workspace to try with real clients (2 clients, 5 projects).
 - Ask for the firm name and a contact email near the end, with consent, and save with save_answer (firm, contact).
@@ -76,6 +89,10 @@ Rules:
 TOOLS = [
     {"name": "set_role", "description": "Record who the visitor is.",
      "input_schema": {"type": "object", "properties": {"role": {"type": "string", "enum": list(ROLES)}}, "required": ["role"]}},
+    {"name": "yearly_estimate", "description": "Work out the visitor's own yearly paperwork time and cost from their numbers. "
+     "Use midpoints for ranges (for an open top range such as 'over 10' use the lower bound and say 'at least'). Returns the totals to quote as THEIR estimate.",
+     "input_schema": {"type": "object", "properties": {"hours_per_shipment": {"type": "number"}, "shipments_per_year": {"type": "number"},
+                                                       "cost_per_shipment_eur": {"type": "number"}}, "required": ["hours_per_shipment", "shipments_per_year"]}},
     {"name": "save_answer", "description": "Record one thing the visitor told you, in their words, short. For topic product "
      "also give value: one of the product categories. For topic destination also give value: one of the countries.",
      "input_schema": {"type": "object", "properties": {"topic": {"type": "string", "enum": list(TOPICS)},
@@ -107,6 +124,19 @@ def run_tool(state, name, args):
     if name == "set_role" and args.get("role") in ROLES:
         state["role"] = args["role"]
         return {"ok": True}
+    if name == "yearly_estimate":
+        try:
+            h, n = float(args.get("hours_per_shipment")), float(args.get("shipments_per_year"))
+            c = float(args.get("cost_per_shipment_eur") or 0)
+        except (TypeError, ValueError):
+            return {"error": "numbers_needed"}
+        if not (0 <= h <= 1000 and 0 <= n <= 100000 and 0 <= c <= 1000000):
+            return {"error": "out_of_range"}
+        out = {"hours_per_year": round(h * n, 1), "cost_per_year_eur": round(c * n)}
+        state["answers"]["estimate"] = [f"their own numbers: {h:g} h per shipment x {n:g} shipments"
+                                        + (f", EUR {c:g} per shipment" if c else "") + f" = {out['hours_per_year']:g} h"
+                                        + (f", EUR {out['cost_per_year_eur']:,} a year" if c else " a year")]
+        return {**out, "note": "the visitor's own estimate, not a MioTEM figure"}
     if name == "save_answer" and args.get("topic") in TOPICS:
         state["answers"].setdefault(args["topic"], []).append(str(args.get("text") or "")[:300])
         state["answers"][args["topic"]] = state["answers"][args["topic"]][-3:]
@@ -169,8 +199,8 @@ def message(con, body, ip, client):
                 break
             history.append({"role": "user", "content": [
                 {"type": "tool_result", "tool_use_id": u.id, "content": json.dumps(run_tool(state, u.name, u.input))} for u in uses]})
-            if reply:
-                break
+            if reply and all(u.name in QUIET_TOOLS for u in uses):
+                break  # saves need no second call; an estimate must come back to the AI before it speaks
         else:
             reply = ""
     except Exception:
