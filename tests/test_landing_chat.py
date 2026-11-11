@@ -104,6 +104,38 @@ class LandingChat(unittest.TestCase):
         self.assertEqual(say(Script(), "hi", v="nope")[0], 400)
         self.assertEqual(say(Script(), "   ")[0], 400)
 
+    def test_category_and_country_values_are_saved_and_claimed(self):
+        c = Script([tool("set_role", {"role": "exporter"}),
+                    tool("save_answer", {"topic": "product", "text": "dry pasta", "value": "pasta"}, "t2"),
+                    tool("save_answer", {"topic": "destination", "text": "Germany", "value": "Germany"}, "t3"),
+                    tool("save_answer", {"topic": "problem", "text": "documents"}, "t4"), text("What happens if they are wrong?")])
+        say(c, "I export dry pasta to Germany")
+        out = landing_chat.claim(app.con(), "user-1", V1)
+        self.assertEqual((out["claimed"], out["role"], out["category"], out["country"]), (True, "exporter", "pasta", "Germany"))
+        self.assertEqual(out["product"], "dry pasta")
+        self.assertIn("documents", landing_chat.note_for(app.con(), "user-1"))
+        self.assertEqual(landing_chat.note_for(app.con(), "someone-else"), "")
+
+    def test_invalid_values_are_ignored(self):
+        say(Script([tool("save_answer", {"topic": "product", "text": "x", "value": "rocket fuel"}), text("ok")]), "hi")
+        self.assertIsNone(landing_chat.claim(app.con(), "u", V1).get("category"))
+
+    def test_a_conversation_is_claimed_by_one_person(self):
+        say(Script([tool("set_role", {"role": "exporter"}), text("ok")]), "hi")
+        self.assertTrue(landing_chat.claim(app.con(), "user-1", V1)["claimed"])
+        self.assertFalse(landing_chat.claim(app.con(), "user-2", V1)["claimed"])
+        self.assertTrue(landing_chat.claim(app.con(), "user-1", V1)["claimed"])
+        self.assertFalse(landing_chat.claim(app.con(), "user-1", "zz")["claimed"])
+
+    def test_tem_conversation_adds_no_project_note(self):
+        say(Script([tool("set_role", {"role": "tem"}), tool("save_answer", {"topic": "clients", "text": "10"}, "t2"), text("ok")]), "TEM")
+        landing_chat.claim(app.con(), "user-1", V1)
+        self.assertEqual(landing_chat.note_for(app.con(), "user-1"), "")
+
+    def test_lists_match_the_start_form(self):
+        self.assertEqual(landing_chat.CATEGORIES, app.START_CATEGORIES)
+        self.assertEqual(set(landing_chat.COUNTRIES), set(app.START_COUNTRIES))
+
     def test_prompt_rules(self):
         p = landing_chat.SYSTEM
         self.assertNotIn(EM_DASH, p)
