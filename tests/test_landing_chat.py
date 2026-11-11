@@ -92,10 +92,14 @@ class LandingChat(unittest.TestCase):
         try:
             for i in range(3):
                 self.assertEqual(say(Script([text("ok")]), "hi", v=f"{i:032x}")[0], 200)
-            self.assertEqual(say(Script(), "hi", v="f" * 32)[0], 503)
+            code, out = say(Script(), "hi", v="f" * 32)
+            self.assertEqual((code, out["error"], out["signin"]), (429, "limit", True))  # a clear limit, not "unavailable"
             self.assertEqual(say(Script([text("ok")]), "hi", v="e" * 32, ip="2.2.2.2")[0], 200)
         finally:
             landing_chat.IP_DAILY_CAP = old
+
+    def test_the_per_address_cap_default_and_setting(self):
+        self.assertEqual(landing_chat.IP_DAILY_CAP, int(os.environ.get("LANDING_IP_DAILY_CAP", "150")))
 
     def test_daily_ceiling_falls_back(self):
         landing_chat.DAILY_CEILING, old = 1, landing_chat.DAILY_CEILING
@@ -317,18 +321,36 @@ class LandingChat(unittest.TestCase):
                     tool("save_answer", {"topic": "situation", "text": said}, "t2"), text("Where does the time go?")]), said)
         self._offer()
 
-    def test_tem_who_is_vague_is_asked_for_examples_before_any_offer(self):
+    def test_tem_with_no_covered_country_is_asked_before_any_offer(self):
         say(Script([tool("set_role", {"role": "tem"}), text("How many exporter clients do you serve?")]), "I am a TEM")
         say(Script([tool("save_answer", {"topic": "clients", "text": "10 exporters"}),
-                    tool("save_answer", {"topic": "situation", "text": "all kinds of food to France, UK, Germany, USA and UAE"}, "t2"),
-                    text("Which products?")]), "all kinds of food to France, UK, Germany, USA and UAE")
+                    tool("save_answer", {"topic": "situation", "text": "all kinds of food to the UAE"}, "t2"),
+                    text("Which products?")]), "all kinds of food to the UAE")
         c = Script([tool("offer_preview", {})], [text("Which typical clients?")])
         code, out = say(c, "ok")
         res = json.loads(c.calls[-1]["messages"][-1]["content"][0]["content"])
         self.assertFalse(res["ready"])
-        self.assertIn("typical clients", res["instruction"])
         code, out = say(Script([tool("show_preview", {"examples": [{"category": "wine", "country": "USA"}]}), text("below")]), "yes")
         self.assertFalse(out["offer_preview"])
+
+    def test_vague_tem_with_covered_countries_gets_labelled_example_products(self):
+        say(Script([tool("set_role", {"role": "tem"}), text("How many exporter clients do you serve?")]), "I am a TEM")
+        say(Script([tool("save_answer", {"topic": "clients", "text": "10 exporters"}),
+                    tool("save_answer", {"topic": "situation", "text": "all kinds of food to France, UK, Germany, USA and UAE"}, "t2"),
+                    text("Which products?")]), "all kinds of food to France, UK, Germany, USA and UAE")
+        code, out = say(Script([tool("offer_preview", {})], [text("Would you like to see a sample workspace?")]), "ok")
+        self.assertFalse(out["offer_preview"])
+        c = Script([tool("show_preview", {"examples": [{"category": "wine", "country": "USA"}, {"category": "oil", "country": "UAE"}]}), text("It is below.")])
+        code, out = say(c, "yes")
+        self.assertTrue(out["offer_preview"])
+        pv = landing_chat.preview(app.con(), V1)
+        self.assertEqual([(x["category"], x["country"], x["assumed"]) for x in pv["clients"]], [("wine", "USA", True)])  # UAE: not named as covered, olive oil: not a default
+
+    def test_a_named_product_is_not_marked_as_assumed(self):
+        self._talk_tem()
+        say(Script([tool("show_preview", {"examples": [{"category": "wine", "country": "USA"}]}), text("below")]), "yes")
+        pv = landing_chat.preview(app.con(), V1)
+        self.assertEqual([x["assumed"] for x in pv["clients"]], [False])
 
     def test_tem_naming_an_uncovered_country_gets_the_notify_form(self):
         say(Script([tool("set_role", {"role": "tem"}), text("How many clients?")]), "I am a TEM")
