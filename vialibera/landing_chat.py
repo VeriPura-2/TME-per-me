@@ -27,7 +27,7 @@ COUNTRY_WORDS = {"USA": ("usa", "us", "united states", "america", "stati uniti")
                  "Germany": ("germany", "germania", "deutschland"), "France": ("france", "francia"), "Spain": ("spain", "spagna"),
                  "Netherlands": ("netherlands", "olanda", "holland", "paesi bassi"), "Switzerland": ("switzerland", "svizzera"),
                  "Belgium": ("belgium", "belgio"), "Canada": ("canada",)}
-QUIET_TOOLS = ("set_role", "save_answer", "show_signin", "show_preview")
+QUIET_TOOLS = ("set_role", "save_answer", "show_signin", "show_preview", "offer_preview")
 SIGNIN_MENTION = re.compile(r"sign[- ]?in button|button (is )?below|below[^.]{0,40}sign[- ]?in|pulsante[^.]{0,40}(accedi|sotto)|accedi[^.]{0,40}sotto", re.I)
 VISITOR = re.compile(r"^[a-f0-9]{16,64}$")
 ROLES = ("exporter", "tem", "looking")
@@ -84,11 +84,17 @@ If the role is tem:
 - Then offer to sign in: MioTEM gives a TEM a trial workspace to try with real clients (2 clients, 5 projects).
 - Ask for the firm name and a contact email near the end, with consent, and save with save_answer (firm, contact).
 
-Preview: after the yearly estimate (exporter) or once the TEM has told you, in their own words, how many clients they serve
-and which products and countries, call show_preview, say the preview is below, and do not describe what it contains. The page
-builds it from real MioTEM data. NEVER call show_preview on the first messages, and never invent example products or countries:
-use only what the visitor said. If the tool answers with an error, simply ask your next question.
-Then continue with the implication or need-payoff question.
+Preview, in two steps. Step A, after the yearly estimate (exporter) or once the TEM has told you, in their own words, how many
+clients they serve and which products and countries: ask permission. Call offer_preview and ask, in one short question, whether
+they would like to see a preview of their route (exporter) or of a sample workspace with two example clients (TEM), with
+OPTIONS: Yes, show me | Not now. Say in one sentence what they would see and how MioTEM helps: it prepares the document list
+for their route, shows who prepares each document, and checks the documents before they ship. Do NOT call show_preview in the same
+message. Step B, only after the visitor says yes in a later message: call show_preview, and say in one or two sentences what to look
+for (which documents are theirs to prepare, which belong to the carrier, forwarder or tax warehouse, and which are marked for staff
+to verify; for a TEM: one checked list per client project). Say the preview is below and do not describe its contents. If they say
+not now, carry on with the implication question. The page builds the preview from real MioTEM data. NEVER call show_preview on the
+first messages, and never invent example products or countries: use only what the visitor said. If the tool answers with an error,
+simply ask your next question. Then continue with the implication or need-payoff question.
 
 Only say the preview is below if you called show_preview and it answered ok in this conversation. Only say the Sign in button is
 below if you called show_signin in that same response.
@@ -120,6 +126,9 @@ TOOLS = [
      "described. The page shows real checklist and duties data, so never describe its contents yourself, only say it is below.",
      "input_schema": {"type": "object", "properties": {"examples": {"type": "array", "maxItems": 2, "items": {"type": "object",
          "properties": {"category": {"type": "string"}, "country": {"type": "string"}}, "required": ["category", "country"]}}}}},
+    {"name": "offer_preview", "description": "Record that you are asking the visitor whether they want to see the preview. Call it in the same "
+     "response as the question. show_preview only works in a LATER message, after the visitor has said yes.",
+     "input_schema": {"type": "object", "properties": {}}},
     {"name": "show_signin", "description": "Make the page show a Sign in button under your reply. Call it whenever you invite the "
      "visitor to sign in, and whenever they say they want to sign in. In your reply say the button is below.",
      "input_schema": {"type": "object", "properties": {}}},
@@ -156,7 +165,7 @@ def _row(con, visitor):
 
 def _said(state):
     """Everything the visitor told us, as one lowercase text: only their saved answers, never the AI's own examples."""
-    skip = ("examples", "estimate", "category", "country", "preview_ok")
+    skip = ("examples", "estimate", "category", "country", "preview_ok", "preview_offered")
     return " ".join(" ".join(v) for k, v in state["answers"].items() if k not in skip and isinstance(v, list)).lower()
 
 
@@ -168,7 +177,13 @@ def run_tool(state, name, args):
     if name == "set_role" and args.get("role") in ROLES:
         state["role"] = args["role"]
         return {"ok": True}
+    if name == "offer_preview":
+        state["answers"]["preview_offered"] = [str(state.get("messages_so_far", 0))]
+        return {"ok": True}
     if name == "show_preview":
+        offered = state["answers"].get("preview_offered")
+        if not offered or int(offered[0]) >= state.get("messages_so_far", 0):
+            return {"error": "ask first: call offer_preview and ask whether they want to see it; show_preview only after they say yes in a later message"}
         if state.get("messages_so_far", 0) < 2:
             return {"error": "too early: ask your questions first, the visitor has told you almost nothing"}
         if state.get("role") == "tem":

@@ -209,6 +209,10 @@ class LandingChat(unittest.TestCase):
     def _talk_exporter(self, product="pasta", country="Germany"):
         say(self._exporter(product, country), f"{product} to {country}")
         say(Script([tool("save_answer", {"topic": "handling", "text": "a freight forwarder"}), text("How many hours?")]), "forwarder")
+        self._offer()
+
+    def _offer(self):
+        say(Script([tool("offer_preview", {}), text("Would you like to see a preview of your route?")]), "ok that is my estimate")
 
     def test_exporter_preview_is_the_real_route_data(self):
         self._talk_exporter()
@@ -234,6 +238,22 @@ class LandingChat(unittest.TestCase):
         self.assertFalse(out["offer_preview"])
         self.assertEqual(landing_chat.preview(app.con(), V1)["kind"], None)
 
+    def test_preview_needs_a_question_and_a_yes_in_a_later_message(self):
+        say(self._exporter(), "pasta to Germany")
+        say(Script([tool("save_answer", {"topic": "handling", "text": "myself"}), text("ok")]), "myself")
+        code, out = say(Script([tool("show_preview", {}), text("below")]), "go")  # never asked
+        self.assertFalse(out["offer_preview"])
+        code, out = say(Script([tool("offer_preview", {}), tool("show_preview", {}, "t2"), text("Want to see it?")]), "ok")  # asked and shown at once
+        self.assertFalse(out["offer_preview"])
+        code, out = say(Script([tool("show_preview", {}), text("Your route is below.")]), "yes")  # after the yes
+        self.assertTrue(out["offer_preview"])
+
+    def test_script_asks_before_showing_the_preview(self):
+        p = " ".join(landing_chat.SYSTEM.split())
+        self.assertIn("Call offer_preview", p)
+        self.assertIn("Yes, show me | Not now", p)
+        self.assertIn("how MioTEM helps", p)
+
     def test_exporter_preview_needs_the_handling_questions_first(self):
         say(self._exporter(), "pasta to Germany")
         code, out = say(Script([tool("show_preview", {}), text("below")]), "ok")
@@ -243,6 +263,7 @@ class LandingChat(unittest.TestCase):
         say(Script([tool("set_role", {"role": "tem"}), text("How many exporter clients do you serve?")]), "I am a TEM")
         say(Script([tool("save_answer", {"topic": "clients", "text": "about 8 exporters"}),
                     tool("save_answer", {"topic": "situation", "text": said}, "t2"), text("Where does the time go?")]), said)
+        self._offer()
 
     def test_tem_preview_is_a_sample_workspace_with_two_labelled_clients(self):
         self._talk_tem()
@@ -284,7 +305,8 @@ class LandingChat(unittest.TestCase):
     def test_script_tells_the_ai_to_call_show_preview(self):
         p = " ".join(landing_chat.SYSTEM.split())
         self.assertIn("call show_preview", p)
-        self.assertIn("do not describe what it contains", p)
+        self.assertIn("do not describe its contents", p)
+        self.assertIn("what to look for", p)
         self.assertIn("NEVER call show_preview on the first messages", p)
         self.assertIn("never invent example products or countries", p)
 
