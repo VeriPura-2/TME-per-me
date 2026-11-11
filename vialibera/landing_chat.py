@@ -19,7 +19,7 @@ IP_DAILY_CAP = 40
 DAILY_CEILING = int(os.environ.get("LANDING_DAILY_CEILING", "600"))
 MAX_CHARS = 1000
 MAX_TOKENS = 600
-QUIET_TOOLS = ("set_role", "save_answer")
+QUIET_TOOLS = ("set_role", "save_answer", "show_signin")
 VISITOR = re.compile(r"^[a-f0-9]{16,64}$")
 ROLES = ("exporter", "tem", "looking")
 CATEGORIES = ("pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other")
@@ -75,6 +75,9 @@ If the role is tem:
 - Then offer to sign in: MioTEM gives a TEM a trial workspace to try with real clients (2 clients, 5 projects).
 - Ask for the firm name and a contact email near the end, with consent, and save with save_answer (firm, contact).
 
+When you invite the visitor to sign in, or they say they want to, call show_signin in that same response and say the
+Sign in button is below your message. Never describe a link or a page you cannot show.
+
 Rules:
 - Never state tariffs, taxes, legal requirements, prices or deadlines. If asked, say MioTEM checks these against
   official sources once the visitor is signed in, and that you will not guess.
@@ -93,6 +96,9 @@ Rules:
 TOOLS = [
     {"name": "set_role", "description": "Record who the visitor is.",
      "input_schema": {"type": "object", "properties": {"role": {"type": "string", "enum": list(ROLES)}}, "required": ["role"]}},
+    {"name": "show_signin", "description": "Make the page show a Sign in button under your reply. Call it whenever you invite the "
+     "visitor to sign in, and whenever they say they want to sign in. In your reply say the button is below.",
+     "input_schema": {"type": "object", "properties": {}}},
     {"name": "yearly_estimate", "description": "Work out the visitor's own yearly paperwork time and cost from their numbers. "
      "Use midpoints for ranges (for an open top range such as 'over 10' use the lower bound and say 'at least'). Returns the totals to quote as THEIR estimate.",
      "input_schema": {"type": "object", "properties": {"hours_per_shipment": {"type": "number"}, "shipments_per_year": {"type": "number"},
@@ -127,6 +133,9 @@ def _row(con, visitor):
 def run_tool(state, name, args):
     if name == "set_role" and args.get("role") in ROLES:
         state["role"] = args["role"]
+        return {"ok": True}
+    if name == "show_signin":
+        state["offer_signin"] = True
         return {"ok": True}
     if name == "yearly_estimate":
         try:
@@ -220,7 +229,7 @@ def message(con, body, ip, client):
     else:
         con.execute("INSERT INTO anon_chats(visitor_id, ip_hash, role, history, answers, messages, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
                     (visitor, h, state["role"], fields[1], fields[2], fields[3], now, now))
-    return 200, {"reply": reply, "role": state["role"], "left": left, "signin": left <= 0}
+    return 200, {"reply": reply, "role": state["role"], "left": left, "signin": left <= 0, "offer_signin": bool(state.get("offer_signin"))}
 
 
 def listing(con):

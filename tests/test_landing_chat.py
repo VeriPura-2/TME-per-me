@@ -176,6 +176,22 @@ class LandingChat(unittest.TestCase):
         for phrase in ("Signing in is free", "free Explore plan", "trial workspace is free", "Do not quote the price of any paid"):
             self.assertIn(phrase, p)
 
+    def test_the_ai_can_offer_a_sign_in_button_without_closing_the_chat(self):
+        c = Script([tool("show_signin", {}), text("Sign in with the button below.")])
+        code, out = say(c, "I want to sign in")
+        self.assertEqual(code, 200)
+        self.assertTrue(out["offer_signin"])
+        self.assertFalse(out["signin"])
+        self.assertEqual(len(c.calls), 1)
+        code, out = say(Script([text("Sure.")]), "and one more question")
+        self.assertEqual(code, 200)
+        self.assertFalse(out["offer_signin"])
+
+    def test_script_tells_the_ai_to_show_the_button(self):
+        p = " ".join(landing_chat.SYSTEM.split())
+        self.assertIn("call show_signin", p)
+        self.assertIn("Never describe a link or a page you cannot show", p)
+
     def test_prompt_rules(self):
         p = landing_chat.SYSTEM
         self.assertNotIn(EM_DASH, p)
