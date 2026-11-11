@@ -1203,7 +1203,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*tem_interest.record(con(), json.loads(self.rfile.read(n) or b"{}")))
             except (ValueError, TypeError):
                 return self._send(400, {"error": "bad_request"})
-        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/lane/details", "/account", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/ocqpr", "/certreq", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
+        if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/lane/details", "/account", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/ocqpr", "/certreq", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook", "/landing/claim")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
                 or self.path.startswith("/core/") or self.path.startswith("/tem/") or self.path.startswith("/tools/")):
             return self._send(404, {})
@@ -1225,6 +1225,10 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(n) or b"{}")
             if self.path.startswith("/doc/"):
                 return self._send(*handle_doc_update(self.path[len("/doc/"):], body, who))
+            if self.path == "/landing/claim":
+                if not who:
+                    return self._send(400, {"error": "sign-in required"})
+                return self._send(200, landing_chat.claim(con(), who["user"], body.get("visitor")))
             if self.path == "/consent":
                 return self._send(*handle_consent(body, who))
             if self.path == "/profile":

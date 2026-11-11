@@ -5,7 +5,7 @@ and every write goes through db.py and gates.py, which enforce the rules.
 """
 import json
 
-from . import ai_usage, db, docs, fields, gates, masaf, personas
+from . import ai_usage, db, docs, fields, gates, landing_chat, masaf, personas
 
 MODEL = "claude-sonnet-5-5"
 
@@ -171,7 +171,8 @@ def turn(client, con, case_id, menu, history, user_text, max_steps=8, lang="it",
         note = fields.prompt_note(db.case_read(con, case_id)) + (" Documents on file (names only): " + have + "." if have else " No documents uploaded yet.") + (
             " Interface language: " + ("Italian. Write every message and every OPTIONS line in Italian"
                                        if lang == "it" else "English. Write every message and every OPTIONS line in English")
-            + ", unless the client writes in another language, then follow the client.")
+            + ", unless the client writes in another language, then follow the client.") + landing_chat.note_for(
+                con, (con.execute("SELECT owner_sub FROM cases WHERE id=?", (case_id,)).fetchone() or {"owner_sub": None})["owner_sub"])
         fixed = personas.system_prompt(persona_id or persona_for(db.case_read(con, case_id)["path_type"])) + "\n\n" + SYSTEM + "\n\n" + GUIDE
         with db.outside_call():  # 5 to 30 s: the database connection is lent back meanwhile
             resp = client.messages.create(model=MODEL, max_tokens=1024, system=system_blocks(fixed, note), tools=TOOLS,

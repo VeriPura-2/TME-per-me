@@ -21,6 +21,10 @@ MAX_CHARS = 1000
 MAX_TOKENS = 600
 VISITOR = re.compile(r"^[a-f0-9]{16,64}$")
 ROLES = ("exporter", "tem", "looking")
+CATEGORIES = ("pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other")
+COUNTRIES = ("UK", "USA", "Canada", "Switzerland", "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark",
+             "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg",
+             "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden", "other")
 TOPICS = ("product", "destination", "situation", "problem", "implication", "need", "firm", "clients", "contact")
 
 OPENER = {"it": "Ciao. Esporti cibo italiano, oppure sei un TEM o consulente export?",
@@ -72,9 +76,12 @@ Rules:
 TOOLS = [
     {"name": "set_role", "description": "Record who the visitor is.",
      "input_schema": {"type": "object", "properties": {"role": {"type": "string", "enum": list(ROLES)}}, "required": ["role"]}},
-    {"name": "save_answer", "description": "Record one thing the visitor told you, in their words, short.",
+    {"name": "save_answer", "description": "Record one thing the visitor told you, in their words, short. For topic product "
+     "also give value: one of the product categories. For topic destination also give value: one of the countries.",
      "input_schema": {"type": "object", "properties": {"topic": {"type": "string", "enum": list(TOPICS)},
-                                                       "text": {"type": "string"}}, "required": ["topic", "text"]}},
+                                                       "text": {"type": "string"},
+                                                       "value": {"type": "string", "description": "product: " + ", ".join(CATEGORIES) + ". destination: " + ", ".join(COUNTRIES) + " (use other if none fits)."}},
+                     "required": ["topic", "text"]}},
 ]
 
 
@@ -103,6 +110,11 @@ def run_tool(state, name, args):
     if name == "save_answer" and args.get("topic") in TOPICS:
         state["answers"].setdefault(args["topic"], []).append(str(args.get("text") or "")[:300])
         state["answers"][args["topic"]] = state["answers"][args["topic"]][-3:]
+        value = str(args.get("value") or "")
+        if args["topic"] == "product" and value in CATEGORIES:
+            state["answers"]["category"] = value
+        if args["topic"] == "destination" and value in COUNTRIES:
+            state["answers"]["country"] = value
         return {"ok": True}
     return {"error": "unknown"}
 
@@ -184,3 +196,34 @@ def listing(con):
     for r in rows:
         by[r["role"] or "unknown"] = by.get(r["role"] or "unknown", 0) + 1
     return {"total": len(rows), "by_role": by, "chats": rows}
+
+
+def claim(con, user_sub, visitor):
+    """After sign-in: attach the landing conversation to the person and return what it learned. A conversation
+    already claimed by someone else is not shared."""
+    if not VISITOR.match(str(visitor or "")):
+        return {"claimed": False}
+    row = _row(con, visitor)
+    if not row or (row.get("user_sub") and row["user_sub"] != user_sub):
+        return {"claimed": False}
+    if not row.get("user_sub"):
+        con.execute("UPDATE anon_chats SET user_sub=? WHERE visitor_id=?", (user_sub, visitor))
+    a = json.loads(row["answers"])
+    first = lambda k: (a.get(k) or [""])[-1] if isinstance(a.get(k), list) else ""
+    return {"claimed": True, "role": row["role"], "category": a.get("category"), "country": a.get("country"),
+            "product": first("product"), "destination": first("destination")}
+
+
+def note_for(con, user_sub):
+    """A line for the project chat prompt: what this person told the landing guide before signing in."""
+    if not user_sub:
+        return ""
+    row = con.execute("SELECT answers, role FROM anon_chats WHERE user_sub=? ORDER BY updated_at DESC LIMIT 1", (user_sub,)).fetchone()
+    if not row or row["role"] != "exporter":
+        return ""
+    a = json.loads(row["answers"])
+    told = "; ".join(f"{k}: {' / '.join(v)}" for k, v in a.items() if isinstance(v, list) and v)
+    if not told:
+        return ""
+    return (" Before signing in, the client told our landing guide: " + told + ". Do not ask for these again. Build on the "
+            "problem and the consequence they named, in your own words, and ask only what is still missing.")
