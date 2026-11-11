@@ -294,6 +294,14 @@ CREATE TABLE IF NOT EXISTS cert_requests (
   reply_at TEXT,
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS tem_interest (   -- a TEM or export consultant asks to join, from the public landing page
+  id TEXT PRIMARY KEY,
+  firm_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  clients TEXT,                        -- rough number of clients, as typed
+  lang TEXT,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tool_interest (
   id TEXT PRIMARY KEY,
   case_id TEXT,

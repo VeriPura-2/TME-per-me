@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tems, voice
+from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tem_interest, tems, voice
 from .menu import MENU
 from . import plan_prices
 from .secrets import get_secret
@@ -794,6 +794,10 @@ def handle_admin(path, body, who):
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
         return 200, lane_requests.listing(c)
+    if path == "/admin/tem_interest":
+        if not permissions.is_staff(who):
+            return 403, {"error": "forbidden"}
+        return 200, tem_interest.listing(c)
     if path == "/admin/tool_interest":
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
@@ -1178,6 +1182,14 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 traceback.print_exc()  # full details in the server log, not only the error name
                 return self._send(500, {"error": type(e).__name__})
+        if self.path.split("?")[0] == "/public/tem_interest":  # public landing form: no sign-in, small and guarded
+            try:
+                n = int(self.headers.get("Content-Length", 0))
+                if n > 4096:
+                    return self._send(413, {})
+                return self._send(*tem_interest.record(con(), json.loads(self.rfile.read(n) or b"{}")))
+            except (ValueError, TypeError):
+                return self._send(400, {"error": "bad_request"})
         if not (self.path in ("/chat", "/start", "/consent", "/me", "/profile", "/upload", "/plan", "/journey", "/checklist/mark", "/lane/details", "/account", "/simpay", "/speak", "/intro", "/invite", "/invite/accept", "/eori", "/eori/pdf", "/ocqpr", "/certreq", "/pay", "/pay/confirm", "/plan/checkout", "/billing/portal", "/stripe/webhook")
                 or self.path.startswith("/doc/") or self.path.startswith("/team") or self.path.startswith("/admin/")
                 or self.path.startswith("/core/") or self.path.startswith("/tem/") or self.path.startswith("/tools/")):
