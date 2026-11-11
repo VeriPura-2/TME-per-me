@@ -19,6 +19,14 @@ IP_DAILY_CAP = 40
 DAILY_CEILING = int(os.environ.get("LANDING_DAILY_CEILING", "600"))
 MAX_CHARS = 1000
 MAX_TOKENS = 600
+PRODUCT_WORDS = {"pasta": ("pasta",), "wine": ("wine", "vino", "vini"), "olive oil": ("olive oil", "oil", "olio"),
+                 "cheese and dairy": ("cheese", "dairy", "formaggi", "formaggio", "latticini"),
+                 "spirits": ("spirit", "spirits", "grappa", "liquor", "amaro"), "cured meat": ("cured", "salumi", "ham", "prosciutto", "meat"),
+                 "preserves": ("preserve", "preserves", "jam", "sauce", "conserve"), "bakery": ("bakery", "bread", "biscuit", "biscuits", "dolci")}
+COUNTRY_WORDS = {"USA": ("usa", "us", "united states", "america", "stati uniti"), "UK": ("uk", "united kingdom", "britain", "england", "regno unito"),
+                 "Germany": ("germany", "germania", "deutschland"), "France": ("france", "francia"), "Spain": ("spain", "spagna"),
+                 "Netherlands": ("netherlands", "olanda", "holland", "paesi bassi"), "Switzerland": ("switzerland", "svizzera"),
+                 "Belgium": ("belgium", "belgio"), "Canada": ("canada",)}
 QUIET_TOOLS = ("set_role", "save_answer", "show_signin", "show_preview")
 VISITOR = re.compile(r"^[a-f0-9]{16,64}$")
 ROLES = ("exporter", "tem", "looking")
@@ -75,8 +83,10 @@ If the role is tem:
 - Then offer to sign in: MioTEM gives a TEM a trial workspace to try with real clients (2 clients, 5 projects).
 - Ask for the firm name and a contact email near the end, with consent, and save with save_answer (firm, contact).
 
-Preview: after the yearly estimate (exporter) or once you know the products and countries they work with (TEM), call
-show_preview, say the preview is below, and do not describe what it contains. The page builds it from real MioTEM data.
+Preview: after the yearly estimate (exporter) or once the TEM has told you, in their own words, how many clients they serve
+and which products and countries, call show_preview, say the preview is below, and do not describe what it contains. The page
+builds it from real MioTEM data. NEVER call show_preview on the first messages, and never invent example products or countries:
+use only what the visitor said. If the tool answers with an error, simply ask your next question.
 Then continue with the implication or need-payoff question.
 
 When you invite the visitor to sign in, or they say they want to, call show_signin in that same response and say the
@@ -140,20 +150,40 @@ def _row(con, visitor):
     return dict(r) if r else None
 
 
+def _said(state):
+    """Everything the visitor told us, as one lowercase text: only their saved answers, never the AI's own examples."""
+    skip = ("examples", "estimate", "category", "country", "preview_ok")
+    return " ".join(" ".join(v) for k, v in state["answers"].items() if k not in skip and isinstance(v, list)).lower()
+
+
+def _mentioned(said, words):
+    return any(re.search(r"(?<!\w)" + re.escape(w) + r"(?!\w)", said) for w in words)
+
+
 def run_tool(state, name, args):
     if name == "set_role" and args.get("role") in ROLES:
         state["role"] = args["role"]
         return {"ok": True}
     if name == "show_preview":
+        if state.get("messages_so_far", 0) < 2:
+            return {"error": "too early: ask your questions first, the visitor has told you almost nothing"}
         if state.get("role") == "tem":
+            said = _said(state)
+            if not state["answers"].get("clients"):
+                return {"error": "ask how many exporter clients they serve first"}
             ex = [f"{e.get('category')}|{e.get('country')}" for e in (args.get("examples") or [])[:2]
-                  if isinstance(e, dict) and e.get("category") in CATEGORIES and e.get("country") in COUNTRIES]
+                  if isinstance(e, dict) and e.get("category") in PRODUCT_WORDS and e.get("country") in COUNTRY_WORDS
+                  and _mentioned(said, PRODUCT_WORDS[e["category"]]) and _mentioned(said, COUNTRY_WORDS[e["country"]])]
             if not ex:
-                return {"error": "examples needed: category and country values"}
+                return {"error": "no example may be invented: use only products and countries the visitor named"}
             state["answers"]["examples"] = ex
-        elif not (state["answers"].get("category") and state["answers"].get("country")):
-            return {"error": "save product and destination with value first"}
+        else:
+            if not (state["answers"].get("category") and state["answers"].get("country")):
+                return {"error": "save product and destination with value first"}
+            if not any(state["answers"].get(k) for k in ("handling", "time", "volume", "estimate")):
+                return {"error": "ask how they handle the documents and the hours first"}
         state["offer_preview"] = True
+        state["answers"]["preview_ok"] = ["yes"]  # the preview page only answers for a visitor whose preview passed these checks
         return {"ok": True}
     if name == "show_signin":
         state["offer_signin"] = True
@@ -211,6 +241,7 @@ def message(con, body, ip, client):
                        (h, _since(24))).fetchone()["n"]
     if mine >= IP_DAILY_CAP or used_today(con) >= DAILY_CEILING:
         return 503, {"error": "busy", "role": state["role"]}
+    state["messages_so_far"] = state["messages"] + 1  # this message included
     left = MESSAGE_CAP - state["messages"] - 1
     history = state["history"]
     if history and history[-1]["role"] == "user" and isinstance(history[-1]["content"], list):
@@ -321,6 +352,8 @@ def preview(con, visitor):
     if not row:
         return {"kind": None}
     a = json.loads(row["answers"])
+    if not a.get("preview_ok"):
+        return {"kind": None}
     if row["role"] == "tem":
         pairs = [p.split("|", 1) for p in (a.get("examples") or []) if "|" in p][:2]
         if not pairs:
