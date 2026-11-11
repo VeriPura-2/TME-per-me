@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tem_interest, tems, voice
+from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tem_interest, landing_chat, tems, voice
 from .menu import MENU
 from . import plan_prices
 from .secrets import get_secret
@@ -794,6 +794,10 @@ def handle_admin(path, body, who):
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
         return 200, lane_requests.listing(c)
+    if path == "/admin/landing_chats":
+        if not permissions.is_staff(who):
+            return 403, {"error": "forbidden"}
+        return 200, landing_chat.listing(c)
     if path == "/admin/tem_interest":
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
@@ -1182,6 +1186,15 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 traceback.print_exc()  # full details in the server log, not only the error name
                 return self._send(500, {"error": type(e).__name__})
+        if self.path.split("?")[0] == "/public/chat":  # landing conversation before sign-in: capped, no sign-in
+            try:
+                n = int(self.headers.get("Content-Length", 0))
+                if n > 8192:
+                    return self._send(413, {})
+                ip = (self.headers.get("X-Forwarded-For") or self.client_address[0]).split(",")[0].strip()
+                return self._send(*landing_chat.message(con(), json.loads(self.rfile.read(n) or b"{}"), ip, client()))
+            except (ValueError, TypeError):
+                return self._send(400, {"error": "bad_request"})
         if self.path.split("?")[0] == "/public/tem_interest":  # public landing form: no sign-in, small and guarded
             try:
                 n = int(self.headers.get("Content-Length", 0))

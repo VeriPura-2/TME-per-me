@@ -323,7 +323,7 @@ $("theme").onclick = $("theme2").onclick = () => {
 };
 ["c1", "c2"].forEach(id => $(id).onchange = () => $("accept").disabled = !($("c1").checked && $("c2").checked));
 const LAND = {
-  it: {start: "Inizia gratis", roleh: "Chi sei?", r_exp: "Esporto cibo italiano", r_tem: "Sono un TEM o consulente export", r_look: "Sto solo guardando", tf_h: "Entra in MioTEM come TEM", tf_p: "Lasciaci i tuoi dati. Creiamo lo studio e ti mandiamo l'invito.", tf_firm: "Nome dello studio", tf_email: "Email", tf_clients: "Quanti clienti esportatori hai? (facoltativo)", tf_send: "Invia", tf_ok: "Ricevuto. Ti scriviamo a breve.", tf_err: "Controlla nome ed email e riprova.", how: "Come funziona", tools: "Tutti gli strumenti", forwho: "Per chi è",
+  it: {start: "Inizia gratis", roleh: "Chi sei?", r_exp: "Esporto cibo italiano", r_tem: "Sono un TEM o consulente export", r_look: "Sto solo guardando", lc_open: "Ciao. Esporti cibo italiano, oppure sei un TEM o consulente export?", lc_ph: "Scrivi qui", lc_send: "Invia", lc_signin: "Accedi per continuare", lc_busy: "La chat non è disponibile ora. Puoi accedere, oppure lasciarci i tuoi dati se sei un TEM.", lc_cap: "Per continuare, accedi: la conversazione prosegue lì.", lc_leave: "Preferisci lasciare i tuoi dati?", tf_h: "Entra in MioTEM come TEM", tf_p: "Lasciaci i tuoi dati. Creiamo lo studio e ti mandiamo l'invito.", tf_firm: "Nome dello studio", tf_email: "Email", tf_clients: "Quanti clienti esportatori hai? (facoltativo)", tf_send: "Invia", tf_ok: "Ricevuto. Ti scriviamo a breve.", tf_err: "Controlla nome ed email e riprova.", how: "Come funziona", tools: "Tutti gli strumenti", forwho: "Per chi è",
     who: ["Aziende italiane alla prima esportazione di vino, pasta, olio d'oliva o formaggi", "Esportatori di questi prodotti che vogliono entrare in nuovi mercati", "Altri prodotti alimentari in arrivo: dicci cosa esporti e registriamo la tua richiesta", "Temporary Export Manager che seguono i loro clienti e, presto, trovano nuovi clienti", "Verso il Regno Unito, gli Stati Uniti, il Canada, la Svizzera e tutti i Paesi dell'Unione europea"],
     steps: [["Scopri cosa serve", "I documenti necessari, chi prepara ciascuno e la fonte ufficiale. I dazi dalle tariffe ufficiali, aggiornati ogni settimana."], ["Controlla i documenti", "Fattura, packing list e documento di trasporto confrontati tra loro, ingredienti controllati rispetto agli additivi vietati nell'Unione europea."], ["Spedisci", "Pacchi per campioni e piccoli ordini. Pallet e container: in arrivo."]],
     walkh: "Come funziona", walkp: "Un esempio con dati reali dell'app: vino italiano verso gli Stati Uniti. Esempio, non il tuo progetto.",
@@ -334,7 +334,7 @@ const LAND = {
     live: "Attivo", prev: "Anteprima", soon: "In arrivo", toolsh: "Tutti gli strumenti", toolsp: "Quelli attivi oggi e quelli in arrivo. Ogni strumento dice chi lo offre: MioTEM o un partner.", partner: "Partner",
     grp: {live: "Disponibili ora", preview: "Anteprima", soon: "In arrivo"},
     tag: "Compliance document validation, powered by orchestrated AI-Agents. Strumenti MioTEM e dei nostri partner, incluso VeriPura."},
-  en: {start: "Start free", roleh: "Who are you?", r_exp: "I export Italian food", r_tem: "I am a TEM or export consultant", r_look: "Just looking", tf_h: "Join MioTEM as a TEM", tf_p: "Leave your details. We set up your firm and send you the invite.", tf_firm: "Firm name", tf_email: "Email", tf_clients: "How many exporter clients do you have? (optional)", tf_send: "Send", tf_ok: "Received. We will write to you shortly.", tf_err: "Check the name and email and try again.", how: "How it works", tools: "All tools", forwho: "Who it's for",
+  en: {start: "Start free", roleh: "Who are you?", r_exp: "I export Italian food", r_tem: "I am a TEM or export consultant", r_look: "Just looking", lc_open: "Hello. Do you export Italian food, or are you a TEM or export consultant?", lc_ph: "Type here", lc_send: "Send", lc_signin: "Sign in to continue", lc_busy: "The chat is not available right now. You can sign in, or leave your details if you are a TEM.", lc_cap: "To continue, sign in: the conversation carries on there.", lc_leave: "Prefer to leave your details?", tf_h: "Join MioTEM as a TEM", tf_p: "Leave your details. We set up your firm and send you the invite.", tf_firm: "Firm name", tf_email: "Email", tf_clients: "How many exporter clients do you have? (optional)", tf_send: "Send", tf_ok: "Received. We will write to you shortly.", tf_err: "Check the name and email and try again.", how: "How it works", tools: "All tools", forwho: "Who it's for",
     who: ["Italian companies exporting wine, pasta, olive oil or cheese for the first time", "Exporters of these products looking to enter new markets", "Other food products coming: tell us what you export and we'll record your request", "Temporary export managers who follow their clients and, soon, find new ones", "To the United Kingdom, the United States, Canada, Switzerland and all European Union countries"],
     steps: [["Find out what you need", "The documents you need, who prepares each one, and the official source. Duties from the official tariffs, updated weekly."], ["Check your documents", "Invoice, packing list and transport document compared with each other, ingredients screened against additives banned in the European Union."], ["Ship", "Parcels for samples and small orders. Pallets and containers: coming soon."]],
     walkh: "How it works", walkp: "An example with real data from the app: Italian wine to the United States. An example, not your project.",
@@ -356,9 +356,44 @@ function renderLanding() {
   const fork = el("div", null, null, "margin:8px 0 16px"); fork.append(el("strong", L.roleh));
   const fr = el("div", null, null, "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px");
   const bExp = el("button", L.r_exp, "primary"), bTem = el("button", L.r_tem), bLook = el("button", L.r_look);
-  bExp.onclick = () => { try { localStorage.setItem("vl_role", "exporter"); } catch (e) {} $("login").click(); };
-  bLook.onclick = () => { const t = $("l-tools"); if (t) t.scrollIntoView({behavior: "smooth"}); };
   fr.append(bExp, bTem, bLook); fork.appendChild(fr);
+  // the landing conversation: the AI finds out who the visitor is, then asks questions that fit
+  let vid = null; try { vid = localStorage.getItem("vl_visitor"); } catch (e) {}
+  if (!vid || !/^[a-f0-9]{32}$/.test(vid)) { vid = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("vl_visitor", vid); } catch (e) {} }
+  const chat = el("div", null, "card", "margin-top:12px"); chat.hidden = true;
+  const clog = el("div", null, null, "max-height:340px;overflow:auto"), copts = el("div", null, null, "margin:6px 0");
+  const cin = document.createElement("input"); cin.type = "text"; cin.placeholder = L.lc_ph; cin.maxLength = 1000; cin.style.cssText = "width:70%;margin:4px 6px 4px 0";
+  const csend = el("button", L.lc_send, "primary"), cstate = {busy: false, off: false};
+  const cadd = (cls, t) => { const d = el("div", t, cls); d.style.whiteSpace = "pre-wrap"; clog.appendChild(d); clog.scrollTop = clog.scrollHeight; };
+  const toSignin = (msg) => { cstate.off = true; copts.innerHTML = ""; cin.disabled = csend.disabled = true; if (msg) cadd("bot", msg);
+    const b = el("button", L.lc_signin, "primary"); b.onclick = () => $("login").click(); copts.appendChild(b); };
+  const clientSend = async (text) => {
+    text = (text || cin.value).trim(); if (!text || cstate.busy || cstate.off) return;
+    cin.value = ""; copts.innerHTML = ""; cadd("me", text); cstate.busy = true;
+    try {
+      const r = await fetch("/public/chat", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({visitor: vid, message: text, lang})});
+      const j = await r.json().catch(() => ({}));
+      if (j.role) { try { localStorage.setItem("vl_role", j.role); } catch (e) {} }
+      if (r.status === 429) toSignin(L.lc_cap);
+      else if (!r.ok) toSignin(L.lc_busy);
+      else {
+        const lines = j.reply.trimEnd().split("\n"), last = lines[lines.length - 1];
+        if (last.startsWith("OPTIONS:")) { cadd("bot", lines.slice(0, -1).join("\n").trim());
+          last.slice(8).split("|").map(x => x.trim()).filter(Boolean).forEach(o => { const b = el("button", o); b.onclick = () => clientSend(o); copts.appendChild(b); }); }
+        else cadd("bot", j.reply);
+        if (j.signin) toSignin(null);
+      }
+    } catch (e) { toSignin(L.lc_busy); }
+    cstate.busy = false; };
+  csend.onclick = () => clientSend(); cin.onkeydown = e => { if (e.key === "Enter") clientSend(); };
+  chat.append(clog, copts, cin, csend);
+  const openChat = (text) => { if (chat.hidden) { chat.hidden = false; cadd("bot", L.lc_open); } if (text) clientSend(text); else cin.focus(); };
+  bExp.onclick = () => openChat(L.r_exp);
+  bTem.onclick = () => openChat(L.r_tem);
+  bLook.onclick = () => { const t = $("l-tools"); if (t) t.scrollIntoView({behavior: "smooth"}); };
+  const leave = el("a", L.lc_leave, null, "display:inline-block;margin-top:8px;font-size:14px;cursor:pointer;text-decoration:underline");
+  leave.onclick = () => { tf.hidden = !tf.hidden; if (!tf.hidden) fFirm.focus(); };
+  fork.append(chat);
   const tf = el("div", null, "card", "margin-top:12px"); tf.hidden = true; tf.append(el("strong", L.tf_h), el("div", L.tf_p, "muted", "font-size:14px;margin:4px 0 8px"));
   const fld = (ph) => { const i = document.createElement("input"); i.type = "text"; i.placeholder = ph; i.style.cssText = "width:100%;margin:4px 0"; tf.appendChild(i); return i; };
   const fFirm = fld(L.tf_firm), fMail = fld(L.tf_email), fCl = fld(L.tf_clients);
@@ -368,8 +403,7 @@ function renderLanding() {
     try { const r = await fetch("/public/tem_interest", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({firm_name: fFirm.value, email: fMail.value, clients: fCl.value, website: trap.value, lang})});
       tmsg.textContent = r.ok ? L.tf_ok : L.tf_err; if (r.ok) { fFirm.value = fMail.value = fCl.value = ""; } } catch (e) { tmsg.textContent = L.tf_err; }
     bSend.disabled = false; };
-  tf.append(bSend, tmsg); bTem.onclick = () => { tf.hidden = !tf.hidden; if (!tf.hidden) fFirm.focus(); };
-  fork.appendChild(tf); box.appendChild(fork);
+  tf.append(bSend, tmsg); fork.append(leave, tf); box.appendChild(fork);
   const forwho = el("div", null, "card"); forwho.append(el("strong", L.forwho)); L.who.forEach(w => forwho.appendChild(el("div", w, null, "padding:6px 0;border-top:1px solid var(--line);font-size:14px"))); box.appendChild(forwho);
   const steps = el("div", null, null, "display:flex;gap:12px;flex-wrap:wrap;margin-top:16px");
   L.steps.forEach(([h, p], i) => { const c = el("div", null, "card", "flex:1 1 220px"); c.append(el("strong", (i + 1) + ". " + h), el("div", p, "muted", "margin-top:4px;font-size:14px")); steps.appendChild(c); }); box.appendChild(steps);
@@ -1279,6 +1313,9 @@ applyLang();
     j.requests.forEach(q => box.appendChild(mk("div", sd(q.updated_at) + " · " + (q.company || "(no company)") + " · " + (q.product || "?") + " → " + (q.country || "?")
       + (q.timing ? " · when: " + q.timing : "") + (q.volume ? " · volume: " + q.volume : "") + (q.buyer ? " · buyer: " + q.buyer : "")
       + (q.notes ? " · " + q.notes : "") + " · via " + (q.source === "start_form" ? "start form" : "chat"), "muted")));
+    const [r4, j4] = await call("/admin/landing_chats", {});
+    if (r4.ok) { box.appendChild(mk("h3", "Landing chats (" + j4.total + "): " + Object.entries(j4.by_role).map(([k, v]) => k + " " + v).join(" · ")));
+      j4.chats.slice(0, 20).forEach(q => box.appendChild(mk("div", (q.role || "unknown") + " · " + q.messages + " msgs · " + q.created_at.slice(0, 10) + " · " + q.answers, "muted"))); }
     const [r3, j3] = await call("/admin/tem_interest", {});
     if (r3.ok) { box.appendChild(mk("h3", "TEM interest (" + j3.total + "): firms asking to join"));
       if (!j3.total) box.appendChild(mk("div", "None yet.", "muted"));

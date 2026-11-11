@@ -302,6 +302,16 @@ CREATE TABLE IF NOT EXISTS tem_interest (   -- a TEM or export consultant asks t
   lang TEXT,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS anon_chats (   -- a landing page conversation before sign-in
+  visitor_id TEXT PRIMARY KEY,
+  ip_hash TEXT NOT NULL,
+  role TEXT,                           -- exporter, tem, looking
+  history TEXT NOT NULL,               -- API messages, JSON
+  answers TEXT NOT NULL,               -- what the visitor told us, JSON
+  messages INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tool_interest (
   id TEXT PRIMARY KEY,
   case_id TEXT,
