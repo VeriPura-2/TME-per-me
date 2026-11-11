@@ -370,7 +370,9 @@ function renderLanding() {
     const b = el("button", L.lc_signin, "primary"); b.onclick = () => $("login").click(); copts.appendChild(b); };
   const clientSend = async (text) => {
     text = (text || cin.value).trim(); if (!text || cstate.busy || cstate.off) return;
-    cin.value = ""; copts.innerHTML = ""; cadd("me", text); cstate.busy = true;
+    cin.value = ""; copts.innerHTML = ""; cadd("me", text);
+    if (/^(sign ?in( now)?|log ?in|sign ?up|accedi( ora| adesso| subito)?|registrati)\W*$/i.test(text)) { $("login").click(); return; }  // they asked to sign in: take them there
+    cstate.busy = true;
     try {
       const r = await fetch("/public/chat", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({visitor: vid, message: text, lang})});
       const j = await r.json().catch(() => ({}));
@@ -383,6 +385,7 @@ function renderLanding() {
           last.slice(8).split("|").map(x => x.trim()).filter(Boolean).forEach(o => { const b = el("button", o); b.onclick = () => clientSend(o); copts.appendChild(b); }); }
         else cadd("bot", j.reply);
         if (j.signin) toSignin(null);
+        else if (j.offer_signin) { const b = el("button", L.lc_signin, "primary"); b.onclick = () => $("login").click(); copts.appendChild(b); }
       }
     } catch (e) { toSignin(L.lc_busy); }
     cstate.busy = false; };
