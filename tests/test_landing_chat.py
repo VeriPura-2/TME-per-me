@@ -240,6 +240,11 @@ class LandingChat(unittest.TestCase):
         self.assertEqual((out["offer_notify"], out["notify_kind"]), (True, "tem_intro"))
         self.assertIn("tem_intro", app.con().execute("SELECT answers FROM anon_chats WHERE visitor_id=?", (V1,)).fetchone()["answers"])
 
+    def test_the_introduction_form_has_its_own_consent_line(self):
+        html = open(os.path.join(os.path.dirname(landing_chat.__file__), "static", "index.html"), encoding="utf-8").read()
+        self.assertIn("I agree to be contacted about a TEM introduction", html)
+        self.assertIn('kind === "tem_intro" ? L.nt_ic : L.nt_consent', html)
+
     def test_the_prompt_asks_tem_users_about_document_time_and_offers_an_introduction(self):
         self.assertIn("gathering and sending documents to their TEM", landing_chat.SYSTEM)
         self.assertIn("offer_tem_intro", landing_chat.SYSTEM)
