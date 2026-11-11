@@ -15,7 +15,7 @@ from . import ai_usage, db, duties, lane_requests, requirements
 
 MODEL = "claude-sonnet-5-5"
 MESSAGE_CAP = 12
-IP_DAILY_CAP = 40
+IP_DAILY_CAP = int(os.environ.get("LANDING_IP_DAILY_CAP", "150"))
 DAILY_CEILING = int(os.environ.get("LANDING_DAILY_CEILING", "600"))
 MAX_CHARS = 1000
 MAX_TOKENS = 600
@@ -115,8 +115,11 @@ warmly for that country, call note_uncovered with the countries as they said the
 they are ready), and ask whether a covered country also fits. Never guess documents or rules for an uncovered country. If the product is
 clearly not food (or not Italian), ask politely what Italian product they mean before saving it. Keep going with the questions either way.
 
-If a TEM answers vaguely ("all kinds of food", "everything"), ask for two or three typical clients with a product and a country each
-(for example wine to the USA, pasta to the UK) before moving on. Never tell the visitor that something "could not load" or failed: if a
+An uncovered country or product never stops you: note it (note_uncovered) and carry on with the ones that are covered. If an exporter
+lists several destinations, save the first covered one as the destination and note the rest. If a TEM answers vaguely ("all kinds of
+food", "everything") but names covered countries, offer the preview anyway: the page uses wine and pasta examples labelled as our choice.
+After the preview, ask which products matter most to their clients. If they name no covered country at all, ask for two or three typical
+clients with a product and a country each (for example wine to the USA, pasta to the UK). Never tell the visitor that something "could not load" or failed: if a
 tool answers with an error, simply ask your next question.
 
 Rules:
@@ -186,7 +189,7 @@ def _row(con, visitor):
 
 def _said(state):
     """Everything the visitor told us, as one lowercase text: only their saved answers, never the AI's own examples."""
-    skip = ("examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered")
+    skip = ("examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered", "vague_products")
     return " ".join(" ".join(v) for k, v in state["answers"].items() if k not in skip and isinstance(v, list)).lower()
 
 
@@ -216,11 +219,13 @@ def run_tool(state, name, args):
                     "lets them look at routes that are covered. Ask no other question in this message."}
         if state.get("role") == "tem":
             said = _said(state)
-            if not a.get("clients") or not any(_mentioned(said, w) for w in PRODUCT_WORDS.values()) \
-                    or not any(_mentioned(said, w) for w in COUNTRY_WORDS.values()):
-                return {"ready": False, "instruction": "Do NOT offer the preview yet: the visitor has not named a product and a country. Ask for two "
-                        "or three typical clients, a product and a country each (for example wine to the USA, pasta to the UK), and the number of "
-                        "clients if you do not have it. Then offer the preview."}
+            if not a.get("clients") or not any(_mentioned(said, w) for w in COUNTRY_WORDS.values()):
+                return {"ready": False, "instruction": "Do NOT offer the preview yet: you still need the number of clients and at least one destination "
+                        "country that MioTEM covers. Ask for them (a product and a country for two or three typical clients is ideal), then offer the preview."}
+            if any(_mentioned(said, w) for w in PRODUCT_WORDS.values()):
+                state["answers"].pop("vague_products", None)
+            else:
+                state["answers"]["vague_products"] = ["yes"]  # no product named: the sample may use wine and pasta, labelled as examples we chose
         state["answers"]["preview_offered"] = [str(state.get("messages_so_far", 0))]
         return {"ok": True, "covered": True}
     if name == "show_preview":
@@ -233,9 +238,16 @@ def run_tool(state, name, args):
             said = _said(state)
             if not state["answers"].get("clients"):
                 return {"error": "ask how many exporter clients they serve first"}
-            ex = [f"{e.get('category')}|{e.get('country')}" for e in (args.get("examples") or [])[:2]
-                  if isinstance(e, dict) and e.get("category") in PRODUCT_WORDS and e.get("country") in COUNTRY_WORDS
-                  and _mentioned(said, PRODUCT_WORDS[e["category"]]) and _mentioned(said, COUNTRY_WORDS[e["country"]])]
+            vague = bool(state["answers"].get("vague_products"))
+            ex = []
+            for e in (args.get("examples") or [])[:2]:
+                if not (isinstance(e, dict) and e.get("category") in PRODUCT_WORDS and e.get("country") in COUNTRY_WORDS
+                        and _mentioned(said, COUNTRY_WORDS[e["country"]])):
+                    continue
+                if _mentioned(said, PRODUCT_WORDS[e["category"]]):
+                    ex.append(f"{e['category']}|{e['country']}")
+                elif vague and e["category"] in ("wine", "pasta"):
+                    ex.append(f"{e['category']}|{e['country']}|assumed")  # the TEM named no product: labelled as our choice
             if not ex:
                 return {"error": "no example may be invented: use only products and countries the visitor named"}
             state["answers"]["examples"] = ex
@@ -301,7 +313,9 @@ def message(con, body, ip, client):
     h = ip_hash(ip)
     mine = con.execute("SELECT COALESCE(SUM(messages), 0) AS n FROM anon_chats WHERE ip_hash=? AND updated_at>?",
                        (h, _since(24))).fetchone()["n"]
-    if mine >= IP_DAILY_CAP or used_today(con) >= DAILY_CEILING:
+    if mine >= IP_DAILY_CAP:
+        return 429, {"error": "limit", "signin": True, "role": state["role"]}  # this connection used its messages for today
+    if used_today(con) >= DAILY_CEILING:
         return 503, {"error": "busy", "role": state["role"]}
     state["con"] = con
     state["messages_so_far"] = state["messages"] + 1  # this message included
@@ -436,10 +450,11 @@ def preview(con, visitor):
     if not a.get("preview_ok"):
         return {"kind": None}
     if row["role"] == "tem":
-        pairs = [p.split("|", 1) for p in (a.get("examples") or []) if "|" in p][:2]
+        pairs = [p.split("|") for p in (a.get("examples") or []) if "|" in p][:2]
         if not pairs:
             return {"kind": None}
-        return {"kind": "workspace", "clients": [dict(_route(con, c, k), name="Example client " + "AB"[n]) for n, (c, k) in enumerate(pairs)]}
+        return {"kind": "workspace", "clients": [dict(_route(con, q[0], q[1]), name="Example client " + "AB"[n], assumed=len(q) > 2)
+                                                  for n, q in enumerate(pairs)]}
     if row["role"] == "exporter" and a.get("category") and a.get("country"):
         first = lambda k: (a.get(k) or [""])[0] if isinstance(a.get(k), list) else (a.get(k) or "")
         label = (first("product") or a["category"]) + " → " + (first("destination") or a["country"])  # their own words
