@@ -1204,6 +1204,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*landing_chat.message(con(), json.loads(self.rfile.read(n) or b"{}"), ip, client()))
             except (ValueError, TypeError):
                 return self._send(400, {"error": "bad_request"})
+        if self.path.split("?")[0] == "/public/preview":  # read only preview from the visitor's own answers, no AI
+            try:
+                n = int(self.headers.get("Content-Length", 0))
+                if n > 2048:
+                    return self._send(413, {})
+                return self._send(200, landing_chat.preview(con(), json.loads(self.rfile.read(n) or b"{}").get("visitor")))
+            except (ValueError, TypeError, AttributeError):
+                return self._send(400, {"error": "bad_request"})
         if self.path.split("?")[0] == "/public/tem_interest":  # public landing form: no sign-in, small and guarded
             try:
                 n = int(self.headers.get("Content-Length", 0))

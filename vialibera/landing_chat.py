@@ -11,7 +11,7 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 
-from . import ai_usage, db
+from . import ai_usage, db, duties, requirements
 
 MODEL = "claude-sonnet-5-5"
 MESSAGE_CAP = 12
@@ -19,7 +19,7 @@ IP_DAILY_CAP = 40
 DAILY_CEILING = int(os.environ.get("LANDING_DAILY_CEILING", "600"))
 MAX_CHARS = 1000
 MAX_TOKENS = 600
-QUIET_TOOLS = ("set_role", "save_answer", "show_signin")
+QUIET_TOOLS = ("set_role", "save_answer", "show_signin", "show_preview")
 VISITOR = re.compile(r"^[a-f0-9]{16,64}$")
 ROLES = ("exporter", "tem", "looking")
 CATEGORIES = ("pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other")
@@ -75,6 +75,10 @@ If the role is tem:
 - Then offer to sign in: MioTEM gives a TEM a trial workspace to try with real clients (2 clients, 5 projects).
 - Ask for the firm name and a contact email near the end, with consent, and save with save_answer (firm, contact).
 
+Preview: after the yearly estimate (exporter) or once you know the products and countries they work with (TEM), call
+show_preview, say the preview is below, and do not describe what it contains. The page builds it from real MioTEM data.
+Then continue with the implication or need-payoff question.
+
 When you invite the visitor to sign in, or they say they want to, call show_signin in that same response and say the
 Sign in button is below your message. Never describe a link or a page you cannot show.
 
@@ -96,6 +100,12 @@ Rules:
 TOOLS = [
     {"name": "set_role", "description": "Record who the visitor is.",
      "input_schema": {"type": "object", "properties": {"role": {"type": "string", "enum": list(ROLES)}}, "required": ["role"]}},
+    {"name": "show_preview", "description": "Make the page show a read only preview built from what the visitor told you. Exporter: "
+     "call it once product and destination are saved (with value), right after the yearly estimate and before the sign-in offer. "
+     "TEM: call it with examples, up to two example routes (category and country) from the products and countries they "
+     "described. The page shows real checklist and duties data, so never describe its contents yourself, only say it is below.",
+     "input_schema": {"type": "object", "properties": {"examples": {"type": "array", "maxItems": 2, "items": {"type": "object",
+         "properties": {"category": {"type": "string"}, "country": {"type": "string"}}, "required": ["category", "country"]}}}}},
     {"name": "show_signin", "description": "Make the page show a Sign in button under your reply. Call it whenever you invite the "
      "visitor to sign in, and whenever they say they want to sign in. In your reply say the button is below.",
      "input_schema": {"type": "object", "properties": {}}},
@@ -133,6 +143,17 @@ def _row(con, visitor):
 def run_tool(state, name, args):
     if name == "set_role" and args.get("role") in ROLES:
         state["role"] = args["role"]
+        return {"ok": True}
+    if name == "show_preview":
+        if state.get("role") == "tem":
+            ex = [f"{e.get('category')}|{e.get('country')}" for e in (args.get("examples") or [])[:2]
+                  if isinstance(e, dict) and e.get("category") in CATEGORIES and e.get("country") in COUNTRIES]
+            if not ex:
+                return {"error": "examples needed: category and country values"}
+            state["answers"]["examples"] = ex
+        elif not (state["answers"].get("category") and state["answers"].get("country")):
+            return {"error": "save product and destination with value first"}
+        state["offer_preview"] = True
         return {"ok": True}
     if name == "show_signin":
         state["offer_signin"] = True
@@ -229,7 +250,8 @@ def message(con, body, ip, client):
     else:
         con.execute("INSERT INTO anon_chats(visitor_id, ip_hash, role, history, answers, messages, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
                     (visitor, h, state["role"], fields[1], fields[2], fields[3], now, now))
-    return 200, {"reply": reply, "role": state["role"], "left": left, "signin": left <= 0, "offer_signin": bool(state.get("offer_signin"))}
+    return 200, {"reply": reply, "role": state["role"], "left": left, "signin": left <= 0, "offer_signin": bool(state.get("offer_signin")),
+                "offer_preview": bool(state.get("offer_preview"))}
 
 
 def listing(con):
@@ -270,3 +292,40 @@ def note_for(con, user_sub):
         return ""
     return (" Before signing in, the client told our landing guide: " + told + ". Do not ask for these again. Build on the "
             "problem and the consequence they named, in your own words, and ask only what is still missing.")
+
+
+def _route(con, category, country):
+    """The real checklist and duties for one route, from the same data the project page uses. No AI."""
+    out = {"category": category, "country": country, "covered": requirements.covers(category, country)}
+    if not out["covered"]:
+        return out
+    req = requirements.required(category, country, set())
+    data = req["data"]
+    out["checked"] = req["checked"]
+    out["layers"] = [{"id": k, "name": v, "items": [
+        {"it": i["it"], "en": i["en"], "who": i["who"], "verified": i["verified"], "only_if": i["only_if"],
+         "source": i["source"] if isinstance(i["source"], str) else None}
+        for i in data["items"] if i["layer"] == k]} for k, v in data["layers"].items()]
+    out["layers"] = [l for l in out["layers"] if l["items"]]
+    out["documents"] = len(data["items"])
+    out["staff_verify"] = sum(1 for i in data["items"] if not i["verified"])
+    out["caveat"] = data["caveat"]
+    out["duties"] = duties.for_case(con, {"product": {"category": category}, "market": {"country": country}})
+    return out
+
+
+def preview(con, visitor):
+    """A read only preview built from this visitor's saved answers. Exporter: their route. TEM: a sample workspace with
+    two example clients. Everything in it is real data or labelled as an example."""
+    row = _row(con, str(visitor or "")) if VISITOR.match(str(visitor or "")) else None
+    if not row:
+        return {"kind": None}
+    a = json.loads(row["answers"])
+    if row["role"] == "tem":
+        pairs = [p.split("|", 1) for p in (a.get("examples") or []) if "|" in p][:2]
+        if not pairs:
+            return {"kind": None}
+        return {"kind": "workspace", "clients": [dict(_route(con, c, k), name="Example client " + "AB"[n]) for n, (c, k) in enumerate(pairs)]}
+    if row["role"] == "exporter" and a.get("category") and a.get("country"):
+        return dict(_route(con, a["category"], a["country"]), kind="route")
+    return {"kind": None}
