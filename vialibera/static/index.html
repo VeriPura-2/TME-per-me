@@ -370,7 +370,7 @@ function renderLanding() {
   const clog = el("div", null, null, "max-height:72vh;min-height:240px;overflow:auto"), copts = el("div", null, null, "margin:6px 0");
   const cin = document.createElement("input"); cin.type = "text"; cin.placeholder = L.lc_ph; cin.maxLength = 1000; cin.style.cssText = "width:70%;margin:4px 6px 4px 0";
   const csend = el("button", L.lc_send, "primary"), cstate = {busy: false, off: false};
-  const cadd = (cls, t) => { const d = el("div", t, cls); d.style.whiteSpace = "pre-wrap"; clog.appendChild(d); if (cls === "bot") clog.lastBot = d; clog.scrollTop = clog.scrollHeight; return d; };
+  const cadd = (cls, t) => { const d = el("div", cls === "bot" ? String(t).replace(/\*\*/g, "").replace(/^\s*[-*] /gm, "") : t, cls); d.style.whiteSpace = "pre-wrap"; clog.appendChild(d); if (cls === "bot") clog.lastBot = d; clog.scrollTop = clog.scrollHeight; return d; };
   const routeCard = (r, withTitle) => {
     const box = el("div", null, "card", "margin:8px 0;font-size:14px");
     box.append(el("strong", (withTitle ? withTitle + ": " : "") + r.category + " → " + r.country));

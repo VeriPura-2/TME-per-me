@@ -38,6 +38,11 @@ COUNTRIES = ("UK", "USA", "Canada", "Switzerland", "Austria", "Belgium", "Bulgar
 TOPICS = ("product", "destination", "situation", "handling", "time", "volume", "cost", "problem", "implication", "need",
           "firm", "clients", "contact")
 
+NO_LIST = {"it": "MioTEM non ha ancora un elenco verificato per {p} verso {d}. Qui sotto un breve modulo ti permette di lasciare un'email per "
+                 "essere avvisato quando sarà pronto (facoltativo). Registrarsi è gratis e permette di vedere le rotte già coperte.",
+           "en": "MioTEM has no checked list for {p} to {d} yet. A short form below lets you leave an email to be told when it is ready "
+                 "(optional). Signing up is free and lets you look at routes that are covered."}
+
 OPENER = {"it": "Ciao. Esporti cibo italiano, oppure sei un TEM o consulente export?",
           "en": "Hello. Do you export Italian food, or are you a TEM or export consultant?"}
 
@@ -124,6 +129,9 @@ warmly for that country, call note_uncovered with the countries as they said the
 they are ready), and ask whether a covered country also fits. Never guess documents or rules for an uncovered country. If the product is
 clearly not food (or not Italian), ask politely what Italian product they mean before saving it. Keep going with the questions either way.
 
+If Saved so far contains route_noted, the page has already told the visitor there is no checked list for their route: do not repeat it,
+never offer a preview, and carry on with the hours, cost and implication questions, then the sign-up offer. Write the preview question
+only after offer_preview has answered ok; never write it first and correct yourself later.
 An uncovered country or product never stops you: note it (note_uncovered) and carry on with the ones that are covered. If an exporter
 lists several destinations, save the first covered one as the destination and note the rest. If a TEM answers vaguely ("all kinds of
 food", "everything") but names covered countries, offer the preview anyway: the page uses wine and pasta examples labelled as our choice.
@@ -134,7 +142,8 @@ tool answers with an error, simply ask your next question.
 Rules:
 - Never state tariffs, taxes, legal requirements, prices or deadlines. If asked, say MioTEM checks these against
   official sources once the visitor is signed in, and that you will not guess.
-- Tools. When you invite sign-up (or the visitor asks what MioTEM can do), name the two or three tools from the list below that fit
+- Write plain text only: no asterisks, no markdown, no bullet symbols. Mention tools in one sentence or short plain lines.
+Tools. When you invite sign-up (or the visitor asks what MioTEM can do), name the two or three tools from the list below that fit
 this visitor and say in one short sentence what each does for them, then say the full list is further down the page. Use only the
 tools, names and descriptions in this list; say plainly which are in development or coming soon and never present them as ready.
 Never describe how a tool works inside.
@@ -213,7 +222,7 @@ def _row(con, visitor):
 
 def _said(state):
     """Everything the visitor told us, as one lowercase text: only their saved answers, never the AI's own examples."""
-    skip = ("examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered", "vague_products", "tem_intro")
+    skip = ("examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered", "vague_products", "tem_intro", "route_noted")
     return " ".join(" ".join(v) for k, v in state["answers"].items() if k not in skip and isinstance(v, list)).lower()
 
 
@@ -414,6 +423,15 @@ def message(con, body, ip, client):
     if not reply:
         reply = FALLBACK[lang]
         history.append({"role": "assistant", "content": [{"type": "text", "text": reply}]})
+    a = state["answers"]
+    if state["role"] == "exporter" and a.get("category") and a.get("country") and "route_noted" not in a \
+            and not requirements.covers(a["category"], a["country"]):
+        # the route has no checked list: say so now, not after five more questions
+        a["route_noted"] = ["yes"]
+        state["offer_notify"] = True
+        what = ((a.get("product") or [a["category"]])[-1] or a["category"])[:60]
+        where = ((a.get("destination") or [a["country"]])[-1] or a["country"])[:60]
+        reply = NO_LIST[lang].format(p=what, d=where) + "\n\n" + reply
     now = db.now()
     fields = (state["role"], json.dumps(history[-24:]), json.dumps(state["answers"], ensure_ascii=False), state["messages"] + 1, now)
     if row:
