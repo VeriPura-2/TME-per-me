@@ -35,7 +35,7 @@ CHILLED_NOTE = L("Chilled parcels suit samples and small orders only. Larger chi
                  "I pacchi refrigerati vanno bene solo per campioni e piccoli ordini. Volumi refrigerati più grandi viaggiano su pallet o container refrigerati.")
 
 CORE = [  # MioTEM's own tools: always shown (no switch for the TEM); "go" is where the button takes the user
-    {"id": "ai_manager", "go": "chat", "name": L("Your AI export manager", "Il tuo export manager AI"),
+    {"id": "ai_manager", "go": "chat", "name": L("Your agentic export assistant", "Il tuo assistente export agentico"),
      "today": {"text": L("Guides you one question at a time and builds your project: product, market, company.",
                          "Ti guida una domanda alla volta e costruisce il tuo progetto: prodotto, mercato, azienda.")}},
     {"id": "checklist", "go": "req", "name": L("Required documents", "Documenti richiesti"),

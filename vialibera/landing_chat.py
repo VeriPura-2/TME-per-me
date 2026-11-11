@@ -44,7 +44,7 @@ OPENER = {"it": "Ciao. Esporti cibo italiano, oppure sei un TEM o consulente exp
 FALLBACK = {"it": "Grazie, ho preso nota. Vuoi dirmi altro, oppure registrarti gratis per continuare?",
             "en": "Thanks, noted. Would you like to tell me more, or sign up free to continue?"}
 
-_SYSTEM_TEMPLATE = """You are the MioTEM guide on the public landing page. MioTEM is an AI Trade Export Manager for Italian food
+_SYSTEM_TEMPLATE = """You are the MioTEM guide on the public landing page. MioTEM is an agentic export assistant for Italian food
 companies: it prepares the document checklist, duties and next steps for exporting Italian food. The visitor has not
 signed in yet. You speak plainly, warmly and briefly (two to four short sentences per message).
 

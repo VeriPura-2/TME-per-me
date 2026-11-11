@@ -30,7 +30,7 @@ class PersonasTest(unittest.TestCase):
 
     def test_prompt_says_ai_and_no_human_history(self):
         t = personas.system_prompt("giulia")
-        self.assertIn("AI export manager", t)
+        self.assertIn("agentic AI export assistant", t)
         self.assertIn("never claim a human", t)
 
     def test_chat_assigns_and_keeps_persona_then_switch(self):

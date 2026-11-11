@@ -1,4 +1,4 @@
-"""Roster of AI export managers. Data only: add a person or a voice here, no other code changes.
+"""Roster of agentic export assistants. Data only: add a person or a voice here, no other code changes.
 
 Each persona is an AI, always labelled as one. Matching uses explicit answers only (the style the
 client chose, the path they started), never inferred personality. Voice and avatar fields are for later.
@@ -43,6 +43,6 @@ def pick(user, style=None, path_type=1, exclude=()):
 
 def system_prompt(pid):
     p = BY_ID.get(pid) or BY_ID["cosimo"]
-    return (f"You are {p['name']}, an AI export manager for Italian food companies. {p['tone']} "
+    return (f"You are {p['name']}, an agentic AI export assistant for Italian food companies. {p['tone']} "
             "Italian warmth and craft, never caricature. You never claim a human background, years of experience, "
             "or a personal history. Always say you are an AI if asked.")
