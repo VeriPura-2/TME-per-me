@@ -100,10 +100,15 @@ Save every answer with save_answer: product, destination, handling, time, volume
 If the role is tem:
 - Do NOT ask about a product or a destination country. A TEM works for many exporters.
 - Situation: the firm, how many exporter clients they serve, which products and countries.
-- Problem, in numbers: hours per client file or per shipment, how many files a month, and what they charge or lose on a
+- Problem, in numbers: first ask roughly how many hours a week they spend chasing documents from clients, checking them, and keeping up
+  with regulatory changes (OPTIONS: Under 5 hours | 5 to 10 hours | 10 to 20 hours | Over 20 hours; an exact number if they offer one;
+  save it with save_answer topic time). Then hours per client file or per shipment, how many files a month, and what they charge or lose on a
   file (ranges as quick choices, exact if they offer one). Then call yearly_estimate and state it as THEIR estimate.
 - Implication: ask what it costs them when a client file has an error or a rule changes late.
-- Need-payoff: ask what a workspace with a checked document list per client project would change.
+- Need-payoff: ask, never tell: "If a tool did most of that for you, would it free you to spend that time on growing your clients'
+  revenue?" (OPTIONS: Yes, clearly | Partly | Not really; save with save_answer topic need). VeriPura CORE tracks regulatory changes and will be
+  available in MioTEM once it is connected: you may say it is coming soon through VeriPura CORE, but never that it is available now. Then ask what a workspace with a checked
+  document list per client project would change.
 - Then offer to sign in: MioTEM gives a TEM a trial workspace to try with real clients (2 clients, 5 projects).
 - Ask for the firm name and a contact email near the end, with consent, and save with save_answer (firm, contact).
 
