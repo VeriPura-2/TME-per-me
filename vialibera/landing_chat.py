@@ -333,10 +333,10 @@ def run_tool(state, name, args):
         state["answers"].setdefault(args["topic"], []).append(str(args.get("text") or "")[:300])
         state["answers"][args["topic"]] = state["answers"][args["topic"]][-3:]
         value = str(args.get("value") or "")
-        if args["topic"] == "product" and value in CATEGORIES:
-            state["answers"]["category"] = value
-        if args["topic"] == "destination" and value in COUNTRIES:
-            state["answers"]["country"] = value
+        if args["topic"] == "product" and value:
+            state["answers"]["category"] = value if value in CATEGORIES else "other"  # a product we have no list for counts as "other"
+        if args["topic"] == "destination" and value:
+            state["answers"]["country"] = value if value in COUNTRIES else "other"
         return {"ok": True}
     return {"error": "unknown"}
 
