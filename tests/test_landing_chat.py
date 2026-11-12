@@ -384,7 +384,8 @@ class LandingChat(unittest.TestCase):
     def _talk_tem(self, said="I advise wine exporters selling to the US and pasta producers selling to the UK"):
         say(Script([tool("set_role", {"role": "tem"}), text("How many exporter clients do you serve?")]), "I am a TEM")
         say(Script([tool("save_answer", {"topic": "clients", "text": "about 8 exporters"}),
-                    tool("save_answer", {"topic": "situation", "text": said}, "t2"), text("Where does the time go?")]), said)
+                    tool("save_answer", {"topic": "situation", "text": said}, "t2"),
+                    tool("save_answer", {"topic": "time", "text": "10 to 20 hours a week"}, "t3"), text("Where does the time go?")]), said)  # the weekly hours come before the preview offer
         self._offer()
 
     def test_tem_with_no_covered_country_is_asked_before_any_offer(self):
@@ -403,7 +404,8 @@ class LandingChat(unittest.TestCase):
         say(Script([tool("set_role", {"role": "tem"}), text("How many exporter clients do you serve?")]), "I am a TEM")
         say(Script([tool("save_answer", {"topic": "clients", "text": "10 exporters"}),
                     tool("save_answer", {"topic": "situation", "text": "all kinds of food to France, UK, Germany, USA and UAE"}, "t2"),
-                    text("Which products?")]), "all kinds of food to France, UK, Germany, USA and UAE")
+                    tool("save_answer", {"topic": "time", "text": "5 to 10 hours a week"}, "t3"), text("Which products?")]),
+            "all kinds of food to France, UK, Germany, USA and UAE")
         code, out = say(Script([tool("offer_preview", {})], [text("Would you like to see a sample workspace?")]), "ok")
         self.assertFalse(out["offer_preview"])
         c = Script([tool("show_preview", {"examples": [{"category": "wine", "country": "USA"}, {"category": "oil", "country": "UAE"}]}), text("It is below.")])

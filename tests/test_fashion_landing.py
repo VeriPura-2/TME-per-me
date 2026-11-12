@@ -35,12 +35,19 @@ class FashionLanding(unittest.TestCase):
         self.assertNotIn("—", landing_chat.SYSTEM)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TemQuestions(unittest.TestCase):
     def test_tem_path_asks_weekly_hours_and_the_revenue_need_payoff(self):
         self.assertIn("hours a week they spend chasing documents", landing_chat.SYSTEM)
         self.assertIn("growing your clients'", landing_chat.SYSTEM)
         self.assertIn("coming soon through VeriPura CORE, but never that it is available now", landing_chat.SYSTEM)
+
+    def test_a_tem_is_asked_the_weekly_hours_before_the_preview_is_offered(self):
+        s = state(role="tem", clients=["8"], product=["wine to the UK"])
+        r = landing_chat.run_tool(s, "offer_preview", {})
+        self.assertFalse(r.get("ready", True))
+        self.assertIn("hours a week", r["instruction"])
+        self.assertNotIn("preview_offered", s["answers"])
+
+
+if __name__ == "__main__":
+    unittest.main()
