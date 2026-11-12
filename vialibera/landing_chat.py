@@ -43,24 +43,28 @@ NO_LIST = {"it": "MioTEM non ha ancora un elenco verificato per {p} verso {d}. Q
            "en": "MioTEM has no checked list for {p} to {d} yet. A short form below lets you leave an email to be told when it is ready "
                  "(optional). Signing up is free and lets you look at routes that are covered."}
 
-OPENER = {"it": "Ciao. Esporti cibo italiano, oppure sei un TEM o consulente export?",
-          "en": "Hello. Do you export Italian food, or are you a TEM or export consultant?"}
+OPENER = {"it": "Ciao. Esporti prodotti italiani, oppure sei un TEM o consulente export?",
+          "en": "Hello. Do you export Italian products, or are you a TEM or export consultant?"}
 
 FALLBACK = {"it": "Grazie, ho preso nota. Vuoi dirmi altro, oppure registrarti gratis per continuare?",
             "en": "Thanks, noted. Would you like to tell me more, or sign up free to continue?"}
 
 _SYSTEM_TEMPLATE = """You are the MioTEM guide on the public landing page. MioTEM is an agentic export assistant for Italian food
-companies: it prepares the document checklist, duties and next steps for exporting Italian food. The visitor has not
-signed in yet. You speak plainly, warmly and briefly (two to four short sentences per message).
+companies: it prepares the document checklist, duties and next steps for exporting Italian food. Food is available now, and
+MioTEM is also adding fashion (clothing, footwear and accessories first). The visitor has not signed in yet. You speak plainly, warmly and briefly (two to four short sentences per message).
 
-If the visitor's first message is the text of a role button ("I export Italian food", "I want to start exporting Italian food",
+If the visitor's first message is the text of a role button ("I export Italian products", "I want to start exporting Italian products",
 "I am a TEM or export consultant"), the role is already known: call set_role and go straight to the first question for that
-role, without repeating the opening line. Otherwise the visitor has already seen this opening line: "Do you export Italian food, or are you a TEM or export consultant?"
+role, without repeating the opening line. Otherwise the visitor has already seen this opening line: "Do you export Italian products, or are you a TEM or export consultant?"
 (a TEM is a Trade Export Manager: a consultant who runs exports for several food companies).
 
 STEP 1. Find out the role. As soon as it is clear, call set_role (exporter, tem or looking). A person who says they want to START exporting (or plan to) is also "exporter", a first-time exporter: ask how they plan to
 handle the documents rather than how they do today. A person who only wants to
 look around is "looking": answer what they ask and let them explore.
+
+STEP 1b. Food or fashion. Right after the role is known (exporter or tem), your first question is exactly one: "Is it food or fashion?"
+(for a TEM: "Do your clients export food or fashion?"), with OPTIONS: Food | Fashion. Skip it only if the visitor already said which.
+If food: carry on as described below, nothing changes. If fashion: call note_fashion, then follow the FASHION rules after step 2.
 
 STEP 2. Ask questions that fit the role. The whole conversation depends on the role. Use SPIN: ask about the Situation,
 then the Problem, then the Implication of that problem, then the Need-payoff (what would change for them if it were
@@ -103,6 +107,14 @@ If the role is tem:
 - Then offer to sign in: MioTEM gives a TEM a trial workspace to try with real clients (2 clients, 5 projects).
 - Ask for the firm name and a contact email near the end, with consent, and save with save_answer (firm, contact).
 
+FASHION rules. MioTEM is adding fashion and does not have checked lists for it yet. Say so plainly and warmly in one sentence ("we are adding
+fashion too"), never "extending". Then run the same discovery questions as for the role (situation, problem, implication, need-payoff),
+asking about what they make (clothing, footwear, accessories), where they sell or want to sell, how they handle the documents, hours and
+shipments. For fashion, save product and destination with save_answer WITHOUT a value (their own words only), so no route is set.
+Never state or hint at any document, duty, label, test, restriction or compliance rule for fashion, and never name a market as covered.
+Never call offer_preview or show_preview for fashion. If asked about requirements, say MioTEM is still checking them against official
+sources and will not guess. Offer the notify form (note_fashion shows it) and the free sign-in as usual.
+
 Preview, in two steps. Step A, after the yearly estimate (exporter) or once the TEM has told you, in their own words, how many
 clients they serve and which products and countries: ask permission. Call offer_preview and ask, in one short question, whether
 they would like to see a preview of their route (exporter) or of a sample workspace with two example clients (TEM), with
@@ -127,7 +139,7 @@ Coverage: MioTEM has checked lists for these products: {PRODUCTS}; and these cou
 (exporter or TEM) names a destination country outside that list, or an exporter's destination is saved as "other", say so plainly and
 warmly for that country, call note_uncovered with the countries as they said them (the page then shows an optional form to be told when
 they are ready), and ask whether a covered country also fits. Never guess documents or rules for an uncovered country. If the product is
-clearly not food (or not Italian), ask politely what Italian product they mean before saving it. Keep going with the questions either way.
+clearly not food and not fashion (or not Italian), ask politely what Italian product they mean before saving it. Keep going with the questions either way.
 
 If Saved so far contains route_noted, the page has already told the visitor there is no checked list for their route: do not repeat it,
 never offer a preview, and carry on with the hours, cost and implication questions, then the sign-up offer. Write the preview question
@@ -181,6 +193,9 @@ TOOLS = [
     {"name": "note_uncovered", "description": "Call it when the visitor (exporter or TEM) names a destination country that is not in the covered "
      "list. Give the countries as they said them. The page then shows an optional notify-me form.",
      "input_schema": {"type": "object", "properties": {"countries": {"type": "string"}}, "required": ["countries"]}},
+    {"name": "note_fashion", "description": "Call it when the visitor (exporter or TEM) says they are in fashion: clothing, footwear or accessories. "
+     "Records interest only: MioTEM has no checked fashion lists yet. The page then shows an optional notify-me form.",
+     "input_schema": {"type": "object", "properties": {}}},
     {"name": "offer_tem_intro", "description": "Call it when an exporter says yes to an introduction to a TEM. The page then shows an optional "
      "contact form. Records interest only, no match is promised.",
      "input_schema": {"type": "object", "properties": {}}},
@@ -222,7 +237,7 @@ def _row(con, visitor):
 
 def _said(state):
     """Everything the visitor told us, as one lowercase text: only their saved answers, never the AI's own examples."""
-    skip = ("examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered", "vague_products", "tem_intro", "route_noted")
+    skip = ("fashion", "examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered", "vague_products", "tem_intro", "route_noted")
     return " ".join(" ".join(v) for k, v in state["answers"].items() if k not in skip and isinstance(v, list)).lower()
 
 
@@ -242,6 +257,14 @@ def run_tool(state, name, args):
         state["offer_notify"] = True  # the page shows the notify-me form
         return {"ok": True, "instruction": "Say plainly that MioTEM has no checked list for those countries yet, that a short form below lets "
                 "them leave an email to be told when they are ready (optional), then carry on with your next question."}
+    if name == "note_fashion":
+        if state.get("role") not in ("exporter", "tem"):
+            return {"error": "ask the role first"}
+        state["answers"]["fashion"] = ["yes"]
+        state["offer_notify"] = True  # the page shows the notify-me form for fashion
+        state["notify_kind"] = "fashion"
+        return {"ok": True, "instruction": "Say in one sentence that MioTEM is adding fashion too and has no checked lists for it yet, that a short form below "
+                "lets them leave an email to be told when it is ready (optional), then carry on with your next discovery question. No document, duty or compliance statements."}
     if name == "offer_tem_intro":
         if state.get("role") != "exporter":
             return {"error": "only for an exporter"}
@@ -252,6 +275,8 @@ def run_tool(state, name, args):
                 "(optional), that no match is promised yet, then carry on with your next question or the sign-up offer."}
     if name == "offer_preview":
         a = state["answers"]
+        if a.get("fashion"):
+            return {"ready": False, "instruction": "Fashion has no checked lists yet: do NOT offer a preview. Carry on with your next discovery question or the sign-in offer."}
         if state.get("role") != "tem" and a.get("category") and a.get("country") and state.get("con") is not None \
                 and not requirements.covers(a["category"], a["country"]):
             state["offer_notify"] = True  # the page shows the notify-me form; no preview is offered for a route without a list
@@ -270,6 +295,8 @@ def run_tool(state, name, args):
         state["answers"]["preview_offered"] = [str(state.get("messages_so_far", 0))]
         return {"ok": True, "covered": True}
     if name == "show_preview":
+        if state["answers"].get("fashion"):
+            return {"error": "no preview for fashion yet"}
         offered = state["answers"].get("preview_offered")
         if not offered or int(offered[0]) >= state.get("messages_so_far", 0):
             return {"error": "ask first: call offer_preview and ask whether they want to see it; show_preview only after they say yes in a later message"}
