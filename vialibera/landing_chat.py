@@ -36,7 +36,7 @@ COUNTRIES = ("UK", "USA", "Canada", "Switzerland", "Austria", "Belgium", "Bulgar
              "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg",
              "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden", "other")
 TOPICS = ("product", "destination", "situation", "handling", "time", "volume", "cost", "problem", "implication", "need",
-          "firm", "clients", "contact")
+          "firm", "clients", "contact", "other_product", "transactions", "avg_value", "product_types", "markets")
 
 NO_LIST = {"it": "MioTEM non ha ancora un elenco verificato per {p} verso {d}. Qui sotto un breve modulo ti permette di lasciare un'email per "
                  "essere avvisato quando sarà pronto (facoltativo). Registrarsi è gratis e permette di vedere le rotte già coperte.",
@@ -62,9 +62,10 @@ STEP 1. Find out the role. As soon as it is clear, call set_role (exporter, tem 
 handle the documents rather than how they do today. A person who only wants to
 look around is "looking": answer what they ask and let them explore.
 
-STEP 1b. Food or fashion. Right after the role is known (exporter or tem), your first question is exactly one: "Is it food or fashion?"
-(for a TEM: "Do your clients export food or fashion?"), with OPTIONS: Food | Fashion. Skip it only if the visitor already said which.
+STEP 1b. Food or fashion. Right after the role is known (exporter or tem), your first question is exactly one: "Is it food, fashion or something else?"
+(for a TEM: "Do your clients export food, fashion or something else?"), with OPTIONS: Food | Fashion | Something else. Skip it only if the visitor already said which.
 If food: carry on as described below, nothing changes. If fashion: call note_fashion, then follow the FASHION rules after step 2.
+If something else: call note_other, then follow the OTHER rules after the FASHION rules.
 
 STEP 2. Ask questions that fit the role. The whole conversation depends on the role. Use SPIN: ask about the Situation,
 then the Problem, then the Implication of that problem, then the Need-payoff (what would change for them if it were
@@ -119,6 +120,15 @@ shipments. For fashion, save product and destination with save_answer WITHOUT a 
 Never state or hint at any document, duty, label, test, restriction or compliance rule for fashion, and never name a market as covered.
 Never call offer_preview or show_preview for fashion. If asked about requirements, say MioTEM is still checking them against official
 sources and will not guess. Offer the notify form (note_fashion shows it) and the free sign-in as usual.
+
+OTHER rules. The visitor exports something that is neither food nor fashion. Ask what they export (for a TEM: what their clients export) and save it
+with save_answer topic other_product (their own words, no value). Then say, in one sentence, that this information is shared with the MioTEM
+team, who look at which categories to add next, and ask: "Would you be willing to share a few more details: transactions a year, average
+transaction value, the types of products and your target markets?" (OPTIONS: Yes | No thanks). If yes: ask ONE detail at a time and save each
+with save_answer (topics transactions, avg_value, product_types, markets; their own words, ranges as quick choices where useful). Then, or
+right after "No thanks", call offer_contact_form: a short form below lets them leave an email and an optional phone number for follow up, with a
+consent box. Never ask for the email or phone in the chat itself. Never state or hint at any document, duty, label or compliance rule for
+the category and never offer a preview.
 
 Preview, in two steps. Step A, after the yearly estimate (exporter) or once the TEM has told you, in their own words, how many
 clients they serve and which products and countries, and has answered the weekly hours question: ask permission. Call offer_preview and ask, in one short question, whether
@@ -201,6 +211,10 @@ TOOLS = [
     {"name": "note_fashion", "description": "Call it when the visitor (exporter or TEM) says they are in fashion: clothing, footwear or accessories. "
      "Records interest only: MioTEM has no checked fashion lists yet. The page then shows an optional notify-me form.",
      "input_schema": {"type": "object", "properties": {}}},
+    {"name": "note_other", "description": "Call it when the visitor (exporter or TEM) says what they export is neither food nor fashion. Records interest only.",
+     "input_schema": {"type": "object", "properties": {}}},
+    {"name": "offer_contact_form", "description": "Call it after the optional details questions (or after No thanks) in the OTHER path: the page then shows the form "
+     "for email, optional phone and consent.", "input_schema": {"type": "object", "properties": {}}},
     {"name": "offer_tem_intro", "description": "Call it when an exporter says yes to an introduction to a TEM. The page then shows an optional "
      "contact form. Records interest only, no match is promised.",
      "input_schema": {"type": "object", "properties": {}}},
@@ -242,7 +256,7 @@ def _row(con, visitor):
 
 def _said(state):
     """Everything the visitor told us, as one lowercase text: only their saved answers, never the AI's own examples."""
-    skip = ("fashion", "examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered", "vague_products", "tem_intro", "route_noted")
+    skip = ("fashion", "other", "examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered", "vague_products", "tem_intro", "route_noted")
     return " ".join(" ".join(v) for k, v in state["answers"].items() if k not in skip and isinstance(v, list)).lower()
 
 
@@ -262,6 +276,17 @@ def run_tool(state, name, args):
         state["offer_notify"] = True  # the page shows the notify-me form
         return {"ok": True, "instruction": "Say plainly that MioTEM has no checked list for those countries yet, that a short form below lets "
                 "them leave an email to be told when they are ready (optional), then carry on with your next question."}
+    if name == "note_other":
+        if state.get("role") not in ("exporter", "tem"):
+            return {"error": "ask the role first"}
+        state["answers"]["other"] = ["yes"]
+        return {"ok": True, "instruction": "Ask what they export (for a TEM: what their clients export), then follow the OTHER rules. No compliance statements."}
+    if name == "offer_contact_form":
+        if not state["answers"].get("other"):
+            return {"error": "only after note_other"}
+        state["offer_notify"] = True
+        state["notify_kind"] = "other"
+        return {"ok": True, "instruction": "Say a short form below lets them leave an email and an optional phone number so the MioTEM team can follow up."}
     if name == "note_fashion":
         if state.get("role") not in ("exporter", "tem"):
             return {"error": "ask the role first"}
@@ -280,7 +305,7 @@ def run_tool(state, name, args):
                 "(optional), that no match is promised yet, then carry on with your next question or the sign-up offer."}
     if name == "offer_preview":
         a = state["answers"]
-        if a.get("fashion"):
+        if a.get("fashion") or a.get("other"):
             return {"ready": False, "instruction": "Fashion has no checked lists yet: do NOT offer a preview. Carry on with your next discovery question or the sign-in offer."}
         if state.get("role") != "tem" and a.get("category") and a.get("country") and state.get("con") is not None \
                 and not requirements.covers(a["category"], a["country"]):
@@ -304,8 +329,8 @@ def run_tool(state, name, args):
         state["answers"]["preview_offered"] = [str(state.get("messages_so_far", 0))]
         return {"ok": True, "covered": True}
     if name == "show_preview":
-        if state["answers"].get("fashion"):
-            return {"error": "no preview for fashion yet"}
+        if state["answers"].get("fashion") or state["answers"].get("other"):
+            return {"error": "no preview for fashion or other categories yet"}
         offered = state["answers"].get("preview_offered")
         if not offered or int(offered[0]) >= state.get("messages_so_far", 0):
             return {"error": "ask first: call offer_preview and ask whether they want to see it; show_preview only after they say yes in a later message"}
