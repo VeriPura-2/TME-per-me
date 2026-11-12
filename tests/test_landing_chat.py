@@ -138,7 +138,7 @@ class LandingChat(unittest.TestCase):
 
     def test_invalid_values_are_ignored(self):
         say(Script([tool("save_answer", {"topic": "product", "text": "x", "value": "rocket fuel"}), text("ok")]), "hi")
-        self.assertIsNone(landing_chat.claim(app.con(), "u", V1).get("category"))
+        self.assertEqual(landing_chat.claim(app.con(), "u", V1).get("category"), "other")  # never the invented value, only a known category
 
     def test_a_conversation_is_claimed_by_one_person(self):
         say(Script([tool("set_role", {"role": "exporter"}), text("ok")]), "hi")
@@ -315,6 +315,12 @@ class LandingChat(unittest.TestCase):
         self.assertEqual((out["offer_notify"], out["notify_kind"]), (True, "route"))
         code, out = say(Script([tool("save_answer", {"topic": "handling", "text": "myself"}), text("How many hours?")]), "myself")
         self.assertEqual(out["reply"], "How many hours?")  # not repeated
+
+    def test_a_product_or_country_outside_the_lists_still_gets_the_early_notice(self):
+        c = Script([tool("set_role", {"role": "exporter"}), tool("save_answer", {"topic": "product", "text": "hazelnut butter", "value": "hazelnut butter"}, "t2"),
+                    tool("save_answer", {"topic": "destination", "text": "UK", "value": "UK"}, "t3"), text("How do you handle the documents?")])
+        code, out = say(c, "hazelnut butter to the UK")
+        self.assertTrue(out["reply"].startswith("MioTEM has no checked list for hazelnut butter to UK yet."))
 
     def test_a_covered_route_gets_no_early_notice(self):
         code, out = say(self._exporter("pasta", "Germany"), "pasta to Germany")
