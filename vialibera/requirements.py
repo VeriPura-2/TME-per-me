@@ -434,20 +434,23 @@ def importer_only(r):
     return r["who"] in IMPORTER_SIDE and r["id"] not in EXPORTER_ACTS
 
 
-def lane(category, country):
-    """(product key, destination key) when the lane is in Wave 1, else None."""
+def lane(category, country, vertical="food"):
+    """(product key, destination key) when the lane is in Wave 1, else None.
+    vertical: only food has rows today, so any other vertical has no lane yet (see verticals.py)."""
+    if vertical not in (None, "", "food"):
+        return None
     p = PRODUCTS.get((category or "").strip().lower())
     d = DESTINATIONS.get((country or "").strip().lower())
     return (p, d) if p and d else None
 
 
-def covers(category, country):
-    return lane(category, country) is not None
+def covers(category, country, vertical="food"):
+    return lane(category, country, vertical) is not None
 
 
-def required(category, country, on_file_types):
+def required(category, country, on_file_types, vertical="food"):
     """Checklist for one lane. on_file_types: set of docs.TYPES ids the client already has."""
-    ln = lane(category, country)
+    ln = lane(category, country, vertical)
     if not ln:
         return None
     p, d = ln

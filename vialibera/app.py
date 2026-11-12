@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, voice
+from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
 from .menu import MENU
 from . import plan_prices
 from .secrets import get_secret
@@ -656,9 +656,10 @@ def handle_mark(body, who):
     c = con()
     case = db.case_read(c, row["id"])
     cat, country = case["product"].get("category"), case["market"].get("country")
-    if not requirements.covers(cat, country):
+    vert = verticals.vertical_of(case)
+    if not requirements.covers(cat, country, vert):
         return 400, {"error": "not_covered"}
-    ids = {i["id"] for i in requirements.required(cat, country, set())["data"]["items"]}
+    ids = {i["id"] for i in requirements.required(cat, country, set(), vert)["data"]["items"]}
     return marks.mark(c, row["id"], who, body.get("item"), body.get("on", True) is not False, ids)
 
 
@@ -683,10 +684,12 @@ def handle_journey(body, who):
                        "simulated": invites.has_simulated(c, who["user"])},
            "plan": plan, "role": permissions.case_role(c, row, who), "case": {"product": case["product"].get("name_brand"), "country": case["market"].get("country"),
                                   "category": case["product"].get("category"),
-                                  "export_registration": case["company"].get("export_registration")}}
-    if requirements.covers(case["product"].get("category"), case["market"].get("country")):
-        out["required_docs"] = requirements.required(case["product"].get("category"), case["market"].get("country"), have)
-    elif features.is_sim("required_docs_other"):
+                                  "export_registration": case["company"].get("export_registration"),
+                                  **({"vertical": verticals.vertical_of(case)} if verticals.vertical_of(case) != verticals.DEFAULT else {})}}
+    vert = verticals.vertical_of(case)
+    if requirements.covers(case["product"].get("category"), case["market"].get("country"), vert):
+        out["required_docs"] = requirements.required(case["product"].get("category"), case["market"].get("country"), have, vert)
+    elif vert == verticals.DEFAULT and features.is_sim("required_docs_other"):  # the simulated list is food only
         from .sim import required_docs
         out["required_docs"] = required_docs.required(case["product"].get("category"), have)
     if out.get("required_docs") and not out["required_docs"].get("simulated"):
@@ -694,7 +697,7 @@ def handle_journey(body, who):
         jobs.apply_source_flags(c, row["id"], out["required_docs"])
         vat_check.apply_to_checklist(c, row["company_id"], out["required_docs"])
         marks.apply(c, row["id"], out["required_docs"])
-    if not requirements.covers(case["product"].get("category"), case["market"].get("country")):
+    if not requirements.covers(case["product"].get("category"), case["market"].get("country"), vert):
         lr = lane_requests.latest(c, row["id"])
         out["lane_request"] = {k: (lr or {}).get(k) or "" for k in ("timing", "volume", "buyer")} if lr else None
     out["core"] = core_checks.summary(c, row["id"])

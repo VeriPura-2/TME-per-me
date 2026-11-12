@@ -299,6 +299,8 @@ try { const q = new URLSearchParams(location.search); const ic = q.get("invite")
 let lang = store.get("vl_lang", "it");
 let theme = store.get("vl_theme", "");
 let ctx = {};
+// The industry of the open project (food is the default and sets nothing). No style uses this yet: it is the hook for a later look.
+function setVertical(v) { if (v && v !== "food") document.documentElement.setAttribute("data-vertical", v); else document.documentElement.removeAttribute("data-vertical"); }
 function applyTheme() {
   if (theme) document.documentElement.setAttribute("data-theme", theme); else document.documentElement.removeAttribute("data-theme");
   const dark = theme === "dark";
@@ -993,6 +995,7 @@ applyLang();
     dutiesBox(cb, j.duties);
     jToolsBoxes(j.tools, cid, t);
     if (j.notes && j.notes.length) { cb.appendChild(mk("h3", TT[lang].c_notes)); j.notes.forEach(n => cb.appendChild(mk("div", n.at.slice(0, 10) + " · " + n.by + ": " + n.text))); }
+    setVertical(j.case && j.case.vertical);
     loadEori(j.case && j.case.export_registration, cid);
     loadOcq(cid);
     loadCertReq(cid);
@@ -1212,6 +1215,7 @@ applyLang();
       clearTimeout(timer); armed = false; btn.textContent = label; await action(); };
   }
   async function loadTem() {
+    setVertical(null);
     const tt = TT[lang], box = $("temws"); box.innerHTML = "";
     const [r, j] = await call("/tem/me", {}); if (!r.ok || !j.firm) { box.textContent = T[lang].err + (j.error || r.status); return; }
     const lead = j.role === "lead";
@@ -1261,7 +1265,7 @@ applyLang();
     const tt = TT[lang], t = T[lang], box = $("temws"); box.innerHTML = "";
     const [r, j] = await call("/tem/project", {case_id: caseId0}); if (!r.ok) { box.textContent = t.err + (j.error || r.status); return; }
     const back = mk("button", "← " + tt.ws_back); back.onclick = loadTem; box.appendChild(back);
-    const k = j.case; box.appendChild(mk("h2", k.client.name + " · " + (k.product.name_brand || k.product.category || "-") + " → " + (k.market.country || "-")));
+    const k = j.case; setVertical(k.vertical); box.appendChild(mk("h2", k.client.name + " · " + (k.product.name_brand || k.product.category || "-") + " → " + (k.market.country || "-")));
     const chat = mk("button", tt.ws_chat); chat.onclick = () => { caseId = caseId0; $("welcome").hidden = true; $("app").hidden = false; add("bot", tt.ws_chat_on); $("msg").focus(); };
     box.appendChild(chat);
     box.appendChild(mk("h3", tt.ws_case));

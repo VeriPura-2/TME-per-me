@@ -12,7 +12,7 @@ import base64
 import json
 import uuid
 
-from . import db, docs, permissions, requirements, storage
+from . import db, docs, permissions, requirements, storage, verticals
 from .adapters.base import AdapterError
 from .adapters.core import COUNTRY, DOC_TYPE, HS, PRODUCT, VeriPuraCore, outcome
 
@@ -61,7 +61,7 @@ def _case(con, case_id):
 def shipment_for(case_row):
     """Core shipment fields from the case file. None when the lane is not known yet."""
     prod, mkt, comp = (json.loads(case_row[k] or "{}") for k in ("product", "market", "company"))
-    ln = requirements.lane(prod.get("category"), mkt.get("country"))
+    ln = requirements.lane(prod.get("category"), mkt.get("country"), verticals.vertical_of(case_row))
     if not ln:
         return None
     p, d = ln

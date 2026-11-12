@@ -13,7 +13,7 @@ import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from . import accounts, db, docs, permissions, storage
+from . import accounts, db, docs, permissions, storage, verticals
 
 LINK_DAYS = 14
 SCOPE = {
@@ -428,16 +428,17 @@ def overview(con, who):
             continue
         projects = []
         have = {d["doc_type"] for d in con.execute("SELECT doc_type FROM documents WHERE company_id=?", (c["company_id"],)).fetchall()}
-        for k in con.execute("SELECT id, status, product, market, updated_at FROM cases WHERE company_id=? ORDER BY updated_at DESC",
+        for k in con.execute("SELECT id, status, product, market, updated_at, vertical FROM cases WHERE company_id=? ORDER BY updated_at DESC",
                              (c["company_id"],)).fetchall():
             prod, mkt = json.loads(k["product"] or "{}"), json.loads(k["market"] or "{}")
-            req = requirements.required(prod.get("category"), mkt.get("country"), have)
+            vert = verticals.vertical_of(k)
+            req = requirements.required(prod.get("category"), mkt.get("country"), have, vert)
             mine = [i for i in req["data"]["items"] if not i["importer_side"]] if req else None
             missing = sum(1 for i in mine if not i["on_file"]) if req else None
             docs_n = {"have": len(mine) - missing, "total": len(mine)} if req else None
             projects.append({"id": k["id"], "status": k["status"], "product": prod.get("name_brand") or prod.get("category"),
                              "category": prod.get("category"), "country": mkt.get("country"), "missing": missing, "docs": docs_n,
-                             "updated_at": k["updated_at"]})
+                             "updated_at": k["updated_at"], **({"vertical": vert} if vert != verticals.DEFAULT else {})})
         assigned = [r["user_sub"] for r in con.execute("SELECT user_sub FROM tem_assignments WHERE firm_id=? AND company_id=?",
                                                         (f["firm_id"], c["company_id"])).fetchall()]
         requests = [{"id": q["id"], "case_id": q["case_id"], "tool": q["tool"], "tool_name": names.get(q["tool"]), "note": q["note"], "at": q["created_at"],
@@ -519,7 +520,7 @@ def project(con, who, case_id):
     log_access(con, who, row, "open_project")
     case = db.case_read(con, case_id)
     have = {d["doc_type"] for d in con.execute("SELECT doc_type FROM documents WHERE company_id=?", (row["company_id"],)).fetchall()}
-    req = requirements.required(case["product"].get("category"), case["market"].get("country"), have)
+    req = requirements.required(case["product"].get("category"), case["market"].get("country"), have, verticals.vertical_of(case))
     if req:
         from . import jobs, vat_check
         apply_confirmations(con, case_id, req)
@@ -542,7 +543,8 @@ def project(con, who, case_id):
     answered, total, missing, _ = fields.status(case)
     co = con.execute("SELECT legal_name, vat FROM companies WHERE id=?", (row["company_id"],)).fetchone()
     return 200, {"case": {"id": case_id, "status": row["status"], "company": case["company"], "product": case["product"],
-                          "market": case["market"], "client": {"id": row["company_id"], "name": co["legal_name"], "vat": co["vat"]}},
+                          "market": case["market"], "client": {"id": row["company_id"], "name": co["legal_name"], "vat": co["vat"]},
+                          **({"vertical": verticals.vertical_of(case)} if verticals.vertical_of(case) != verticals.DEFAULT else {})},
                  "progress": {"answered": answered, "total": total, "missing": [{"label": m[2], "later": m[4]} for m in missing]},
                  "required_docs": req, "documents": pdocs, "library": library,
                  "core": core_checks.summary(con, case_id), "notes": notes(con, case_id, internal=True), "transcript": transcript,
