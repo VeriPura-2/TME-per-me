@@ -495,7 +495,8 @@ class PG:
 
 ADDED_COLUMNS = [("companies", c) for c in ("vies_state", "vies_name", "vies_address", "vies_checked_at")] + [
     ("source_snapshots", "page_text"), ("companies", "owner_confirmed"), ("tem_firms", "max_projects"), ("anon_chats", "user_sub"),
-    ("tem_firms", "max_clients"), ("tem_firms", "trial"), ("tem_interest", "source"), ("tem_interest", "note"), ("tem_interest", "user_sub")]
+    ("tem_firms", "max_clients"), ("tem_firms", "trial"), ("tem_interest", "source"), ("tem_interest", "note"), ("tem_interest", "user_sub"),
+    ("cases", "vertical")]  # empty = food, see verticals.py
 
 
 def connect(path=":memory:"):

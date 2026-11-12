@@ -7,7 +7,7 @@ Explore: the covered slot is used up for good once taken (deleting does not rest
 Uncovered projects always count live, because they are deleted after 90 days.
 Accounts that already had a project before LIMITS_START are grandfathered (test accounts at launch).
 """
-from . import plans, permissions, requirements, accounts, db
+from . import plans, permissions, requirements, accounts, db, verticals
 
 LIMITS_START = "2026-11-09"
 
@@ -55,13 +55,13 @@ def _room(con, user_sub, kind):
     return plan_id, cap is None or used < cap
 
 
-def check_new(con, who, category=None, country=None):
+def check_new(con, who, category=None, country=None, vertical=None):
     """Refusal (status, body) when the account has no room for one more project, else None.
     With product or country still unknown the project cannot be classified yet: refused only when neither kind has room."""
     if not who or _grandfathered(con, who["user"]):
         return None
     if category and country:
-        kinds = ["covered" if requirements.covers(category, country) else "uncovered"]
+        kinds = ["covered" if requirements.covers(category, country, vertical) else "uncovered"]
     else:
         kinds = ["covered", "uncovered"]
     for kind in kinds:
@@ -81,7 +81,7 @@ def register(con, who, case_id):
     cat, country = case["product"].get("category"), case["market"].get("country")
     if not (cat and country):
         return
-    kind = "covered" if requirements.covers(cat, country) else "uncovered"
+    kind = "covered" if requirements.covers(cat, country, verticals.vertical_of(case)) else "uncovered"
     key = owner_key(con, who["user"])
     con.execute("INSERT INTO counted_cases(case_id, owner_key, kind) VALUES (?,?,?)", (case_id, key, kind))
     if kind == "covered":

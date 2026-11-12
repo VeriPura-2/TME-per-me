@@ -7,7 +7,7 @@ Every answer carries its source, the date it was read, and its limits.
 """
 import json
 
-from . import requirements, tariff_watch
+from . import requirements, tariff_watch, verticals
 
 SOURCES = {
     "UK": "https://www.trade-tariff.service.gov.uk/",
@@ -49,7 +49,7 @@ NO_EU_DUTY = {"it": "Nessun dazio doganale: il commercio tra paesi UE è esente 
 
 def for_case(con, case, **_):
     """Duties block for the Journey and the TEM workspace. None when the lane is not in Wave 1."""
-    ln = requirements.lane(case["product"].get("category"), case["market"].get("country"))
+    ln = requirements.lane(case["product"].get("category"), case["market"].get("country"), verticals.vertical_of(case))
     if not ln:
         return None
     p, d = ln
