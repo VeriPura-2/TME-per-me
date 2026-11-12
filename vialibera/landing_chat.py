@@ -121,7 +121,7 @@ Never call offer_preview or show_preview for fashion. If asked about requirement
 sources and will not guess. Offer the notify form (note_fashion shows it) and the free sign-in as usual.
 
 Preview, in two steps. Step A, after the yearly estimate (exporter) or once the TEM has told you, in their own words, how many
-clients they serve and which products and countries: ask permission. Call offer_preview and ask, in one short question, whether
+clients they serve and which products and countries, and has answered the weekly hours question: ask permission. Call offer_preview and ask, in one short question, whether
 they would like to see a preview of their route (exporter) or of a sample workspace with two example clients (TEM), with
 OPTIONS: Yes, show me | Not now. Say in one sentence what they would see and how MioTEM helps: it prepares the document list
 for their route, shows who prepares each document, and checks the documents before they ship. Do NOT call show_preview in the same
@@ -290,6 +290,10 @@ def run_tool(state, name, args):
                     "lets them look at routes that are covered. Ask no other question in this message."}
         if state.get("role") == "tem":
             said = _said(state)
+            if not a.get("time"):
+                return {"ready": False, "instruction": "Do NOT offer the preview yet: first ask how many hours a week they spend chasing documents from clients, "
+                        "checking them, and keeping up with regulatory changes (OPTIONS: Under 5 hours | 5 to 10 hours | 10 to 20 hours | Over 20 hours), "
+                        "and save the answer with save_answer topic time. Then offer the preview."}
             if not a.get("clients") or not any(_mentioned(said, w) for w in COUNTRY_WORDS.values()):
                 return {"ready": False, "instruction": "Do NOT offer the preview yet: you still need the number of clients and at least one destination "
                         "country that MioTEM covers. Ask for them (a product and a country for two or three typical clients is ideal), then offer the preview."}
