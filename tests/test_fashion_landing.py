@@ -37,3 +37,10 @@ class FashionLanding(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TemQuestions(unittest.TestCase):
+    def test_tem_path_asks_weekly_hours_and_the_revenue_need_payoff(self):
+        self.assertIn("hours a week they spend chasing documents", landing_chat.SYSTEM)
+        self.assertIn("growing your clients'", landing_chat.SYSTEM)
+        self.assertIn("coming soon through VeriPura CORE, but never that it is available now", landing_chat.SYSTEM)
