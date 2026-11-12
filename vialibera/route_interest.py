@@ -40,6 +40,8 @@ def record(con, data):
             country = (a.get("destination") or [None])[0] if isinstance(a.get("destination"), list) else a.get("destination")
             if a.get("uncovered"):
                 country = a["uncovered"][0]  # a TEM (or exporter) named countries without a list: keep their words
+            if a.get("fashion"):
+                product = "Fashion: " + (str(product) if product else "interest")  # no checked list yet: keep their words
             if a.get("tem_intro") and not a.get("uncovered"):
                 product, country = "TEM introduction", None
             if not product and row_role_is_tem(con, visitor):
