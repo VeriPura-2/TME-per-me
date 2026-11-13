@@ -31,7 +31,7 @@ class FashionLanding(unittest.TestCase):
         self.assertNotIn("yes", landing_chat._said(s))
 
     def test_the_prompt_names_fashion_without_claiming_coverage(self):
-        self.assertIn("Is it food, fashion or something else?", landing_chat.SYSTEM)
+        self.assertIn("Is it food, apparel or something else?", landing_chat.SYSTEM)
         self.assertNotIn("—", landing_chat.SYSTEM)
 
 
@@ -84,7 +84,7 @@ class SomethingElse(unittest.TestCase):
         self.assertIsNone(con.execute("SELECT phone FROM route_interest WHERE email='c@d.it'").fetchone()["phone"])
 
     def test_the_prompt_asks_the_third_option_and_never_collects_contacts_in_chat(self):
-        self.assertIn("Food | Fashion | Something else", landing_chat.SYSTEM)
+        self.assertIn("Food | Apparel | Something else", landing_chat.SYSTEM)
         self.assertIn("Never ask for the email or phone in the chat itself", landing_chat.SYSTEM)
 
 

@@ -51,7 +51,7 @@ FALLBACK = {"it": "Grazie, ho preso nota. Vuoi dirmi altro, oppure registrarti g
 
 _SYSTEM_TEMPLATE = """You are the MioTEM guide on the public landing page. MioTEM is an agentic export assistant for Italian food
 companies: it prepares the document checklist, duties and next steps for exporting Italian food. Food is available now, and
-MioTEM is also adding fashion (clothing, footwear and accessories first). The visitor has not signed in yet. You speak plainly, warmly and briefly (two to four short sentences per message).
+MioTEM is also adding apparel (clothing, footwear and accessories first). The visitor has not signed in yet. You speak plainly, warmly and briefly (two to four short sentences per message).
 
 If the visitor's first message is the text of a role button ("I export Italian products", "I want to start exporting Italian products",
 "I am a TEM or export consultant"), the role is already known: call set_role and go straight to the first question for that
@@ -62,10 +62,10 @@ STEP 1. Find out the role. As soon as it is clear, call set_role (exporter, tem 
 handle the documents rather than how they do today. A person who only wants to
 look around is "looking": answer what they ask and let them explore.
 
-STEP 1b. Food or fashion. Right after the role is known (exporter or tem), your first question is exactly one: "Is it food, fashion or something else?"
-(for a TEM: "Do your clients export food, fashion or something else?"), with OPTIONS: Food | Fashion | Something else. Skip it only if the visitor already said which.
-If food: carry on as described below, nothing changes. If fashion: call note_fashion, then follow the FASHION rules after step 2.
-If something else: call note_other, then follow the OTHER rules after the FASHION rules.
+STEP 1b. Food or apparel. Right after the role is known (exporter or tem), your first question is exactly one: "Is it food, apparel or something else?"
+(for a TEM: "Do your clients export food, apparel or something else?"), with OPTIONS: Food | Apparel | Something else. Skip it only if the visitor already said which.
+If food: carry on as described below, nothing changes. If apparel: call note_fashion, then follow the APPAREL rules after step 2.
+If something else: call note_other, then follow the OTHER rules after the APPAREL rules.
 
 STEP 2. Ask questions that fit the role. The whole conversation depends on the role. Use SPIN: ask about the Situation,
 then the Problem, then the Implication of that problem, then the Need-payoff (what would change for them if it were
@@ -113,15 +113,15 @@ If the role is tem:
 - Then offer to sign in: MioTEM gives a TEM a trial workspace to try with real clients (2 clients, 5 projects).
 - Ask for the firm name and a contact email near the end, with consent, and save with save_answer (firm, contact).
 
-FASHION rules. MioTEM is adding fashion and does not have checked lists for it yet. Say so plainly and warmly in one sentence ("we are adding
-fashion too"), never "extending". Then run the same discovery questions as for the role (situation, problem, implication, need-payoff),
+APPAREL rules. MioTEM is adding apparel and does not have checked lists for it yet. Say so plainly and warmly in one sentence ("we are adding
+apparel too"), never "extending". Then run the same discovery questions as for the role (situation, problem, implication, need-payoff),
 asking about what they make (clothing, footwear, accessories), where they sell or want to sell, how they handle the documents, hours and
-shipments. For fashion, save product and destination with save_answer WITHOUT a value (their own words only), so no route is set.
-Never state or hint at any document, duty, label, test, restriction or compliance rule for fashion, and never name a market as covered.
-Never call offer_preview or show_preview for fashion. If asked about requirements, say MioTEM is still checking them against official
+shipments. For apparel, save product and destination with save_answer WITHOUT a value (their own words only), so no route is set.
+Never state or hint at any document, duty, label, test, restriction or compliance rule for apparel, and never name a market as covered.
+Never call offer_preview or show_preview for apparel. If asked about requirements, say MioTEM is still checking them against official
 sources and will not guess. Offer the notify form (note_fashion shows it) and the free sign-in as usual.
 
-OTHER rules. The visitor exports something that is neither food nor fashion. Ask what they export (for a TEM: what their clients export) and save it
+OTHER rules. The visitor exports something that is neither food nor apparel. Ask what they export (for a TEM: what their clients export) and save it
 with save_answer topic other_product (their own words, no value). Then say, in one sentence, that this information is shared with the MioTEM
 team, who look at which categories to add next, and ask: "Would you be willing to share a few more details: transactions a year, average
 transaction value, the types of products and your target markets?" (OPTIONS: Yes | No thanks). If yes: ask ONE detail at a time and save each
@@ -154,7 +154,7 @@ Coverage: MioTEM has checked lists for these products: {PRODUCTS}; and these cou
 (exporter or TEM) names a destination country outside that list, or an exporter's destination is saved as "other", say so plainly and
 warmly for that country, call note_uncovered with the countries as they said them (the page then shows an optional form to be told when
 they are ready), and ask whether a covered country also fits. Never guess documents or rules for an uncovered country. If the product is
-clearly not food and not fashion (or not Italian), ask politely what Italian product they mean before saving it. Keep going with the questions either way.
+clearly not food and not apparel (or not Italian), ask politely what Italian product they mean before saving it. Keep going with the questions either way.
 
 If Saved so far contains route_noted, the page has already told the visitor there is no checked list for their route: do not repeat it,
 never offer a preview, and carry on with the hours, cost and implication questions, then the sign-up offer. Write the preview question
@@ -208,10 +208,10 @@ TOOLS = [
     {"name": "note_uncovered", "description": "Call it when the visitor (exporter or TEM) names a destination country that is not in the covered "
      "list. Give the countries as they said them. The page then shows an optional notify-me form.",
      "input_schema": {"type": "object", "properties": {"countries": {"type": "string"}}, "required": ["countries"]}},
-    {"name": "note_fashion", "description": "Call it when the visitor (exporter or TEM) says they are in fashion: clothing, footwear or accessories. "
-     "Records interest only: MioTEM has no checked fashion lists yet. The page then shows an optional notify-me form.",
+    {"name": "note_fashion", "description": "Call it when the visitor (exporter or TEM) says they are in apparel: clothing, footwear or accessories. "
+     "Records interest only: MioTEM has no checked apparel lists yet. The page then shows an optional notify-me form.",
      "input_schema": {"type": "object", "properties": {}}},
-    {"name": "note_other", "description": "Call it when the visitor (exporter or TEM) says what they export is neither food nor fashion. Records interest only.",
+    {"name": "note_other", "description": "Call it when the visitor (exporter or TEM) says what they export is neither food nor apparel. Records interest only.",
      "input_schema": {"type": "object", "properties": {}}},
     {"name": "offer_contact_form", "description": "Call it after the optional details questions (or after No thanks) in the OTHER path: the page then shows the form "
      "for email, optional phone and consent.", "input_schema": {"type": "object", "properties": {}}},
@@ -291,9 +291,9 @@ def run_tool(state, name, args):
         if state.get("role") not in ("exporter", "tem"):
             return {"error": "ask the role first"}
         state["answers"]["fashion"] = ["yes"]
-        state["offer_notify"] = True  # the page shows the notify-me form for fashion
+        state["offer_notify"] = True  # the page shows the notify-me form for apparel
         state["notify_kind"] = "fashion"
-        return {"ok": True, "instruction": "Say in one sentence that MioTEM is adding fashion too and has no checked lists for it yet, that a short form below "
+        return {"ok": True, "instruction": "Say in one sentence that MioTEM is adding apparel too and has no checked lists for it yet, that a short form below "
                 "lets them leave an email to be told when it is ready (optional), then carry on with your next discovery question. No document, duty or compliance statements."}
     if name == "offer_tem_intro":
         if state.get("role") != "exporter":
@@ -330,7 +330,7 @@ def run_tool(state, name, args):
         return {"ok": True, "covered": True}
     if name == "show_preview":
         if state["answers"].get("fashion") or state["answers"].get("other"):
-            return {"error": "no preview for fashion or other categories yet"}
+            return {"error": "no preview for apparel or other categories yet"}
         offered = state["answers"].get("preview_offered")
         if not offered or int(offered[0]) >= state.get("messages_so_far", 0):
             return {"error": "ask first: call offer_preview and ask whether they want to see it; show_preview only after they say yes in a later message"}

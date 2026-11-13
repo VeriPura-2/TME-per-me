@@ -44,7 +44,7 @@ def record(con, data):
             if a.get("uncovered"):
                 country = a["uncovered"][0]  # a TEM (or exporter) named countries without a list: keep their words
             if a.get("fashion"):
-                product = "Fashion: " + (str(product) if product else "interest")  # no checked list yet: keep their words
+                product = "Apparel: " + (str(product) if product else "interest")  # no checked list yet: keep their words
             if a.get("other"):
                 product = "Other: " + (str((a.get("other_product") or [""])[0]) or "interest")
                 labels = (("transactions", "transactions a year"), ("avg_value", "average value"), ("product_types", "product types"), ("markets", "target markets"))
