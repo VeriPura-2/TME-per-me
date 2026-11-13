@@ -163,7 +163,7 @@ footer.legal{font-size:12px;opacity:.7;text-align:center;padding:16px 12px;line-
   <h2 id="landing-h"></h2>
   <p id="landing-t"></p>
   <p id="landing-err" class="muted" hidden></p>
-  <button id="login"></button> <a href="#l-how" id="l-how-link"></a> <a href="#l-tools" id="l-tools-link"></a>
+  <button id="login"></button> <button id="landing-listen" class="secondary" hidden></button> <a href="#l-how" id="l-how-link"></a> <a href="#l-tools" id="l-tools-link"></a>
   <div id="landing-body"></div>
 </div>
 
@@ -225,7 +225,7 @@ const T = {
     signin: "Accesso / Registrazione", signout: "Esci", send: "Invia", ph: "Descriva il suo prodotto e il mercato",
     own_pending: "La titolarità della sua azienda è in verifica da parte dello staff VeriPura (di solito entro un giorno lavorativo). Nel frattempo può lavorare; inviti ai colleghi e invio dei documenti alla validazione attendono la conferma.",
     verify_email: "Confermi la sua email: Le abbiamo inviato un link (controlli anche lo spam). Poi acceda di nuovo.", login_refused: "Accesso non riuscito: ",
-    signed: "Accesso come ", landing_h: "Più tempo per gli acquirenti, meno per i documenti.", landing: "Esporta prodotti alimentari o abbigliamento italiani? MioTEM, il suo Assistente Export Agentico, le mostra quali documenti servono per il suo prodotto e il suo mercato di destinazione, chi prepara ciascun documento e quali dazi all'importazione si applicano, poi l'aiuta a controllare i documenti prima della spedizione. L'alimentare è disponibile ora, l'abbigliamento è in arrivo. I Temporary Export Manager (TEM) perdono ore a inseguire documenti e norme: MioTEM svolge questo lavoro al loro posto, con una vista unica per seguire ogni cliente. Presto gli esportatori potranno rivolgersi a un TEM su MioTEM, e i TEM potranno offrire i propri servizi agli esportatori.",
+    signed: "Accesso come ", lv: "🔊 Ascolti il benvenuto", landing_h: "Più tempo per gli acquirenti, meno per i documenti.", landing: "Esporta prodotti alimentari o abbigliamento italiani? MioTEM, il suo Assistente Export Agentico, le mostra quali documenti servono per il suo prodotto e il suo mercato di destinazione, chi prepara ciascun documento e quali dazi all'importazione si applicano, poi l'aiuta a controllare i documenti prima della spedizione. L'alimentare è disponibile ora, l'abbigliamento è in arrivo. I Temporary Export Manager (TEM) perdono ore a inseguire documenti e norme: MioTEM svolge questo lavoro al loro posto, con una vista unica per seguire ogni cliente. Presto gli esportatori potranno rivolgersi a un TEM su MioTEM, e i TEM potranno offrire i propri servizi agli esportatori.",
     gateIntro: "Prima di iniziare, legga e accetti le condizioni.",
     c1: 'Ho letto e accetto le <a href="/terms?lang=it" target="_blank">Condizioni del servizio</a> e l\'<a href="/terms?lang=it#privacy" target="_blank">Informativa sulla privacy</a>.',
     c2: "Approvo specificamente, ai sensi degli artt. 1341 e 1342 c.c., le clausole indicate nelle Condizioni (limitazione di responsabilità, sospensione e cessazione, modifiche unilaterali, legge applicabile e foro competente).",
@@ -259,7 +259,7 @@ const T = {
     signin: "Sign in / Sign up", signout: "Sign out", send: "Send", ph: "Tell us about your product and market",
     own_pending: "VeriPura staff are confirming that you own this company (usually within one working day). Meanwhile you can work; inviting colleagues and sending documents for validation wait for that confirmation.",
     verify_email: "Please confirm your email: we sent you a link (check spam too). Then sign in again.", login_refused: "Sign-in failed: ",
-    signed: "Signed in as ", landing_h: "Spend your time winning buyers, not chasing documents.", landing: "Exporting Italian food or apparel? MioTEM, your Agentic Export Assistant, shows you which documents your product needs for your target market, who prepares each one and which import duties apply there, then helps you check the documents before you ship. Food is available now, and apparel is being added. Temporary Export Managers (TEMs) lose hours chasing documents and rule changes: MioTEM does that groundwork for them, with a single view to follow every client. Soon, exporters will be able to ask a TEM for help on MioTEM, and TEMs will be able to offer their services to exporters.",
+    signed: "Signed in as ", lv: "🔊 Listen to the welcome", landing_h: "Spend your time winning buyers, not chasing documents.", landing: "Exporting Italian food or apparel? MioTEM, your Agentic Export Assistant, shows you which documents your product needs for your target market, who prepares each one and which import duties apply there, then helps you check the documents before you ship. Food is available now, and apparel is being added. Temporary Export Managers (TEMs) lose hours chasing documents and rule changes: MioTEM does that groundwork for them, with a single view to follow every client. Soon, exporters will be able to ask a TEM for help on MioTEM, and TEMs will be able to offer their services to exporters.",
     gateIntro: "Before we start, please read and accept the terms.",
     c1: 'I have read and accept the <a href="/terms?lang=en" target="_blank">Terms of Service</a> and the <a href="/terms?lang=en#privacy" target="_blank">Privacy Notice</a>.',
     c2: "I specifically approve, under Articles 1341 and 1342 of the Italian Civil Code, the clauses listed in the Terms (limitation of liability, suspension and ending, changes to the terms, governing law and courts).",
@@ -314,6 +314,7 @@ function applyLang() {
   $("logout").textContent = t.signout; $("docsbtn").textContent = t.d_btn; $("jbtn").textContent = t.j_btn; $("abtn").textContent = t.a_btn; $("a-title").textContent = t.a_title; $("a-prefs").textContent = t.a_prefs; $("tbtn").textContent = t.t_btn; $("send").textContent = t.send; $("msg").placeholder = t.ph;
   $("landing-h").textContent = t.landing_h; $("landing-t").textContent = t.landing; $("login").textContent = t.signin; $("hlogin").textContent = t.signin;
   if (typeof renderLanding === "function") renderLanding();
+  { const lb = $("landing-listen"); lb.textContent = t.lv; lb.hidden = !(window.vlLandingVoice || []).includes(lang); }
   $("gate-intro").textContent = t.gateIntro; $("c1t").innerHTML = t.c1; $("c2t").textContent = t.c2;
   $("gate-ai").textContent = t.ai; $("accept").textContent = t.accept;
   if (ctx.email) $("who").textContent = t.signed + ctx.email;
@@ -527,6 +528,11 @@ applyLang();
 
 (async () => {
   const cfg = await (await fetch("/config.json")).json();
+  window.vlLandingVoice = cfg.landing_voice || []; { const lb = $("landing-listen"); lb.hidden = !window.vlLandingVoice.includes(lang);
+    let la = null;  // plays on click only, never on its own
+    lb.onclick = async () => { try { if (la) { la.pause(); la = null; return; }
+      const r = await fetch("/public/landing_voice?lang=" + lang); if (!r.ok) { lb.hidden = true; return; }
+      la = new Audio(URL.createObjectURL(await r.blob())); la.onended = () => { la = null; }; await la.play(); } catch (e) { la = null; } }; }
   const client = await auth0.createAuth0Client({
     domain: cfg.domain, clientId: cfg.client_id,
     authorizationParams: {audience: cfg.audience, redirect_uri: location.origin, ui_locales: lang}});
