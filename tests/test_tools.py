@@ -267,8 +267,8 @@ class CoreAndGuide(unittest.TestCase):
         self.assertIn('last.startsWith("GOTO:")', html)
         self.assertIn('id="w-tools"', html)  # 11 Nov: a first sign-in sees every tool and what it does; later visits do not (welcomeTools)
         self.assertIn("if (me.latest_case) return;", html)
-        self.assertIn("MioTEM. Your Agentic Export Assistant.", html)
-        self.assertIn("MioTEM. Il tuo Assistente Export Agentico.", html)
+        self.assertIn("Spend your time winning buyers, not chasing documents.", html)
+        self.assertIn("Più tempo per gli acquirenti, meno per i documenti.", html)
 
 
 class ChatBold(unittest.TestCase):

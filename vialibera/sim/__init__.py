@@ -8,7 +8,7 @@ compliance verdicts, no invented statistics.
 from ..features import is_sim
 
 NOTE = {
-    "it": "Esempio simulato. Non è un controllo del tuo prodotto.",
+    "it": "Esempio simulato. Non è un controllo del suo prodotto.",
     "en": "Simulated example. Not a check of your product.",
 }
 

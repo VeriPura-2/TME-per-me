@@ -38,15 +38,15 @@ COUNTRIES = ("UK", "USA", "Canada", "Switzerland", "Austria", "Belgium", "Bulgar
 TOPICS = ("product", "destination", "situation", "handling", "time", "volume", "cost", "problem", "implication", "need",
           "firm", "clients", "contact", "other_product", "transactions", "avg_value", "product_types", "markets")
 
-NO_LIST = {"it": "MioTEM non ha ancora un elenco verificato per {p} verso {d}. Qui sotto un breve modulo ti permette di lasciare un'email per "
-                 "essere avvisato quando sarà pronto (facoltativo). Registrarsi è gratis e permette di vedere le rotte già coperte.",
+NO_LIST = {"it": "MioTEM non ha ancora un elenco verificato per {p} verso {d}. Qui sotto un breve modulo Le permette di lasciare un'email per "
+                 "ricevere un avviso quando sarà pronto (facoltativo). Registrarsi è gratis e permette di vedere le rotte già coperte.",
            "en": "MioTEM has no checked list for {p} to {d} yet. A short form below lets you leave an email to be told when it is ready "
                  "(optional). Signing up is free and lets you look at routes that are covered."}
 
-OPENER = {"it": "Ciao. Esporti prodotti italiani, oppure sei un TEM o consulente export?",
+OPENER = {"it": "Buongiorno. Esporta prodotti italiani, oppure è un TEM o un consulente export?",
           "en": "Hello. Do you export Italian products, or are you a TEM or export consultant?"}
 
-FALLBACK = {"it": "Grazie, ho preso nota. Vuoi dirmi altro, oppure registrarti gratis per continuare?",
+FALLBACK = {"it": "Grazie, ho preso nota. Desidera dirmi altro, oppure registrarsi gratuitamente per continuare?",
             "en": "Thanks, noted. Would you like to tell me more, or sign up free to continue?"}
 
 _SYSTEM_TEMPLATE = """You are the MioTEM guide on the public landing page. MioTEM is an agentic export assistant for Italian food

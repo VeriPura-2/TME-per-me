@@ -82,11 +82,11 @@ def voice_for(persona_id):
 
 
 INTRO_SCRIPT = {
-    "it": ("Ciao, sono {name}, un assistente export agentico con intelligenza artificiale. Ti aiuto a capire come esportare i tuoi "
-           "prodotti alimentari: quali regole, documenti, etichette e dazi servono per un mercato, e ti preparo un "
-           "pacchetto di servizi con prezzi chiari. Ti faccio una domanda alla volta, puoi saltarne quante vuoi, e non "
-           "paghi nulla finché non approvi. Questa è una dimostrazione: alcune funzioni sono simulate e lo vedrai "
-           "indicato. Da qui in avanti continuiamo per iscritto. Scegli da dove iniziare."),
+    "it": ("Buongiorno, sono {name}, un assistente export agentico con intelligenza artificiale. La aiuto a capire come esportare i suoi "
+           "prodotti alimentari: quali regole, documenti, etichette e dazi servono per un mercato, e Le preparo un "
+           "pacchetto di servizi con prezzi chiari. Le farò una domanda alla volta, può saltarne quante desidera, e non "
+           "paga nulla finché non approva. Questa è una dimostrazione: alcune funzioni sono simulate e lo vedrà "
+           "indicato. Da qui in avanti continuiamo per iscritto. Scelga da dove iniziare."),
     "en": ("Hello, I am {name}, an agentic AI export assistant. I help you work out how to export your food products: which rules, "
            "documents, labels and duties apply to a market, and I prepare a package of services with clear prices. I ask "
            "one question at a time, you can skip as many as you like, and you pay nothing until you approve. This is a "

@@ -17,10 +17,10 @@ ITALY_ONLY = {"it": "MioTEM è per le aziende italiane: serve una partita IVA it
               "en": "MioTEM is for Italian companies: an Italian VAT number (partita IVA) is needed."}
 
 ENROL = {
-    "it": ["La tua partita IVA non risulta nell'archivio VIES. Serve per vendere ad aziende di altri paesi UE (per esempio la Germania) senza IVA italiana.",
-           "L'iscrizione è gratuita e immediata. Accedi all'area riservata dell'Agenzia delle Entrate (Fisconline, SPID o CIE), "
-           "poi Servizi, Comunicazioni, \"Comunicare istanza di inclusione nell'archivio VIES\", e indica la tua partita IVA. "
-           "Puoi farlo anche tramite il tuo commercialista.",
+    "it": ["La sua partita IVA non risulta nell'archivio VIES. Serve per vendere ad aziende di altri paesi UE (per esempio la Germania) senza IVA italiana.",
+           "L'iscrizione è gratuita e immediata. Acceda all'area riservata dell'Agenzia delle Entrate (Fisconline, SPID o CIE), "
+           "poi Servizi, Comunicazioni, \"Comunicare istanza di inclusione nell'archivio VIES\", e indichi la sua partita IVA. "
+           "Può farlo anche tramite il suo commercialista.",
            "MioTEM ricontrolla il VIES ogni giorno e aggiorna lo stato da solo."],
     "en": ["Your VAT number is not in the VIES archive. You need it to sell to businesses in other EU countries (for example Germany) without Italian VAT.",
            "Enrolment is free and immediate. Sign in to the Agenzia delle Entrate reserved area (Fisconline, SPID or CIE), "

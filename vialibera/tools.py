@@ -35,24 +35,24 @@ CHILLED_NOTE = L("Chilled parcels suit samples and small orders only. Larger chi
                  "I pacchi refrigerati vanno bene solo per campioni e piccoli ordini. Volumi refrigerati più grandi viaggiano su pallet o container refrigerati.")
 
 CORE = [  # MioTEM's own tools: always shown (no switch for the TEM); "go" is where the button takes the user
-    {"id": "ai_manager", "go": "chat", "name": L("Your agentic export assistant", "Il tuo assistente export agentico"),
+    {"id": "ai_manager", "go": "chat", "name": L("Your agentic export assistant", "Il suo assistente export agentico"),
      "today": {"text": L("Guides you one question at a time and builds your project: product, market, company.",
-                         "Ti guida una domanda alla volta e costruisce il tuo progetto: prodotto, mercato, azienda.")}},
+                         "La guida una domanda alla volta e costruisce il suo progetto: prodotto, mercato, azienda.")}},
     {"id": "checklist", "go": "req", "name": L("Required documents", "Documenti richiesti"),
      "today": {"text": L("For your product and market, the documents you need, who prepares each one, and the official source where we have one.",
-                         "Per il tuo prodotto e mercato, i documenti necessari, chi prepara ciascuno e la fonte ufficiale, quando disponibile.")}},
+                         "Per il suo prodotto e mercato, i documenti necessari, chi prepara ciascuno e la fonte ufficiale, quando disponibile.")}},
     {"id": "duties", "go": "duties", "name": L("Duties and taxes", "Dazi e imposte"),
      "today": {"text": L("Customs duties for your product in your destination, checked against the official tariffs.",
-                         "I dazi doganali per il tuo prodotto nel paese di destinazione, verificati rispetto alle tariffe ufficiali.")}},
+                         "I dazi doganali per il suo prodotto nel paese di destinazione, verificati rispetto alle tariffe ufficiali.")}},
     {"id": "library", "go": "docs", "name": L("Document library", "Archivio documenti"),
      "today": {"text": L("All your company documents in one place, filed by project, private to your company.",
-                         "Tutti i documenti dell'azienda in un unico posto, archiviati per progetto, riservati alla tua azienda.")}},
+                         "Tutti i documenti dell'azienda in un unico posto, archiviati per progetto, riservati alla sua azienda.")}},
     {"id": "eori", "go": "eori", "name": L("EORI registration form", "Modulo di registrazione EORI"),
      "today": {"text": L("A prefilled draft of the official customs form: you check, sign and file it.",
-                         "Una bozza precompilata del modulo ufficiale delle dogane: la controlli, la firmi e la presenti tu.")}},
+                         "Una bozza precompilata del modulo ufficiale delle dogane: la controlla, la firma e la presenta Lei.")}},
     {"id": "consultants", "name": L("Export consultants (TEM)", "Consulenti export (TEM)"),
      "today": {"text": L("Work with your temporary export manager on MioTEM: they see your projects only after you engage them.",
-                         "Lavora con il tuo temporary export manager su MioTEM: vede i tuoi progetti solo dopo che lo hai incaricato.")},
+                         "Lavora con il suo temporary export manager su MioTEM: vede i suoi progetti solo dopo che Lei lo ha incaricato.")},
      "coming": {"status": "soon", "text": L("Find a TEM on MioTEM. TEMs can offer their services to exporters on MioTEM.",
                                            "Trova un TEM su MioTEM. I TEM possono offrire i propri servizi agli esportatori su MioTEM.")}},
 ]
@@ -66,20 +66,20 @@ CARDS = [
                          "Pacchi per campioni e piccoli ordini, da prenotare con questi servizi.")},
      "coming": {"status": "soon",
                 "text": L("Pallets and containers: quotes, booking and container tracking for larger shipments, and shipment tracking through the freight forwarder you or your TEM engage.",
-                          "Pallet e container: preventivi, prenotazione e tracciamento container per spedizioni più grandi, e tracciamento delle spedizioni tramite lo spedizioniere che incarichi tu o il tuo TEM.")}},
+                          "Pallet e container: preventivi, prenotazione e tracciamento container per spedizioni più grandi, e tracciamento delle spedizioni tramite lo spedizioniere che incarica Lei o il suo TEM.")}},
     {"id": "doc_checks", "by": {"kind": "partner", "name": "VeriPura"},
      "name": L("VeriPura Document Checker", "VeriPura Document Checker"),
      "coming": {"status": "preview",
                 "text": L("Upload your documents in the project. For now our staff run the check: it compares the invoice, packing list and transport document with each other, "
                           "and screens ingredients against additives banned in the European Union. Also planned: the export declaration, the e-AD for wine and the US wine certificates.",
-                          "Carica i documenti nel progetto. Per ora il controllo lo avvia il nostro staff: confronta fattura, packing list e documento di trasporto tra loro, "
+                          "Carichi i documenti nel progetto. Per ora il controllo lo avvia il nostro staff: confronta fattura, packing list e documento di trasporto tra loro, "
                           "e controlla gli ingredienti rispetto agli additivi vietati nell'Unione europea. In programma anche la dichiarazione di esportazione, l'e-AD per il vino e i certificati per il vino negli USA."),
                 "example": [L("Export declaration (MRN): matches invoice and packing list", "Dichiarazione di esportazione (MRN): coerente con fattura e packing list"),
                             L("e-AD: quantities match the invoice", "e-AD: quantità coerenti con la fattura")]}},
     {"id": "label_check", "by": {"kind": "partner", "name": "VeriPura"},
      "name": L("Label check, VeriPura label validator", "Verifica etichetta, validatore etichette VeriPura"),
      "today": {"text": L("Check your label artwork in the VeriPura label validator (separate VeriPura account, opens in a new tab).",
-                         "Verifica la grafica dell'etichetta nel validatore etichette VeriPura (account VeriPura separato, si apre in una nuova scheda)."),
+                         "Verifichi la grafica dell'etichetta nel validatore etichette VeriPura (account VeriPura separato, si apre in una nuova scheda)."),
                "links": [{"label": L("VeriPura label validator", "Validatore etichette VeriPura"), "url": "https://label.veripura.com/"}]},
      "coming": {"status": "preview",
                 "text": L("The result inside your project, in Italian, without a separate account.",
@@ -91,7 +91,7 @@ CARDS = [
      "name": L("US wine certificate assistant", "Assistente certificato vino USA"),
      "coming": {"status": "preview",
                 "text": L("Planned: an AI assistant will guide you through the US certificate for your wine, step by step, with you confirming each one.",
-                          "In programma: un assistente AI ti guiderà nel certificato USA per il tuo vino, passo dopo passo, e tu confermerai ogni passaggio."),
+                          "In programma: un assistente AI La guiderà nel certificato USA per il suo vino, passo dopo passo, e Lei confermerà ogni passaggio."),
                 "steps": [
                     {"t": L("Is it needed?", "Serve?"),
                      "ex": L("Likely needed: your label shows a vintage year. Confirm?", "Probabilmente sì: l'etichetta riporta l'annata. Confermi?")},
@@ -107,17 +107,17 @@ CARDS = [
                          "We show the body the Ministry of Agriculture (MASAF) lists for that name, with the list date. "
                          "Upload your certificate in Documents: until our staff or VeriPura CORE have seen it, the status stays claimed. "
                          "For Parmigiano Reggiano, an exporter can also check its own VAT number against the public list of OCQ PR.",
-                         "Indica quale denominazione protetta ha il tuo prodotto (DOP, IGP, DOCG) e quale organismo di controllo ti certifica. "
+                         "Indichi quale denominazione protetta ha il suo prodotto (DOP, IGP, DOCG) e quale organismo di controllo La certifica. "
                          "Ti mostriamo l'organismo che il Ministero dell'agricoltura (MASAF) indica per quel nome, con la data dell'elenco. "
-                         "Carica il certificato in Documenti: finché il nostro staff o VeriPura CORE non lo hanno visto, lo stato resta «dichiarato». "
+                         "Carichi il certificato in Documenti: finché il nostro staff o VeriPura CORE non lo hanno visto, lo stato resta «dichiarato». "
                          "Per il Parmigiano Reggiano l'esportatore può anche controllare la propria partita IVA nell'elenco pubblico di OCQ PR.")},
      "coming": {"status": "preview",
                 "text": L("Request to the control body: with your consent, your TEM or VeriPura staff prepare a request for an extract or a verification (Valoritalia, Kiwa Cermet), send it, and file the reply in Documents.",
-                          "Richiesta all'organismo di controllo: con il tuo consenso, il tuo TEM o lo staff VeriPura preparano una richiesta di estratto o di verifica (Valoritalia, Kiwa Cermet), la inviano e archiviano la risposta in Documenti.")}},
+                          "Richiesta all'organismo di controllo: con il suo consenso, il suo TEM o lo staff VeriPura preparano una richiesta di estratto o di verifica (Valoritalia, Kiwa Cermet), la inviano e archiviano la risposta in Documenti.")}},
     {"id": "label_design", "by": {"kind": "partner", "name": "Food Label Maker, GoVisually"},
      "name": L("Label design", "Progettazione etichette"),
      "today": {"text": L("Create nutrition panels and labels with these partner tools. GoVisually is free, and Food Label Maker has a free trial label. Then upload the label here.",
-                         "Crea tabelle nutrizionali ed etichette con questi strumenti dei partner. GoVisually è gratuito e Food Label Maker offre un'etichetta di prova gratuita. Poi carica qui l'etichetta."),
+                         "Crei tabelle nutrizionali ed etichette con questi strumenti dei partner. GoVisually è gratuito e Food Label Maker offre un'etichetta di prova gratuita. Poi carichi qui l'etichetta."),
                "links": [{"label": L("Food Label Maker", "Food Label Maker"), "url": "https://foodlabelmaker.com/"},
                          {"label": L("GoVisually nutrition label generator", "Generatore di etichette nutrizionali GoVisually"),
                           "url": "https://govisually.com/free-tools/nutrition-label"}]}},
@@ -158,7 +158,7 @@ CARDS = [
                     "url": "https://www.aa.camcom.it/sites/default/files/contenuto_redazione/editor/Internazionalizzazione_attrazione_investimenti_transizione_digitale_ed_ecologica/Brochure%20misure%20internazionalizzazione/Brochure%20misure%20internazionalizzazione%202026.pdf"}]},
      "coming": {"status": "soon",
                 "text": L("Funding finder: MioTEM matches your company and project to the open calls and prepares the application from the data you already gave.",
-                          "Ricerca finanziamenti: MioTEM abbina azienda e progetto ai bandi aperti e prepara la domanda con i dati che hai già fornito.")}},
+                          "Ricerca finanziamenti: MioTEM abbina azienda e progetto ai bandi aperti e prepara la domanda con i dati che ha già fornito.")}},
     {"id": "buyer_verification", "by": {"kind": "miotem"},
      "name": L("Buyer verification page", "Pagina di verifica per l'acquirente"),
      "coming": {"status": "preview",
@@ -168,7 +168,7 @@ CARDS = [
     {"id": "importers", "by": {"kind": "partner", "name": "VeriPura Connect"},
      "name": L("Researched importers", "Importatori ricercati"),
      "today": {"text": L("Browse researched importers of Italian food and wine for your destination. This list is updated regularly.",
-                         "Consulta gli importatori ricercati di prodotti alimentari e vino italiani per la tua destinazione. L'elenco è aggiornato regolarmente.")},
+                         "Consulti gli importatori ricercati di prodotti alimentari e vino italiani per la sua destinazione. L'elenco è aggiornato regolarmente.")},
      "no_tell": True,
      "coming": {"status": "soon",
                 "text": L("Contact importers through VeriPura Connect.",
@@ -177,7 +177,7 @@ CARDS = [
      "name": L("Rule changes ahead", "Novità normative in arrivo"),
      "coming": {"status": "soon",
                 "text": L("Notices of new food-safety rules for your product and destination, from official WTO notifications and from changes to official sources.",
-                          "Avvisi sulle nuove norme di sicurezza alimentare per il tuo prodotto e la tua destinazione, dalle notifiche ufficiali WTO e dalle modifiche alle fonti ufficiali.")}},
+                          "Avvisi sulle nuove norme di sicurezza alimentare per il suo prodotto e la sua destinazione, dalle notifiche ufficiali WTO e dalle modifiche alle fonti ufficiali.")}},
     {"id": "mode2", "by": {"kind": "miotem"},
      "name": L("Help with a project", "Aiuto per un progetto"),
      "coming": {"status": "soon",
@@ -219,9 +219,9 @@ PUBLIC_TEXT = {  # shorter wording for the public page (no link details, no part
     "shipping": L("Parcels for samples and small orders, booked with partner services. Next: pallets and containers.",
                   "Pacchi per campioni e piccoli ordini, prenotabili con servizi partner. Poi: pallet e container."),
     "label_check": L("Check your label artwork in the VeriPura label validator. Next: the result inside your project, in Italian.",
-                     "Verifica la grafica dell'etichetta nel validatore etichette VeriPura. Poi: il risultato dentro il progetto, in italiano."),
+                     "Verifichi la grafica dell'etichetta nel validatore etichette VeriPura. Poi: il risultato dentro il progetto, in italiano."),
     "label_design": L("Create nutrition panels and labels with partner tools, then upload the label in your project.",
-                      "Crea tabelle nutrizionali ed etichette con strumenti dei partner, poi carica l'etichetta nel progetto."),
+                      "Crei tabelle nutrizionali ed etichette con strumenti dei partner, poi carichi l'etichetta nel progetto."),
     "importers": L("Researched importers of Italian food and wine, by destination. The list is updated regularly.",
                    "Importatori ricercati di prodotti alimentari e vino italiani, per destinazione. L'elenco è aggiornato regolarmente."),
 }
@@ -368,6 +368,6 @@ def check_reference(kind, value):
         return {"kind": "arc", "value": v, "format_ok": ok, "lookup": None,
                 "message": L("Format correct (21 characters). The movement's status is shown in your EMCS account or by your customs agent." if ok else
                              "This does not look like an ARC: it has 21 characters, starting with the year and the country code (e.g. 26IT...).",
-                             "Formato corretto (21 caratteri). Lo stato del movimento è visibile nel tuo account EMCS o tramite il tuo spedizioniere doganale." if ok else
+                             "Formato corretto (21 caratteri). Lo stato del movimento è visibile nel suo account EMCS o tramite il suo spedizioniere doganale." if ok else
                              "Non sembra un ARC: ha 21 caratteri e inizia con l'anno e il codice paese (es. 26IT...).")}
     return {"error": "unknown kind"}
