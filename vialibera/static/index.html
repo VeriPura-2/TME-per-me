@@ -370,7 +370,43 @@ function renderLanding() {
   if (!vid || !/^[a-f0-9]{32}$/.test(vid)) { vid = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("vl_visitor", vid); } catch (e) {} }
   const chat = el("div", null, "card", "margin-top:12px"); chat.hidden = true;
   const clog = el("div", null, null, "max-height:72vh;min-height:240px;overflow:auto"), copts = el("div", null, null, "margin:6px 0");
-  const cin = document.createElement("input"); cin.type = "text"; cin.placeholder = L.lc_ph; cin.maxLength = 1000; cin.style.cssText = "width:70%;margin:4px 6px 4px 0";
+  const cin = document.createElement("input"); cin.type = "text"; cin.placeholder = L.lc_ph; cin.maxLength = 1000; cin.style.cssText = "width:100%;margin:4px 0";
+  // autocomplete: products and countries, from local lists (no AI call); fills the word being typed
+  const SUG_P = [
+    ["pasta", "pasta"], ["vino", "wine", "vini"], ["olio d'oliva", "olive oil", "olio", "oil"], ["formaggi e latticini", "cheese and dairy", "formaggio", "formaggi", "latticini", "cheese", "dairy"],
+    ["distillati", "spirits", "grappa", "amaro", "liquori", "spirit"], ["salumi", "cured meat", "prosciutto", "ham", "meat"], ["conserve e sughi", "preserves", "sughi", "marmellate", "jam", "sauce"],
+    ["prodotti da forno", "bakery", "dolci", "biscotti", "pane", "bread", "biscuits"],
+    ["abbigliamento (capi finiti)", "apparel (finished garments)", "capi", "vestiti", "clothing", "garments", "moda", "fashion"], ["calzature", "footwear", "scarpe", "shoes"],
+    ["accessori", "accessories", "borse", "bags", "cinture", "belts"], ["tessuti", "fabrics", "stoffe", "tessile", "textile"], ["pelle e pellami", "leather materials", "pelli", "cuoio", "leather"]];
+  const ISO = "AF AL DZ AD AO AG AR AM AU AT AZ BS BH BD BB BY BE BZ BJ BT BO BA BW BR BN BG BF BI CV KH CM CA CF TD CL CN CO KM CG CD CR CI HR CU CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FJ FI FR GA GM GE DE GH GR GD GT GN GW GY HT HN HU IS IN ID IR IQ IE IL JM JP JO KZ KE KI KP KR XK KW KG LA LV LB LS LR LY LI LT LU MG MW MY MV ML MT MH MR MU MX FM MD MC MN ME MA MZ MM NA NR NP NL NZ NI NE NG MK NO OM PK PW PS PA PG PY PE PH PL PT QA RO RU RW KN LC VC WS SM ST SA SN RS SC SL SG SK SI SB SO ZA SS ES LK SD SR SE CH SY TW TJ TZ TH TL TG TO TT TN TR TM TV UG UA AE GB US UY UZ VU VA VE VN YE ZM ZW HK MO".split(" ");
+  const ALIAS = {GB: ["UK", "Inghilterra", "England", "Britain"], US: ["USA", "America"], NL: ["Olanda", "Holland"], CZ: ["Cechia", "Czech Republic"], AE: ["UAE", "Emirati"], KR: ["Corea"], KP: ["Corea"], CD: ["Congo"], CG: ["Congo"], MK: ["Macedonia"], SZ: ["Swaziland"], TR: ["Turkey"], CI: ["Ivory Coast"]};
+  const PRIO = "US GB CA CH DE FR ES NL BE AT JP CN AU AE".split(" ");
+  const regionName = (code, l) => { try { const n = new Intl.DisplayNames([l], {type: "region"}).of(code); return n && n !== code ? n : null; } catch (e) { return null; } };
+  const SUG_C = ISO.map(c => { const it = regionName(c, "it") || c, en = regionName(c, "en") || c; return [it, en, ...(ALIAS[c] || []), c.length === 2 ? "" : c, PRIO.indexOf(c) < 0 ? 99 : PRIO.indexOf(c)]; })
+    .sort((a, b) => a[a.length - 1] - b[b.length - 1] || a[0].localeCompare(b[0], "it")).map(r => r.slice(0, -1).filter(Boolean));
+  const SUG = SUG_P.concat(SUG_C);
+  const norm = t => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const sugBox = el("div", null, null, "position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.25);overflow:hidden"); sugBox.hidden = true;
+  let sugItems = [], sugSel = -1, sugWord = "";
+  const sugClose = () => { sugBox.hidden = true; sugItems = []; sugSel = -1; };
+  const sugPick = (label) => { cin.value = cin.value.slice(0, cin.value.length - sugWord.length) + label + " "; sugClose(); cin.focus(); };
+  const sugPaint = () => { sugBox.innerHTML = ""; sugItems.forEach((l, i) => { const d = el("div", l, null, "padding:7px 12px;cursor:pointer;background:" + (i === sugSel ? "var(--line)" : "transparent"));
+    d.onmousedown = e => { e.preventDefault(); sugPick(l); }; sugBox.appendChild(d); }); sugBox.hidden = !sugItems.length; };
+  const sugUpdate = () => {
+    const m = cin.value.match(/(\S+)$/); sugWord = m ? m[1] : ""; const q = norm(sugWord);
+    if (q.length < 2 || cin.disabled) { sugClose(); return; }
+    const out = []; SUG.forEach(r => { const label = lang === "en" ? r[1] : r[0];
+      if (r.some(x => norm(x).split(/[\s']+/).some(w => w.startsWith(q))) && norm(label) !== q) out.push(label); });
+    sugItems = out.slice(0, 6); sugSel = -1; sugPaint(); };
+  const sugKey = e => {
+    if (sugBox.hidden || !sugItems.length) return false;
+    if (e.key === "ArrowDown") { sugSel = (sugSel + 1) % sugItems.length; sugPaint(); e.preventDefault(); return true; }
+    if (e.key === "ArrowUp") { sugSel = (sugSel - 1 + sugItems.length) % sugItems.length; sugPaint(); e.preventDefault(); return true; }
+    if (e.key === "Tab" || (e.key === "Enter" && sugSel >= 0)) { sugPick(sugItems[Math.max(sugSel, 0)]); e.preventDefault(); return true; }
+    if (e.key === "Escape") { sugClose(); return true; }
+    return false; };
+  const cwrap = el("div", null, null, "position:relative;display:inline-block;width:70%;margin:0 6px 0 0;vertical-align:middle"); cwrap.append(cin, sugBox);
+  cin.addEventListener("input", sugUpdate); cin.addEventListener("blur", () => setTimeout(sugClose, 120));
   const csend = el("button", L.lc_send, "primary"), cstate = {busy: false, off: false};
   const cadd = (cls, t) => { const d = el("div", cls === "bot" ? String(t).replace(/\*\*/g, "").replace(/^\s*[-*] /gm, "") : t, cls); d.style.whiteSpace = "pre-wrap"; clog.appendChild(d); if (cls === "bot") clog.lastBot = d; clog.scrollTop = clog.scrollHeight; return d; };
   const routeCard = (r, withTitle) => {
@@ -445,8 +481,8 @@ function renderLanding() {
       }
     } catch (e) { toSignin(L.lc_busy); }
     cstate.busy = false; };
-  csend.onclick = () => clientSend(); cin.onkeydown = e => { if (e.key === "Enter") clientSend(); };
-  chat.append(clog, copts, cin, csend, bIn);
+  csend.onclick = () => clientSend(); cin.onkeydown = e => { if (sugKey(e)) return; if (e.key === "Enter") { sugClose(); clientSend(); } };
+  chat.append(clog, copts, cwrap, csend, bIn);
   const openChat = (text) => { if (chat.hidden) { chat.hidden = false; if (!text) cadd("bot", L.lc_open);
       // a new page view starts a new conversation (the id then stays the same through the sign-in redirect)
       vid = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join(""); try { localStorage.setItem("vl_visitor", vid); } catch (e) {} }
