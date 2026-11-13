@@ -25,6 +25,23 @@ class VoiceTest(unittest.TestCase):
         self.calls.append(req)
         return b"ID3audio"
 
+    def test_landing_greeting_generated_once_then_served_stored(self):
+        voice._LANDING_SEEN["at"] = 0.0
+        self.assertIsNone(voice.landing_stored("it"))
+        self.assertEqual(voice.landing_langs(), [])
+        code, info = voice.landing_generate(app.con(), "it", post=self.fake)
+        self.assertEqual((code, info["generated"]), (200, True))
+        self.assertEqual(voice.landing_stored("it"), b"ID3audio")
+        self.assertEqual(voice.landing_langs(), ["it"])
+        code, info = voice.landing_generate(app.con(), "it", post=self.fake)  # second call: no provider call
+        self.assertEqual((code, info["generated"], len(self.calls)), (200, False, 1))
+        self.assertEqual(json.loads(self.calls[0].data)["text"], voice.LANDING_SCRIPT["it"])
+        self.assertIn("voice123", self.calls[0].full_url)
+
+    def test_landing_admin_route_is_superadmin_only(self):
+        code, out = app.handle_admin("/admin/landing_voice", {"lang": "en"}, who("v1"))
+        self.assertEqual(code, 403)
+
     def test_clean_removes_options_and_markdown(self):
         out = voice.clean("**Ciao** il prodotto?\nOPTIONS: vino | pasta")
         self.assertEqual(out, "Ciao il prodotto?")

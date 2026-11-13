@@ -780,6 +780,10 @@ def handle_admin(path, body, who):
         return 400, {"error": "sign-in required"}
     c = con()
     cid = str(body.get("company") or "")
+    if path == "/admin/landing_voice":  # superadmin: generate the landing greeting once per language
+        if not permissions.is_superadmin(who):
+            return 403, {"error": "forbidden"}
+        return voice.landing_generate(c, str(body.get("lang") or "it"))
     if path == "/admin/companies":
         return admin.companies(c, who)
     if path == "/admin/company":
@@ -1137,7 +1141,19 @@ class Handler(BaseHTTPRequestHandler):
                                     "default_org": os.environ.get("AUTH0_DEFAULT_ORG", ""),
                                     "terms_version": TERMS_VERSION,
                                     "voice": voice.configured(),
+                                    "landing_voice": voice.landing_langs(),
                                     "voice_replies": os.environ.get("VOICE_REPLIES") == "1"})
+        if path == "/public/landing_voice":  # the landing greeting: stored audio only, no sign-in, never calls the provider
+            audio = voice.landing_stored("en" if "lang=en" in self.path else "it")
+            if not audio:
+                return self._send(404, {"error": "not_generated"})
+            self.send_response(200)
+            self.send_header("Content-Type", "audio/mpeg")
+            self.send_header("Content-Length", str(len(audio)))
+            self.send_header("Cache-Control", "public, max-age=3600")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            return self.wfile.write(audio)
         if path == "/tools/public.json":  # the public landing page's tool list: no partner names, no user data
             return self._send(200, {"tools": tools.public_catalog()})
         if path == "/plans.json":
