@@ -1,8 +1,8 @@
-"""Verticals: the industry a project belongs to (food today, fashion later).
+"""Verticals: the industry a project belongs to (food today, apparel later).
 
 The vertical is stored per project (cases.vertical). An empty or unknown value means food, so every project
-created before this column existed behaves exactly as before. Fashion is registered but switched off: no start
-form, chat or API path creates a Fashion project until it is enabled in a later step.
+created before this column existed behaves exactly as before. Apparel is registered but switched off: no start
+form, chat or API path creates an Apparel project until it is enabled in a later step.
 """
 from . import lane_requests, requirements
 
@@ -13,7 +13,7 @@ VERTICALS = {
     "food": {"enabled": True, "label": {"it": "Alimentare", "en": "Food"},
              "products": requirements.PRODUCTS, "destinations": requirements.DESTINATIONS,
              "covered_products": lane_requests.COVERED_PRODUCTS, "covered_countries": lane_requests.COVERED_COUNTRIES},
-    "fashion": {"enabled": False, "label": {"it": "Moda", "en": "Fashion"}},
+    "fashion": {"enabled": False, "label": {"it": "Abbigliamento", "en": "Apparel"}},
 }
 
 
