@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import re
+import traceback
 from datetime import datetime, timedelta, timezone
 
 from . import ai_usage, db, duties, lane_requests, requirements, tools
@@ -431,6 +432,7 @@ def message(con, body, ip, client):
     if mine >= IP_DAILY_CAP:
         return 429, {"error": "limit", "signin": True, "role": state["role"]}  # this connection used its messages for today
     if used_today(con) >= DAILY_CEILING:
+        print("landing chat: daily ceiling of %d messages reached" % DAILY_CEILING, flush=True)
         return 503, {"error": "busy", "role": state["role"]}
     state["con"] = con
     state["messages_so_far"] = state["messages"] + 1  # this message included
@@ -461,6 +463,7 @@ def message(con, body, ip, client):
         else:
             reply = ""
     except Exception:
+        traceback.print_exc()  # the cause (connection, key, billing, overload) goes to the server log, not the visitor
         ai_usage.record(con, None, "visitor", usage, MODEL)
         return 503, {"error": "ai_unavailable", "role": state["role"]}  # history not saved: the message counts as not sent
     if not reply:
