@@ -136,8 +136,10 @@ _LANDING_SEEN = {"at": 0.0, "langs": []}
 
 
 def landing_voice_id():
-    """One fixed voice for the landing greeting: ELEVENLABS_VOICE_LANDING, else the default voice."""
-    return os.environ.get("ELEVENLABS_VOICE_LANDING") or os.environ.get("ELEVENLABS_VOICE_DEFAULT")
+    """One fixed voice for the landing greeting: ELEVENLABS_VOICE_LANDING, else the first chosen female persona voice
+    (ELEVENLABS_VOICES_F), else the default voice."""
+    f = [x.strip() for x in os.environ.get("ELEVENLABS_VOICES_F", "").split(",") if x.strip()]
+    return os.environ.get("ELEVENLABS_VOICE_LANDING") or (f[0] if f else None) or os.environ.get("ELEVENLABS_VOICE_DEFAULT")
 
 
 def _landing_key(lang):

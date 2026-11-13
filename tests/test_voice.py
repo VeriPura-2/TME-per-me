@@ -38,6 +38,16 @@ class VoiceTest(unittest.TestCase):
         self.assertEqual(json.loads(self.calls[0].data)["text"], voice.LANDING_SCRIPT["it"])
         self.assertIn("voice123", self.calls[0].full_url)
 
+    def test_landing_voice_prefers_chosen_female_persona_voice(self):
+        os.environ["ELEVENLABS_VOICES_F"] = "femA, femB"
+        try:
+            self.assertEqual(voice.landing_voice_id(), "femA")
+            os.environ["ELEVENLABS_VOICE_LANDING"] = "land1"
+            self.assertEqual(voice.landing_voice_id(), "land1")
+        finally:
+            os.environ.pop("ELEVENLABS_VOICES_F", None); os.environ.pop("ELEVENLABS_VOICE_LANDING", None)
+        self.assertEqual(voice.landing_voice_id(), "voice123")
+
     def test_landing_admin_route_is_superadmin_only(self):
         code, out = app.handle_admin("/admin/landing_voice", {"lang": "en"}, who("v1"))
         self.assertEqual(code, 403)
