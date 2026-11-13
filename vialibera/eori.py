@@ -14,7 +14,7 @@ LINKS = {
     "check": "https://ec.europa.eu/taxation_customs/dds2/eos/eori_validation.jsp",
 }
 NOTE = {
-    "it": "Bozza. Controlla ogni dato, scarica il modulo, firmalo e consegnalo all'Ufficio delle Dogane che scegli. MioTEM non lo presenta e non lo firma.",
+    "it": "Bozza. Controlli ogni dato, scarichi il modulo, lo firmi e lo consegni all'Ufficio delle Dogane che sceglie. MioTEM non lo presenta e non lo firma.",
     "en": "Draft. Check every field, download the form, sign it and file it with the customs office you choose. MioTEM does not file or sign it.",
 }
 # key, label it, label en, page, baseline y (top-down), required
