@@ -120,6 +120,64 @@ def intro_audio(con, persona_id, lang, post=None):
     return code, audio
 
 
+LANDING_SCRIPT = {
+    "it": ("Benvenuti su MioTEM. Se sta iniziando a esportare, si blocca su documenti di cui ignorava la necessità. "
+           "Se sta ampliando l'export, rifà il lavoro preparatorio per ogni mercato. E se è un Temporary Export Manager, "
+           "perde ore ogni settimana a inseguire documenti e norme invece di far crescere i suoi clienti. "
+           "MioTEM svolge questo lavoro. Mi dica che cosa esporta e dove: le mostrerò i documenti necessari, "
+           "chi prepara ciascuno e i dazi."),
+    "en": ("Welcome to MioTEM. If you are new to exporting, you stall on documents you did not know you needed. "
+           "If you are expanding, you redo the groundwork for every market. And if you are a Temporary Export Manager, "
+           "you lose hours every week chasing documents and rule changes instead of growing your clients. "
+           "MioTEM does that groundwork. Tell me what you export and where, and I will show you the documents, "
+           "who prepares each one, and the duties."),
+}
+_LANDING_SEEN = {"at": 0.0, "langs": []}
+
+
+def landing_voice_id():
+    """One fixed voice for the landing greeting: ELEVENLABS_VOICE_LANDING, else the first chosen female persona voice
+    (ELEVENLABS_VOICES_F), else the default voice."""
+    f = [x.strip() for x in os.environ.get("ELEVENLABS_VOICES_F", "").split(",") if x.strip()]
+    return os.environ.get("ELEVENLABS_VOICE_LANDING") or (f[0] if f else None) or os.environ.get("ELEVENLABS_VOICE_DEFAULT")
+
+
+def _landing_key(lang):
+    text = LANDING_SCRIPT["en" if lang == "en" else "it"]
+    return "voice/landing_%s_%s.mp3" % ("en" if lang == "en" else "it",
+                                        hashlib.sha256((text + (landing_voice_id() or "")).encode()).hexdigest()[:10])
+
+
+def landing_stored(lang):
+    """The stored greeting, or None. Never calls the provider: visitors only ever replay what staff generated."""
+    try:
+        return storage.store().get(_landing_key(lang))
+    except Exception:
+        return None
+
+
+def landing_langs():
+    """Languages that have a stored greeting (cached for a minute; the page shows the Listen button only for these)."""
+    if time.time() - _LANDING_SEEN["at"] > 60:
+        _LANDING_SEEN["langs"] = [l for l in ("it", "en") if landing_stored(l)]
+        _LANDING_SEEN["at"] = time.time()
+    return list(_LANDING_SEEN["langs"])
+
+
+def landing_generate(con, lang, post=None):
+    """Staff only (the route checks). Generated once per language and wording, then stored. Returns (status, info)."""
+    lang = "en" if lang == "en" else "it"
+    if landing_stored(lang):
+        return 200, {"lang": lang, "generated": False, "note": "already stored"}
+    code, audio = speak(con, "system:landing", LANDING_SCRIPT[lang], None, lang, user_cap=False, raw_text=True,
+                        post=post, voice_id=landing_voice_id())
+    if code != 200:
+        return code, audio
+    storage.store().put(_landing_key(lang), audio)
+    _LANDING_SEEN["at"] = 0.0
+    return 200, {"lang": lang, "generated": True, "chars": len(LANDING_SCRIPT[lang])}
+
+
 def _used_today(con, user):
     row = con.execute("SELECT chars FROM voice_usage WHERE user_sub=? AND day=?", (user, db.now()[:10])).fetchone()
     return row["chars"] if row else 0
@@ -134,10 +192,10 @@ def _add_usage(con, user, n):
     con.commit()
 
 
-def speak(con, user, text, persona_id, lang="it", intro_name=None, post=None, user_cap=True, raw_text=False):
+def speak(con, user, text, persona_id, lang="it", intro_name=None, post=None, user_cap=True, raw_text=False, voice_id=None):
     """Returns (status, audio bytes or error dict). `post` is injectable for tests."""
     key = api_key()
-    voice = voice_for(persona_id)
+    voice = voice_id or voice_for(persona_id)
     if not key or not voice:
         return 503, {"error": "voice_not_configured"}
     t = text if raw_text else clean(text)
