@@ -161,8 +161,8 @@ def fill(values):
             c.drawString(45, 24, "Precompilato da MioTEM (bozza). Verificare i dati prima di firmare. Consenso, data e firma a cura del richiedente.")
         c.save()
         buf.seek(0)
+        page = wr.add_page(page)  # attach to the writer first: pypdf 7 refuses to merge onto a reader's page
         page.merge_page(PdfReader(buf).pages[0])
-        wr.add_page(page)
     out = io.BytesIO()
     wr.write(out)
     return out.getvalue()
