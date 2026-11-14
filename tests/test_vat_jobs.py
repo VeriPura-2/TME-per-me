@@ -91,7 +91,9 @@ class Daily(unittest.TestCase):
         self.run_job()
         url = requirements.SRC["ca_rawcheese"]
         self.pages[url] = "the rules changed"
-        out = self.run_job()
+        self.assertEqual(self.run_job()["sources"]["changed"], 0)  # first sighting: wait for a later run
+        with mock.patch.object(jobs, "CONFIRM_HOURS", 0):
+            out = self.run_job()
         self.assertEqual(out["sources"]["changed"], 1)
         req = requirements.required("cheese and dairy", "Canada", set())
         tems.apply_confirmations(self.con, "case1", req)
@@ -171,7 +173,10 @@ class Watch(unittest.TestCase):
         pages = {u: "Title\nRule: 60 days\nFooter" for u in jobs.source_urls()}
         jobs.check_sources(con, lambda u: pages[u])
         pages[url] = "Title\nRule: 90 days\nFooter"
-        out = jobs.check_sources(con, lambda u: pages[u])
+        self.assertEqual(jobs.check_sources(con, lambda u: pages[u])["changed"], 0)
+        self.assertEqual(jobs.check_sources(con, lambda u: pages[u])["changed"], 0)  # same day again: still waiting
+        with mock.patch.object(jobs, "CONFIRM_HOURS", 0):
+            out = jobs.check_sources(con, lambda u: pages[u])
         self.assertEqual(out["changed"], 1)
         d = [c for c in jobs.changes(con) if c["kind"] == "source_changed"][0]["detail"]
         self.assertEqual(d["removed"], ["Rule: 60 days"])
@@ -187,6 +192,50 @@ class Watch(unittest.TestCase):
         jobs.check_sources(con, lambda u: "text " + u)
         self.assertEqual([c for c in jobs.changes(con) if c["kind"] == "source_changed"], [])
         self.assertIsNotNone(con.execute("SELECT page_text FROM source_snapshots WHERE url=?", (url,)).fetchone()["page_text"])
+
+    def _quiet(self, con):
+        return [c for c in jobs.changes(con) if c["kind"] == "source_changed"] == []
+
+    def test_text_that_differs_every_day_is_not_flagged(self):
+        con = db.connect()
+        url = jobs.source_urls()[0]
+        pages = {u: "Rule: 60 days\nquote 0" for u in jobs.source_urls()}
+        with mock.patch.object(jobs, "CONFIRM_HOURS", 0):
+            for day in range(1, 5):  # rotating testimonials
+                jobs.check_sources(con, lambda u: pages[u])
+                pages[url] = f"Rule: 60 days\nquote {day}"
+        self.assertTrue(self._quiet(con))
+
+    def test_page_that_flips_between_two_versions_is_not_flagged(self):
+        con = db.connect()
+        url = jobs.source_urls()[0]
+        pages = {u: "News\nRule: 60 days" for u in jobs.source_urls()}
+        with mock.patch.object(jobs, "CONFIRM_HOURS", 0):
+            for text in ("News", "Aktuelles", "News", "Aktuelles", "News"):  # the site answers in two languages
+                pages[url] = text + "\nRule: 60 days"
+                jobs.check_sources(con, lambda u: pages[u])
+        self.assertTrue(self._quiet(con))
+
+    def test_page_that_loses_most_of_its_text_counts_as_unreadable_and_keeps_the_old_text(self):
+        con = db.connect()
+        url = jobs.source_urls()[0]
+        full = "\n".join(f"Article {i}: text of the rule" for i in range(60))
+        pages = {u: full for u in jobs.source_urls()}
+        jobs.check_sources(con, lambda u: pages[u])
+        pages[url] = "Please verify you are human"
+        with mock.patch.object(jobs, "CONFIRM_HOURS", 0):
+            for _ in range(3):
+                out = jobs.check_sources(con, lambda u: pages[u])
+        self.assertEqual((out["changed"], out["unreachable"]), (0, 1))
+        self.assertTrue(self._quiet(con))
+        d = [c for c in jobs.changes(con) if c["kind"] == "source_unreachable"][0]["detail"]
+        self.assertEqual(d["error"], "page_shrank")
+        self.assertEqual(con.execute("SELECT page_text FROM source_snapshots WHERE url=?", (url,)).fetchone()["page_text"], full)
+
+    def test_diff_shows_added_lines_when_a_whole_page_is_replaced(self):
+        d = jobs.text_diff("\n".join(f"a{i}" for i in range(100)), "challenge page")
+        self.assertEqual(d["added"], ["challenge page"])
+        self.assertEqual(len(d["removed"]), jobs.DIFF_LINES - 1)
 
     def test_diff_is_capped(self):
         d = jobs.text_diff("\n".join(f"a{i}" for i in range(100)), "\n".join(f"b{i}" for i in range(100)))

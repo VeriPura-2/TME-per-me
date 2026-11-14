@@ -55,6 +55,8 @@ def page_text(raw):
     return "\n".join(l for l in (" ".join(line.split()) for line in text.splitlines()) if l)
 
 
+CONFIRM_HOURS = 20   # a changed text is flagged only if it is still there at a run this many hours later
+SHRINK_MIN = 400     # a page of at least this many characters that loses more than half its text was not read properly
 TEXT_KEEP = 500_000  # characters of a page kept for tomorrow's comparison (only the latest version is stored)
 DIFF_LINES = 40  # changed lines saved with a Data changes alert
 
@@ -65,10 +67,11 @@ def text_diff(old, new, limit=DIFF_LINES):
     for line in difflib.unified_diff((old or "").splitlines(), (new or "").splitlines(), lineterm="", n=0):
         if line.startswith(("---", "+++", "@@")):
             continue
-        if len(removed) + len(added) >= limit:
-            break
         (removed if line.startswith("-") else added).append(line[1:][:300])
-    return {"removed": removed, "added": added}
+    # share the limit, so a page replaced as a whole still shows what came in its place (14 Nov 2026)
+    keep_removed = max(limit // 2, limit - len(added))
+    removed = removed[:keep_removed]
+    return {"removed": removed, "added": added[:limit - len(removed)]}
 
 
 # 1 + 2: tariffs ---------------------------------------------------------------------
@@ -108,10 +111,17 @@ def _fetch_all(urls, fetch):
         return dict(pool.map(one, urls))
 
 
+def _hours_since(at):
+    try:
+        return (datetime.fromisoformat(db.now()) - datetime.fromisoformat(at)).total_seconds() / 3600
+    except (TypeError, ValueError):
+        return 0
+
+
 def _read_snapshot(con, url):
     """The first database read after the downloads. If the connection was dropped meanwhile (4, 5 and 8 Nov 2026),
     reconnect and try once more; a second failure is raised as before."""
-    sql = "SELECT sha256, page_text FROM source_snapshots WHERE url=?"
+    sql = "SELECT sha256, page_text, pending_sha, pending_at FROM source_snapshots WHERE url=?"
     try:
         return con.execute(sql, (url,)).fetchone()
     except Exception as e:
@@ -142,17 +152,26 @@ def check_sources(con, fetch=_fetch_text):
         elif prev["page_text"] is None:
             # first run that keeps text: take it as the starting point, no alert (the fingerprint format changed too)
             con.execute("UPDATE source_snapshots SET sha256=?, page_text=?, checked_at=? WHERE url=?", (sha, text, db.now(), url))
-        elif prev["sha256"] != sha:
+        elif prev["sha256"] == sha:
+            con.execute("UPDATE source_snapshots SET checked_at=?, pending_sha=NULL, pending_at=NULL WHERE url=?", (db.now(), url))
+        elif len(prev["page_text"]) >= SHRINK_MIN and len(text) < len(prev["page_text"]) / 2:
+            # most of the page is gone: a bot check or an error page, not a rule change. Yesterday's text is kept.
+            unreachable += 1
+            _change(con, "source_unreachable", url, "Checklist source could not be read today", {"error": "page_shrank"})
+        elif prev["pending_sha"] != sha or _hours_since(prev["pending_at"]) < CONFIRM_HOURS:
+            # first sighting of this text: wait for a later run. Rotating page parts and pages that flip
+            # between two versions never show the same new text twice in a row, so they stay quiet.
+            if prev["pending_sha"] != sha:
+                con.execute("UPDATE source_snapshots SET pending_sha=?, pending_at=?, checked_at=? WHERE url=?", (sha, db.now(), db.now(), url))
+        else:
             changed += 1
             rows = [r["id"] for r in requirements.ROWS if r["source"] and requirements.watch_url(r["source"]) == url
                     and not requirements.importer_only(r)]
             _change(con, "source_changed", url, f"Checklist source changed: {len(rows)} item(s) to re-verify",
                     {"items": rows, **text_diff(prev["page_text"], text)})
             # only the newest text is kept: yesterday's is replaced, the changed lines stay with the alert
-            con.execute("UPDATE source_snapshots SET sha256=?, page_text=?, checked_at=?, changed_at=? WHERE url=?",
-                        (sha, text, db.now(), db.now(), url))
-        else:
-            con.execute("UPDATE source_snapshots SET checked_at=? WHERE url=?", (db.now(), url))
+            con.execute("UPDATE source_snapshots SET sha256=?, page_text=?, checked_at=?, changed_at=?, pending_sha=NULL, pending_at=NULL "
+                        "WHERE url=?", (sha, text, db.now(), db.now(), url))
         con.commit()
     return {"sources": len(source_urls()), "changed": changed, "unreachable": unreachable}
 
