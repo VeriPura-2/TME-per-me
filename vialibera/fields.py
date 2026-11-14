@@ -81,7 +81,7 @@ def check_write(section, fields):
     if section == "company" and "cert_status" in ok and _norm(ok["cert_status"]) != CERT_CLAIMED:
         del ok["cert_status"]
         return ok, ("cert_status not saved: you may only record \"claimed\". Uploaded and confirmed statuses are set by "
-                    "VeriPura staff or CORE after a document or the control body has been seen.")
+                    "MioTEM staff or CORE after a document or the control body has been seen.")
     if not bad:
         return ok, None
     hints = []
