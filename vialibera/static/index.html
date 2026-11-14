@@ -951,7 +951,7 @@ applyLang();
           if (!p.monthly) { const [rp2] = await call("/plan", {plan: id}); if (rp2.status !== 409) { await loadAccount(); return; } }
           const [rc, jc] = await call(p.monthly ? "/plan/checkout" : "/billing/portal", {plan: id, lang, email: ctx.email});
           if (rc.ok && jc.url) { location.href = jc.url; return; }
-          $("a-done").innerHTML = ""; $("a-done").appendChild(mk("p", t.err + (jc.error || rc.status))); return;
+          $("a-done").innerHTML = ""; $("a-done").appendChild(mk("p", rc.status === 403 ? t.j_owner_only : t.err + (jc.error || rc.status))); return;
         }
         const [rp, jp] = await call("/plan", {plan: id}); await loadAccount();
         if (!rp.ok) { $("a-done").innerHTML = ""; $("a-done").appendChild(mk("p", rp.status === 403 ? t.j_owner_only : t.err + (jp.error || rp.status))); return; }
@@ -962,7 +962,7 @@ applyLang();
     $("j-plans-sim").innerHTML = ""; if (pl.prices) simMark($("j-plans-sim"), pl.prices);
     if (pl.stripe && pl.stripe.enabled) {
       if (pl.stripe.mode === "test") $("j-plans-sim").appendChild(mk("div", t.j_testmode, "sim"));
-      if (cur !== pl.default) { const mg = mk("button", t.j_manage); mg.onclick = async () => { const [rc, jc] = await call("/billing/portal", {email: ctx.email}); if (rc.ok && jc.url) location.href = jc.url; else { $("a-done").innerHTML = ""; $("a-done").appendChild(mk("p", t.err + (jc.error || rc.status))); } }; $("j-plans-sim").appendChild(mg); }
+      if (cur !== pl.default) { const mg = mk("button", t.j_manage); mg.onclick = async () => { const [rc, jc] = await call("/billing/portal", {email: ctx.email}); if (rc.ok && jc.url) location.href = jc.url; else { $("a-done").innerHTML = ""; $("a-done").appendChild(mk("p", rc.status === 403 ? t.j_owner_only : t.err + (jc.error || rc.status))); } }; $("j-plans-sim").appendChild(mg); }
     }
     window.scrollTo(0, y);
   }
