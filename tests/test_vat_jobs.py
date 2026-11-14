@@ -99,6 +99,12 @@ class Daily(unittest.TestCase):
         item = [i for i in req["data"]["items"] if i["id"] == "ca_zoo"][0]
         self.assertFalse(item["verified"])
         self.assertTrue(item["source_changed"])
+        # exporters and TEM firms do not see the flag: the row stays as it was
+        seen = requirements.required("cheese and dairy", "Canada", set())
+        before = [dict(i) for i in seen["data"]["items"]]
+        jobs.apply_source_flags(self.con, "case1", seen, staff=False)
+        self.assertEqual(seen["data"]["items"], before)
+        self.assertNotIn("source_changed", [i for i in seen["data"]["items"] if i["id"] == "ca_zoo"][0])
         # a confirmation after the change clears it
         self.con.execute("INSERT INTO checklist_confirmations(case_id, item_id, confirmed_by, by_label, at) VALUES ('case1','ca_zoo','t','TEM','9999')")
         req = requirements.required("cheese and dairy", "Canada", set())
