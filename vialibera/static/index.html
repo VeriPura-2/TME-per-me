@@ -1457,8 +1457,10 @@ applyLang();
     const box = $("s-tems"); box.innerHTML = ""; const [r, j] = await call("/admin/tem_firms", {}); if (!r.ok) return;
     box.appendChild(mk("h3", "TEM firms (" + j.firms.length + ")"));
     j.firms.forEach(f => { const row = mk("div", f.name + (f.vat ? " · " + f.vat : "") + " · members " + f.members + " · clients " + f.clients + " · seats " + (f.seats || "not limited") + " · projects " + f.projects + " of " + f.project_limit + " ", "muted");
-      if (full) { const pl = mk("input"); pl.type = "number"; pl.placeholder = "Project limit"; pl.style.width = "7em"; const pb = mk("button", "Set project limit");
-        pb.onclick = async () => { const [rr] = await call("/admin/tem_project_limit", {firm: f.id, limit: pl.value}); if (rr.ok) staffTems(); }; row.append(pl, pb); }
+      if (full) { const pl = mk("input"); pl.type = "number"; pl.placeholder = "Project limit"; pl.style.width = "7em"; pl.value = f.project_limit; const pb = mk("button", "Set project limit"), pm = mk("span", "", "muted");
+        pb.onclick = async () => { pm.textContent = ""; const [rr, jj] = await call("/admin/tem_project_limit", {firm: f.id, limit: pl.value});
+          if (rr.ok) { await staffTems(); $("s-tems").prepend(mk("div", "Saved: " + f.name + " now has a limit of " + jj.limit + " projects.", "muted")); }
+          else pm.textContent = " Not saved: " + (jj && jj.error ? jj.error : rr.status); }; row.append(pl, pb, pm); }
       if (full) { const b = mk("button", "New lead link"), o = mk("div"); b.onclick = async () => { o.innerHTML = ""; const [rr, jj] = await call("/admin/tem_lead_link", {firm: f.id}); if (rr.ok) linkBox(o, location.origin + "/?tem=" + jj.token, "Single use, 14 days."); }; row.append(b, o); }
       box.appendChild(row); });
     if (full) { const n = mk("input"), v = mk("input"), st = mk("input"); n.placeholder = "Firm name"; v.placeholder = "VAT (optional)"; st.placeholder = "Seats (empty = not limited)"; st.type = "number";
