@@ -112,8 +112,8 @@ CARDS = [
                          "Carichi il certificato in Documenti: finché il nostro staff o VeriPura CORE non lo hanno visto, lo stato resta «dichiarato». "
                          "Per il Parmigiano Reggiano l'esportatore può anche controllare la propria partita IVA nell'elenco pubblico di OCQ PR.")},
      "coming": {"status": "preview",
-                "text": L("Request to the control body: with your consent, your TEM or VeriPura staff prepare a request for an extract or a verification (Valoritalia, Kiwa Cermet), send it, and file the reply in Documents.",
-                          "Richiesta all'organismo di controllo: con il suo consenso, il suo TEM o lo staff VeriPura preparano una richiesta di estratto o di verifica (Valoritalia, Kiwa Cermet), la inviano e archiviano la risposta in Documenti.")}},
+                "text": L("Request to the control body: with your consent, your TEM or MioTEM staff prepare a request for an extract or a verification (Valoritalia, Kiwa Cermet), send it, and file the reply in Documents.",
+                          "Richiesta all'organismo di controllo: con il suo consenso, il suo TEM o lo staff MioTEM preparano una richiesta di estratto o di verifica (Valoritalia, Kiwa Cermet), la inviano e archiviano la risposta in Documenti.")}},
     {"id": "label_design", "by": {"kind": "partner", "name": "Food Label Maker, GoVisually"},
      "name": L("Label design", "Progettazione etichette"),
      "today": {"text": L("Create nutrition panels and labels with these partner tools. GoVisually is free, and Food Label Maker has a free trial label. Then upload the label here.",
