@@ -51,7 +51,7 @@ def record(con, case_id, user_sub, data, source="chat"):
 
 
 def latest(con, case_id):
-    r = con.execute("SELECT * FROM lane_requests WHERE case_id=? ORDER BY created_at DESC, rowid DESC LIMIT 1", (case_id,)).fetchone()
+    r = con.execute("SELECT * FROM lane_requests WHERE case_id=? ORDER BY created_at DESC, id DESC LIMIT 1", (case_id,)).fetchone()
     return dict(r) if r else None
 
 

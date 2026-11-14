@@ -48,6 +48,22 @@ class LaneRequests(unittest.TestCase):
         b = lane_requests.record(c, cid, "u1", {"product": "wine", "country": "Sweden"})
         self.assertNotEqual(a["request_id"], b["request_id"])
 
+    def test_latest_returns_the_newest_request_without_rowid(self):
+        c = app.con()
+        cid = db.create_case(c, 1)
+        a = lane_requests.record(c, cid, "u1", {"product": "wine", "country": "Japan"})
+        b = lane_requests.record(c, cid, "u1", {"product": "wine", "country": "Sweden"})
+        c.execute("UPDATE lane_requests SET created_at=? WHERE id=?", ("2026-01-01T00:00:00+00:00", a["request_id"]))
+        c.execute("UPDATE lane_requests SET created_at=? WHERE id=?", ("2026-02-01T00:00:00+00:00", b["request_id"]))
+        c.commit()
+        self.assertEqual(lane_requests.latest(c, cid)["id"], b["request_id"])
+        self.assertIsNone(lane_requests.latest(c, "no-such-case"))
+
+    def test_latest_query_is_postgres_safe(self):
+        # rowid exists only in SQLite; on Postgres it made /journey fail with a 500.
+        import inspect
+        self.assertNotIn("rowid", inspect.getsource(lane_requests).lower())
+
     def test_empty_request_is_refused(self):
         self.assertIn("error", lane_requests.record(app.con(), None, "u", {"timing": "soon"}))
 
