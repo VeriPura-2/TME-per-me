@@ -416,7 +416,9 @@ CREATE TABLE IF NOT EXISTS source_snapshots (
   sha256 TEXT NOT NULL,
   checked_at TEXT NOT NULL,
   changed_at TEXT,                     -- last time the text changed: checklist rows using it need re-verifying
-  page_text TEXT                       -- latest page text only, for showing what changed next time
+  page_text TEXT,                      -- latest page text only, for showing what changed next time
+  pending_sha TEXT,                    -- a different text seen once: flagged only if still there at a later run
+  pending_at TEXT
 );
 CREATE TABLE IF NOT EXISTS duty_snapshots (
   ref TEXT PRIMARY KEY,
@@ -496,7 +498,8 @@ class PG:
 ADDED_COLUMNS = [("companies", c) for c in ("vies_state", "vies_name", "vies_address", "vies_checked_at")] + [
     ("source_snapshots", "page_text"), ("companies", "owner_confirmed"), ("tem_firms", "max_projects"), ("anon_chats", "user_sub"),
     ("tem_firms", "max_clients"), ("tem_firms", "trial"), ("tem_interest", "source"), ("tem_interest", "note"), ("tem_interest", "user_sub"),
-    ("cases", "vertical"), ("route_interest", "phone"), ("route_interest", "details")]  # empty = food, see verticals.py
+    ("cases", "vertical"), ("route_interest", "phone"), ("route_interest", "details"),
+    ("source_snapshots", "pending_sha"), ("source_snapshots", "pending_at")]  # empty = food, see verticals.py
 
 
 def connect(path=":memory:"):
