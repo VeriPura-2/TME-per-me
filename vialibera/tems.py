@@ -524,7 +524,7 @@ def project(con, who, case_id):
     if req:
         from . import jobs, vat_check
         apply_confirmations(con, case_id, req)
-        jobs.apply_source_flags(con, case_id, req)
+        jobs.apply_source_flags(con, case_id, req, staff=permissions.is_staff(who))
         vat_check.apply_to_checklist(con, row["company_id"], req)
     pdocs = [dict(r) for r in con.execute(
         "SELECT d.id, d.filename, d.doc_type, d.status, d.created_at FROM project_docs p JOIN documents d ON d.id=p.document_id "

@@ -694,7 +694,7 @@ def handle_journey(body, who):
         out["required_docs"] = required_docs.required(case["product"].get("category"), have)
     if out.get("required_docs") and not out["required_docs"].get("simulated"):
         tems.apply_confirmations(c, row["id"], out["required_docs"])
-        jobs.apply_source_flags(c, row["id"], out["required_docs"])
+        jobs.apply_source_flags(c, row["id"], out["required_docs"], staff=permissions.is_staff(who))
         vat_check.apply_to_checklist(c, row["company_id"], out["required_docs"])
         marks.apply(c, row["id"], out["required_docs"])
     if not requirements.covers(case["product"].get("category"), case["market"].get("country"), vert):
