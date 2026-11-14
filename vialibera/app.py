@@ -606,6 +606,7 @@ def handle_account(body, who):
         n = c.execute("SELECT COUNT(*) AS n FROM memberships WHERE company_id=? AND status='active'", (cid,)).fetchone()["n"]
         out["company"] = {"name": co["legal_name"], "vat": co["vat"], "vies": co["vies_state"],
                           "owner_confirmed": permissions.owner_confirmed(c, cid),
+                          "vies_match": vat_check.vies_matched(c, cid),
                           "team": {"used": n, "cap": plans.get(out["plan"])["team_members"]}}
     return 200, out
 

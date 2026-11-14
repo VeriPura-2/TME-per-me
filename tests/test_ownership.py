@@ -35,16 +35,40 @@ class Ownership(unittest.TestCase):
         code, out = app.handle_start({"category": "pasta", "country": "UK", "vat": vat}, who)
         return app.con().execute("SELECT company_id FROM cases WHERE id=?", (out["case_id"],)).fetchone()["company_id"]
 
-    def test_first_claimant_is_provisional_even_when_vies_is_valid(self):
+    def test_first_claimant_is_provisional_but_can_invite(self):
         cid = self._start(user("own-a"), piva(180000001))
         self.assertFalse(permissions.owner_confirmed(app.con(), cid))
-        self.assertEqual(team.invite(app.con(), {"user": "own-a", "roles": []}, "member")[1]["error"], "owner_not_confirmed")
+        self.assertEqual(team.invite(app.con(), {"user": "own-a", "roles": []}, "member")[0], 200)  # invites no longer wait for staff
 
-    def test_staff_confirm_unlocks_invites(self):
+    def test_staff_confirm_sets_owner_confirmed(self):
         cid = self._start(user("own-b"), piva(190000001))
         self.assertEqual(admin.confirm_owner(app.con(), {"user": "x", "roles": []}, cid)[0], 403)
+        self.assertFalse(permissions.owner_confirmed(app.con(), cid))
         self.assertEqual(admin.confirm_owner(app.con(), SUPER, cid)[0], 200)
-        self.assertEqual(team.invite(app.con(), {"user": "own-b", "roles": []}, "member")[0], 200)
+        self.assertTrue(permissions.owner_confirmed(app.con(), cid))
+
+    def test_vies_name_match_only_with_a_name_that_equals_vies(self):
+        c = app.con()
+        cid = self._start(user("own-m"), piva(170000001))
+        vm = lambda: vat_check.vies_matched(c, cid)
+        c.execute("UPDATE companies SET legal_name=NULL, vies_state='valid', vies_name='ACME SRL' WHERE id=?", (cid,)); c.commit()
+        self.assertFalse(vm())                                    # no name typed
+        c.execute("UPDATE companies SET legal_name='Acme S.r.l.' WHERE id=?", (cid,)); c.commit()
+        self.assertTrue(vm())                                     # case and legal form ignored
+        c.execute("UPDATE companies SET legal_name='Vero Italiano TEST COMPANY', vies_name='MOTOROLA SOLUTIONS ITALIA SRL' WHERE id=?", (cid,)); c.commit()
+        self.assertFalse(vm())                                    # staging case
+        c.execute("UPDATE companies SET legal_name='Acme', vies_name='ACME SRL', vies_state='not_in_vies' WHERE id=?", (cid,)); c.commit()
+        self.assertFalse(vm())                                    # not in VIES
+        self.assertFalse(permissions.owner_confirmed(c, cid))     # a match never confirms the owner
+
+    def test_vies_match_never_releases_documents_and_is_shown_to_the_owner(self):
+        c = app.con()
+        cid = self._start(user("own-n"), piva(175000001))
+        c.execute("UPDATE companies SET legal_name='Acme', vies_state='valid', vies_name='ACME SRL' WHERE id=?", (cid,)); c.commit()
+        out = app.handle_account({}, {"user": "own-n", "roles": []})[1]["company"]
+        self.assertTrue(out["vies_match"])
+        self.assertFalse(out["owner_confirmed"])
+        self.assertTrue(team.overview(c, {"user": "own-n", "roles": []})[1]["company"]["vies_match"])
 
     def test_staff_can_hand_ownership_to_the_real_owner(self):
         c = app.con()
