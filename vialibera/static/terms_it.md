@@ -10,7 +10,7 @@ MioTEM è gestito da A&O CONSULT S.A.S. («**noi**», «**MioTEM**»), sede lega
 
 ## 2. Che cosa fa MioTEM
 
-MioTEM aiuta le imprese alimentari e delle bevande italiane a preparare e realizzare le esportazioni. Un assistente basato su intelligenza artificiale pone domande, costruisce una scheda pratica e propone servizi da un listino fisso. Alcuni servizi sono svolti da personale VeriPura o da fornitori terzi indipendenti.
+MioTEM aiuta le imprese alimentari e delle bevande italiane a preparare e realizzare le esportazioni. Un assistente basato su intelligenza artificiale pone domande, costruisce una scheda pratica e propone servizi da un listino fisso. Alcuni servizi sono svolti da personale MioTEM o da fornitori terzi indipendenti.
 
 **L'esportatore sei tu.** Ogni decisione è tua e il rischio di ogni esportazione resta a tuo carico. MioTEM non agisce come tuo spedizioniere doganale, legale o consulente fiscale e non presenta dichiarazioni per tuo conto, salvo che un servizio lo preveda per iscritto.
 
@@ -20,7 +20,7 @@ MioTEM è riservato a imprese e professionisti, non ai consumatori. Accettando, 
 
 ## 4. Stai parlando con un'intelligenza artificiale
 
-L'assistente è un sistema di intelligenza artificiale e può sbagliare. Non conferma nulla per tuo conto. Le verifiche di conformità (ad esempio dazi, etichette e documenti) sono controllate da personale VeriPura prima della consegna e tu confermi ogni voce prima che sia definitiva. L'introduzione parlata usa una voce sintetica. È una voce di intelligenza artificiale, non una persona, e non è una registrazione o copia di una persona reale. Il fornitore vocale riceve solo un testo prestabilito, mai i tuoi dati o la tua conversazione.
+L'assistente è un sistema di intelligenza artificiale e può sbagliare. Non conferma nulla per tuo conto. Le verifiche di conformità (ad esempio dazi, etichette e documenti) sono controllate da personale MioTEM prima della consegna e tu confermi ogni voce prima che sia definitiva. L'introduzione parlata usa una voce sintetica. È una voce di intelligenza artificiale, non una persona, e non è una registrazione o copia di una persona reale. Il fornitore vocale riceve solo un testo prestabilito, mai i tuoi dati o la tua conversazione.
 
 ## 5. Account e aziende
 
@@ -91,7 +91,7 @@ Scrivi a [EMAIL] o aeoconsultsas@pec.it.
 - Proteggere il servizio, prevenire frodi e migliorarlo in forma aggregata (legittimo interesse, art. 6(1)(f)).
 - Registrare la tua accettazione di queste condizioni (obbligo di legge e legittimo interesse).
 
-**Chi riceve i dati (responsabili e destinatari):** hosting cloud nell'UE (Google Cloud, regione europe-west1, Belgio); fornitore di accesso (Auth0 / Okta, tenant UE); fornitore di elaborazione IA (Anthropic) per le risposte dell'assistente [CONFERMARE REGIONE E CONDIZIONI DI TRATTAMENTO]; fornitore vocale (ElevenLabs) per l'introduzione parlata, che riceve un testo prestabilito e nessun dato personale [SE IN FUTURO SI AGGIUNGONO RISPOSTE PARLATE: AGGIORNARE QUESTA VOCE E CONFERMARE RESIDENZA UE E CONDIZIONI DI TRATTAMENTO]; fornitore di pagamenti [DA SCEGLIERE]; fornitori indipendenti da te scelti per un servizio; personale VeriPura. Gli eventuali trasferimenti fuori dall'UE si basano su decisioni di adeguatezza o clausole contrattuali tipo.
+**Chi riceve i dati (responsabili e destinatari):** hosting cloud nell'UE (Google Cloud, regione europe-west1, Belgio); fornitore di accesso (Auth0 / Okta, tenant UE); fornitore di elaborazione IA (Anthropic) per le risposte dell'assistente [CONFERMARE REGIONE E CONDIZIONI DI TRATTAMENTO]; fornitore vocale (ElevenLabs) per l'introduzione parlata, che riceve un testo prestabilito e nessun dato personale [SE IN FUTURO SI AGGIUNGONO RISPOSTE PARLATE: AGGIORNARE QUESTA VOCE E CONFERMARE RESIDENZA UE E CONDIZIONI DI TRATTAMENTO]; fornitore di pagamenti [DA SCEGLIERE]; fornitori indipendenti da te scelti per un servizio; personale MioTEM. Gli eventuali trasferimenti fuori dall'UE si basano su decisioni di adeguatezza o clausole contrattuali tipo.
 
 **Conservazione:** dati di account e pratiche per la durata dell'account e [24] mesi dopo l'ultima attività; scritture contabili per [10] anni come richiesto dalla legge; registri di consenso per il tempo necessario a provare l'accettazione. I backup scadono dopo [35] giorni.
 
