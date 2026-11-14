@@ -157,9 +157,11 @@ def check_sources(con, fetch=_fetch_text):
     return {"sources": len(source_urls()), "changed": changed, "unreachable": unreachable}
 
 
-def apply_source_flags(con, case_id, req):
-    """Checklist rows whose source changed since they were confirmed go back to 'staff to verify'."""
-    if not req:
+def apply_source_flags(con, case_id, req, staff=True):
+    """Checklist rows whose source changed since they were confirmed go back to 'staff to verify', for staff only.
+    Exporters and TEM firms keep seeing the row as it was until staff have looked at the change (decision 14 Nov 2026):
+    most changes are page noise, and the flag said nothing about what changed."""
+    if not req or not staff:
         return req
     changed = {r["url"]: r["changed_at"] for r in con.execute(
         "SELECT url, changed_at FROM source_snapshots WHERE changed_at IS NOT NULL").fetchall()}
