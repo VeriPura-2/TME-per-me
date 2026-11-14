@@ -571,7 +571,7 @@ def confirm_item(con, who, case_id, item_id, note=None, on=True):
     row = row or con.execute("SELECT * FROM cases WHERE id=?", (case_id,)).fetchone()
     if row is None:
         return 404, {"error": "no such project"}
-    label = _label(con, who) if firm_of(con, who["user"]) else "VeriPura staff"
+    label = _label(con, who) if firm_of(con, who["user"]) else "MioTEM staff"
     if on:
         con.execute("DELETE FROM checklist_confirmations WHERE case_id=? AND item_id=?", (case_id, item_id))
         con.execute("INSERT INTO checklist_confirmations(case_id, item_id, confirmed_by, by_label, note, at) VALUES (?,?,?,?,?,?)",
@@ -598,7 +598,7 @@ def add_note(con, who, case_id, text, visibility="internal"):
     if not text:
         return 400, {"error": "text required"}
     vis = "client" if visibility == "client" else "internal"
-    label = _label(con, who) if firm_of(con, who["user"]) else "VeriPura staff"
+    label = _label(con, who) if firm_of(con, who["user"]) else "MioTEM staff"
     con.execute("INSERT INTO case_notes(id, case_id, author, author_label, visibility, text, created_at) VALUES (?,?,?,?,?,?,?)",
                 (str(uuid.uuid4()), case_id, who["user"], label, vis, text, db.now()))
     con.commit()
