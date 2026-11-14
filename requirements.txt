@@ -1,9 +1,11 @@
-anthropic
-google-cloud-secret-manager
-psycopg2-binary
-PyJWT[crypto]
-markdown
-google-cloud-storage
-pypdf
-reportlab
-openpyxl
+# Versions are fixed so a new library release cannot change staging without a code change
+# (14 Nov 2026: an unpinned pypdf 7 broke the EORI form). To update: change a version here, run the tests, deploy.
+anthropic==2.8.0
+google-cloud-secret-manager==2.32.0
+psycopg2-binary==2.9.13
+PyJWT[crypto]==2.15.1
+markdown==3.11.3
+google-cloud-storage==3.17.1
+pypdf==7.1.0
+reportlab==5.1.0
+openpyxl==3.1.5
