@@ -27,7 +27,7 @@ h1{margin:0;font-size:1.5rem;display:flex;align-items:center;gap:10px}
 .logo{height:56px;width:auto;display:block}
 /* landing card: light logo on the cream card, dark-surface logo on the dark card */
 .landing-logo img{height:72px;width:auto;display:block;margin-bottom:8px}.ll-dark{display:none!important}:root[data-theme="dark"] .ll-light{display:none!important}:root[data-theme="dark"] .ll-dark{display:block!important}
-.bar button{margin-left:6px}
+.bar button{margin-left:6px}.bar button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 #lang{margin-left:6px;white-space:nowrap}button.flag{padding:2px;margin:0 0 0 4px;line-height:0;background:none;border:2px solid transparent;border-radius:6px;opacity:.55}button.themebtn{font-size:26px;font-weight:700;line-height:1;color:var(--bar-fg);opacity:1;padding:4px 8px;margin-right:4px}button.flag.on{opacity:1;border-color:var(--bar-fg)}button.flag svg{width:36px;height:24px;border-radius:3px}
 button{padding:8px 14px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;cursor:pointer}
 button.primary{background:var(--accent);color:#FFF8EF;border-color:var(--accent)}
@@ -295,6 +295,15 @@ const T = {
   }
 };
 const $ = id => document.getElementById(id);
+const PANELS = {docs: "docsbtn", journey: "jbtn", account: "abtn", team: "tbtn", staff: "sbtn", temws: "wbtn"};
+function showPanel(id, toggle, quiet) {  // one section open at a time; returns true when the section is now open
+  const open = !(toggle && !$(id).hidden);
+  Object.entries(PANELS).forEach(([k, b]) => { const on = open && k === id; if ($(k)) $(k).hidden = !on; if ($(b)) $(b).classList.toggle("on", on); });
+  $("invite").hidden = $("team").hidden;
+  if (open && !quiet) $(id).scrollIntoView({behavior: "smooth", block: "start"});
+  else if (!open) window.scrollTo({top: 0, behavior: "smooth"});
+  return open;
+}
 const store = {
   get(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -683,7 +692,7 @@ applyLang();
       box.appendChild(row);
     });
   }
-  $("docsbtn").onclick = () => { const p = $("docs"); p.hidden = !p.hidden; if (!p.hidden) { $("d-title").textContent = T[lang].d_title; $("d-help").textContent = T[lang].d_help; $("d-projt").textContent = T[lang].d_proj; loadDocs(); } };
+  $("docsbtn").onclick = () => { if (showPanel("docs", true)) { $("d-title").textContent = T[lang].d_title; $("d-help").textContent = T[lang].d_help; $("d-projt").textContent = T[lang].d_proj; loadDocs(); } };
   $("d-proj").onchange = loadDocs;
   $("d-file").onchange = async e => {
     for (const f of e.target.files) {
@@ -816,7 +825,7 @@ applyLang();
     if (key === "chat") { into(); $("msg").focus(); return; }
     if (key === "docs") { into(); if ($("docs").hidden) $("docsbtn").click(); $("docs").scrollIntoView({behavior: "smooth"}); return; }
     const target = {req: "j-req", duties: "j-core", eori: "j-eori", tools: "j-tools"}[key] || "journey";
-    into(); $("journey").hidden = false; jsel = null;
+    into(); showPanel("journey", false, true); jsel = null;
     loadJourney().then(() => { const el = $(target); if (el) el.scrollIntoView({behavior: "smooth"}); });
   }
   function askTem(parent, cid, tool, open) {  // a client asks their TEM for help (tool null = other tools)
@@ -1066,7 +1075,7 @@ applyLang();
     j.invitees.forEach(i => box.appendChild(mk("div", t.i_guest + " " + i.n + ": " + (i.status === "credited" ? t.i_credited : t.i_joined))));
   }
   $("i-copy").onclick = async () => { try { await navigator.clipboard.writeText($("i-link").value); $("i-copy").textContent = T[lang].i_copied; } catch (e) { $("i-link").select(); } };
-  $("abtn").onclick = () => { const p = $("account"); p.hidden = !p.hidden; if (!p.hidden) loadAccount(); };
+  $("abtn").onclick = () => { if (showPanel("account", true)) loadAccount(); };
   // ---- team
   async function loadTeam() {
     const t = T[lang];
@@ -1365,7 +1374,7 @@ applyLang();
     if (j.transcript.length) { const det = mk("details"); det.appendChild(mk("summary", tt.ws_transcript));
       j.transcript.forEach(m => det.appendChild(mk("div", (m.role === "user" ? "▶ " : "◀ ") + m.text, m.role === "user" ? "" : "muted"))); box.appendChild(det); }
   }
-  if (me.tem) { $("wbtn").hidden = false; $("wbtn").textContent = TT[lang].tem_btn; $("wbtn").onclick = () => { const p = $("temws"); p.hidden = !p.hidden; if (!p.hidden) loadTem(); }; }
+  if (me.tem) { $("wbtn").hidden = false; $("wbtn").textContent = TT[lang].tem_btn; $("wbtn").onclick = () => { if (showPanel("temws", true)) loadTem(); }; }
   async function loadTeamTem() {
     const tt = TT[lang], box = $("t-tem"); box.innerHTML = "";
     const [r, j] = await call("/tem/client", {}); if (!r.ok || !j.firms.length) return;
@@ -1479,9 +1488,9 @@ applyLang();
         else o.textContent = jj.error || rr.status; };
       box.append(n, " ", v, " ", st, " ", b, o); }
   }
-  if (me.staff_level) { $("sbtn").hidden = false; $("sbtn").onclick = () => { const p = $("staff"); p.hidden = !p.hidden; if (!p.hidden) loadStaff(); }; }
-  $("tbtn").onclick = () => { const p = $("team"); p.hidden = !p.hidden; $("invite").hidden = p.hidden; if (!p.hidden) { loadTeam(); loadTeamTem(); loadInvite(); } };
-  $("jbtn").onclick = () => { const p = $("journey"); p.hidden = !p.hidden; if (!p.hidden) { jsel = null; loadJourney(); } };
+  if (me.staff_level) { $("sbtn").hidden = false; $("sbtn").onclick = () => { if (showPanel("staff", true)) loadStaff(); }; }
+  $("tbtn").onclick = () => { if (showPanel("team", true)) { loadTeam(); loadTeamTem(); loadInvite(); } };
+  $("jbtn").onclick = () => { if (showPanel("journey", true)) { jsel = null; loadJourney(); } };
   let curPersona = null;
   function setPersona(p) {
     if (!p) return;
@@ -1615,7 +1624,7 @@ applyLang();
         msg.textContent = j.error === "plan_limit"
           ? (j.plan === "esplora" && j.limit !== "uncovered" ? t2.q_limit_free : (j.limit === "uncovered" ? t2.q_limit_unc : t2.q_limit_cov))
           : (j.error || r.status);
-        if (j.error === "plan_limit") { const ab = mk("button", t2.a_go); ab.style.marginLeft = "8px"; ab.onclick = () => { $("account").hidden = false; loadAccount(); $("account").scrollIntoView({behavior: "smooth"}); }; msg.appendChild(ab); }
+        if (j.error === "plan_limit") { const ab = mk("button", t2.a_go); ab.style.marginLeft = "8px"; ab.onclick = () => { showPanel("account"); loadAccount(); }; msg.appendChild(ab); }
         return;
       }
       caseId = j.case_id; pathType = j.path_type;
@@ -1624,7 +1633,7 @@ applyLang();
         const p = j.requested.product || (prod !== "other" ? t.q_cats[prod] : ""), c = j.requested.country || (countryValue() !== "other" ? t.q_countries[countryValue()] : "");
         add("bot", t.q_req.replace("{what}", [p, c].filter(Boolean).join(lang === "it" ? " verso " : " to ") || (lang === "it" ? "questa richiesta" : "this request")));
       } else { add("bot", j.covered ? t.q_ready : t.q_ready_sim); statusEl = j.covered ? $("log").lastElementChild : null; }
-      $("journey").hidden = false; jsel = null; loadJourney();
+      showPanel("journey", false, true); jsel = null; loadJourney();
     };
     const chat = mk("a", t.q_chat); chat.href = "#"; chat.style.marginLeft = "14px";
     chat.onclick = e => { e.preventDefault(); $("welcome").hidden = true; $("app").hidden = false; };
@@ -1688,7 +1697,7 @@ applyLang();
     const pid = localStorage.getItem("vl_paid"), cancelled = localStorage.getItem("vl_paycancel");
     if (pid || cancelled) {
       localStorage.removeItem("vl_paid"); localStorage.removeItem("vl_paycancel");
-      $("welcome").hidden = true; $("app").hidden = false; $("journey").hidden = false; jsel = null;
+      $("welcome").hidden = true; $("app").hidden = false; showPanel("journey", false, true); jsel = null;
       let r3, j3;
       if (pid) [r3, j3] = await call("/pay/confirm", {session_id: pid});
       await loadJourney();
