@@ -35,7 +35,8 @@ def overview(con, who, label=None):
                        "vies_checked_at": co["vies_checked_at"],
                        "vies_enrol": {"steps": vat_check.ENROL, "link": vat_check.ENROL_LINK} if co["vies_state"] == "not_in_vies" else None,
                        "terms_accepted_at": cc["at"] if cc else None, "created_by_staff": bool(co["created_by"]),
-                       "owner_confirmed": permissions.owner_confirmed(con, cid)}, "role": role,
+                       "owner_confirmed": permissions.owner_confirmed(con, cid),
+                       "vies_match": vat_check.vies_matched(con, cid)}, "role": role,
            "members": members, "roles": list(permissions.ROLES), "can_manage": permissions.allowed(role, "team")}
     return 200, out
 
@@ -108,8 +109,6 @@ def invite(con, who, role, company=None):
         return 403, {"error": "forbidden"}
     if role not in permissions.ROLES:
         return 400, {"error": "unknown role"}
-    if not permissions.owner_confirmed(con, cid):
-        return 403, {"error": "owner_not_confirmed"}
     token = secrets.token_urlsafe(24)
     exp = (datetime.now(timezone.utc) + timedelta(days=INVITE_DAYS)).isoformat(timespec="seconds")
     con.execute("INSERT INTO team_invites(token, company_id, role, created_by, expires_at, created_at) VALUES (?,?,?,?,?,?)",

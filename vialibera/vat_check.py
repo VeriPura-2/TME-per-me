@@ -7,6 +7,7 @@ told how to enrol (free, through the Agenzia delle Entrate). When VIES does not 
 company is accepted and the daily job tries again.
 """
 import json
+import re
 import urllib.error
 import urllib.request
 
@@ -101,3 +102,26 @@ def apply_to_checklist(con, company_id, req):
         if i["id"] == "vies" and r and r["vies_state"] == "valid":
             i["on_file"], i["verified"] = True, True
     return req
+
+
+_LEGAL_FORMS = {"srl", "srls", "spa", "snc", "sas", "sapa", "scarl", "scrl", "ss", "soc", "societa", "unipersonale", "di", "responsabilita", "limitata"}
+
+
+def _name_key(name):
+    """A company name reduced for comparison: no case, accents, punctuation or Italian legal forms (S.r.l., S.p.A.)."""
+    import unicodedata
+    s = unicodedata.normalize("NFKD", str(name or "")).encode("ascii", "ignore").decode().lower().replace(".", "")
+    return [w for w in re.sub(r"[^a-z0-9]+", " ", s).split() if w not in _LEGAL_FORMS]
+
+
+def names_match(typed, vies_name):
+    a, b = _name_key(typed), _name_key(vies_name)
+    return bool(a) and a == b
+
+
+def vies_matched(con, company_id):
+    """True when VIES lists the VAT number and its registered name equals the name given at sign-up.
+    No name given, VIES silent or not listing the number: False. A name match can be copied by anyone, so it only
+    opens invitations and never validation (that stays with staff, see permissions.owner_confirmed)."""
+    r = con.execute("SELECT legal_name, vies_state, vies_name FROM companies WHERE id=?", (company_id,)).fetchone()
+    return bool(r and r["vies_state"] == "valid" and names_match(r["legal_name"], r["vies_name"]))
