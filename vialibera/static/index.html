@@ -223,7 +223,8 @@ const TL = {  // tool cards on the project (tools.py)
 const T = {
   it: {
     signin: "Accesso / Registrazione", signout: "Esci", send: "Invia", ph: "Descriva il suo prodotto e il mercato",
-    own_pending: "La titolarità della sua azienda è in verifica da parte dello staff MioTEM (di solito entro un giorno lavorativo). Nel frattempo può lavorare; inviti ai colleghi e invio dei documenti alla validazione attendono la conferma.",
+    own_pending: "La titolarità della sua azienda è in verifica da parte dello staff MioTEM (di solito entro un giorno lavorativo). Nel frattempo può lavorare e invitare i colleghi; solo l'invio dei documenti alla validazione attende la conferma.",
+    own_vies: "La partita IVA e la ragione sociale risultano nel VIES. Lo staff MioTEM conferma la titolarità (di solito entro un giorno lavorativo); solo l'invio dei documenti alla validazione attende la conferma.",
     verify_email: "Confermi la sua email: Le abbiamo inviato un link (controlli anche lo spam). Poi acceda di nuovo.", login_refused: "Accesso non riuscito: ",
     signed: "Accesso come ", lv: "🔊 Ascolti il benvenuto", landing_h: "Più tempo per gli acquirenti, meno per i documenti.", landing: "Esporta prodotti alimentari o abbigliamento italiani? MioTEM, il suo Assistente Export Agentico, le mostra quali documenti servono per il suo prodotto e il suo mercato di destinazione, chi prepara ciascun documento e quali dazi all'importazione si applicano, poi l'aiuta a controllare i documenti prima della spedizione. L'alimentare è disponibile ora, l'abbigliamento è in arrivo. I Temporary Export Manager (TEM) perdono ore a inseguire documenti e norme: MioTEM svolge questo lavoro al loro posto, con una vista unica per seguire ogni cliente. Presto gli esportatori potranno rivolgersi a un TEM su MioTEM, e i TEM potranno offrire i propri servizi agli esportatori.",
     gateIntro: "Prima di iniziare, legga e accetti le condizioni.",
@@ -257,7 +258,8 @@ const T = {
   },
   en: {
     signin: "Sign in / Sign up", signout: "Sign out", send: "Send", ph: "Tell us about your product and market",
-    own_pending: "MioTEM staff are confirming that you own this company (usually within one working day). Meanwhile you can work; inviting colleagues and sending documents for validation wait for that confirmation.",
+    own_pending: "MioTEM staff are confirming that you own this company (usually within one working day). Meanwhile you can work and invite colleagues; only sending documents for validation waits for that confirmation.",
+    own_vies: "Your VAT number and company name are listed in VIES. MioTEM staff are confirming ownership (usually within one working day); only sending documents for validation waits for that confirmation.",
     verify_email: "Please confirm your email: we sent you a link (check spam too). Then sign in again.", login_refused: "Sign-in failed: ",
     signed: "Signed in as ", lv: "🔊 Listen to the welcome", landing_h: "Spend your time winning buyers, not chasing documents.", landing: "Exporting Italian food or apparel? MioTEM, your Agentic Export Assistant, shows you which documents your product needs for your target market, who prepares each one and which import duties apply there, then helps you check the documents before you ship. Food is available now, and apparel is being added. Temporary Export Managers (TEMs) lose hours chasing documents and rule changes: MioTEM does that groundwork for them, with a single view to follow every client. Soon, exporters will be able to ask a TEM for help on MioTEM, and TEMs will be able to offer their services to exporters.",
     gateIntro: "Before we start, please read and accept the terms.",
@@ -1096,7 +1098,7 @@ applyLang();
       box.appendChild(row);
     });
     const cb = $("t-consent");
-    if (!j.company.owner_confirmed) cb.appendChild(mk("p", t.own_pending, "verify"));
+    if (!j.company.owner_confirmed) cb.appendChild(mk("p", j.company.vies_match ? t.own_vies : t.own_pending, "verify"));
     if (j.company.terms_accepted_at) cb.appendChild(mk("p", t.c_ok + " " + j.company.terms_accepted_at.slice(0, 10) + ".", "muted"));
     else {
       cb.appendChild(mk("p", t.c_none, "muted"));
@@ -1113,7 +1115,7 @@ applyLang();
       const b = mk("button", t.t_invite); b.style.marginLeft = "6px";
       const out = mk("p");
       b.onclick = async () => {
-        const [rr, jj] = await call("/team/invite", {role: sel.value}); if (!rr.ok) { if (jj.error === "owner_not_confirmed") pageMsg(sel, t.own_pending); return; }
+        const [rr, jj] = await call("/team/invite", {role: sel.value}); if (!rr.ok) return;
         const link = document.createElement("input"); link.type = "text"; link.readOnly = true; link.style.width = "70%"; link.value = location.origin + "/?team=" + jj.token;
         const cp = mk("button", t.t_copy); cp.onclick = async () => { try { await navigator.clipboard.writeText(link.value); cp.textContent = t.i_copied; } catch (e) { link.select(); } };
         out.innerHTML = ""; out.append(link, " ", cp); out.appendChild(mk("div", t.t_link, "muted"));
