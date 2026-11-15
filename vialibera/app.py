@@ -982,6 +982,19 @@ def handle_simpay(body, who):
     return 200, out
 
 
+def my_cases(c, user, limit=30):
+    """The projects a person can open, newest first: their own (no company yet) and their company's."""
+    cid = permissions.company_of(c, user)
+    rows = c.execute("SELECT id, product, market, created_at FROM cases WHERE (owner_sub=? AND company_id IS NULL) OR company_id=? "
+                     "ORDER BY created_at DESC LIMIT ?", (user, cid, limit)).fetchall()
+    out = []
+    for r in rows:
+        p, m = json.loads(r["product"] or "{}"), json.loads(r["market"] or "{}")
+        out.append({"id": r["id"], "category": p.get("category"), "name": p.get("name_brand"), "country": m.get("country"),
+                    "created_at": r["created_at"]})
+    return out
+
+
 def _base(handler_host=None):
     return os.environ.get("PUBLIC_BASE_URL") or (f"https://{handler_host}" if handler_host else "")
 
@@ -1346,18 +1359,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(*handle_simpay(body, who))
             if self.path == "/me":
                 ok = bool(who) and accounts.has_consent(con(), who["user"], TERMS_VERSION)
-                latest = None
-                if who:
-                    cid = permissions.company_of(con(), who["user"])
-                    r = con().execute("SELECT id FROM cases WHERE (owner_sub=? AND company_id IS NULL) OR company_id=? "
-                                      "ORDER BY created_at DESC LIMIT 1", (who["user"], cid)).fetchone()
-                    latest = r["id"] if r else None
+                cases = my_cases(con(), who["user"]) if who else []
+                latest = cases[0]["id"] if cases else None
                 via = None
                 if who and ok and not con().execute("SELECT 1 FROM consents WHERE user_sub=? AND terms_version=?",
                                                     (who["user"], TERMS_VERSION)).fetchone():
                     via = "company"
                 return self._send(200, {"consent": ok or not who, "terms_version": TERMS_VERSION, "consent_via": via,
-                                        "latest_case": latest,
+                                        "latest_case": latest, "cases": cases,
                                         "role": permissions.my_role(con(), who) if who else None,
                                         "superadmin": permissions.is_superadmin(who), "staff_level": permissions.staff_level(who),
                                         "tem": tems.firm_of(con(), who["user"]) if who else None,
