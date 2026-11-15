@@ -1106,7 +1106,7 @@ applyLang();
         sel.onchange = async () => { const [rr, jj] = await call("/team/role", {user: m.user, role: sel.value}); if (!rr.ok && jj.error === "last_owner") { await loadTeam(); $("t-inv").appendChild(mk("p", t.t_last)); } else loadTeam(); };
         row.appendChild(sel);
         const rm = mk("button", t.t_remove); rm.style.marginLeft = "6px";
-        rm.onclick = async () => { const [rr, jj] = await call("/team/remove", {user: m.user}); if (!rr.ok && jj.error === "last_owner") { await loadTeam(); $("t-inv").appendChild(mk("p", t.t_last)); } else loadTeam(); };
+        twoClick(rm, async () => { const [rr, jj] = await call("/team/remove", {user: m.user}); if (!rr.ok && jj.error === "last_owner") { await loadTeam(); $("t-inv").appendChild(mk("p", t.t_last)); } else loadTeam(); });  // first click asks, second removes
         row.appendChild(rm);
       } else row.appendChild(mk("span", " " + t["r_" + m.role], "muted"));
       box.appendChild(row);
