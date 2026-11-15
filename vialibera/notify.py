@@ -41,8 +41,21 @@ def send_to(to, subject, body):
         msg.set_content(str(body)[:4000])
         _deliver(msg)
         return True
-    except Exception:
+    except Exception as e:
+        _log_failure(e)
         return False
+
+
+def _log_failure(e):
+    """One line in the service log saying why a message did not go out. Never the password or the message text."""
+    code = getattr(e, "smtp_code", "")
+    reason = getattr(e, "smtp_error", b"")
+    if isinstance(reason, bytes):
+        reason = reason.decode("utf-8", "replace")
+    if not reason and getattr(e, "recipients", None):  # SMTPRecipientsRefused: {address: (code, reason)}
+        code, reason = next(iter(e.recipients.values()))
+        reason = reason.decode("utf-8", "replace") if isinstance(reason, bytes) else reason
+    print("notify: mail not sent:", type(e).__name__, code, str(reason or e)[:300].replace("\n", " "), flush=True)
 
 
 def send(subject, body):
@@ -61,5 +74,6 @@ def send(subject, body):
                 smtp.login(os.environ["NOTIFY_SMTP_USER"], os.environ.get("NOTIFY_SMTP_PASSWORD", ""))
             smtp.send_message(msg)
         return True
-    except Exception:
+    except Exception as e:
+        _log_failure(e)
         return False
