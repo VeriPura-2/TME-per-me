@@ -139,6 +139,14 @@ class TeamTest(unittest.TestCase):
             self.assertEqual(team.invite(self.c, own, "member", email="z@example.it", base_url="https://app.test")[1]["email_state"], "failed")
         self.assertEqual(team.accept(self.c, who("newbie"), out["token"])[0], 200)   # the emailed link joins like any other
 
+    def test_my_cases_lists_company_projects_newest_first_and_hides_others(self):
+        mine = app.my_cases(self.c, "own")
+        self.assertIn(self.case, [x["id"] for x in mine])
+        self.assertEqual(sorted(mine[0]), ["category", "country", "created_at", "id", "name"])
+        self.assertEqual([x["created_at"] for x in mine], sorted((x["created_at"] for x in mine), reverse=True))
+        self.assertEqual([x["id"] for x in app.my_cases(self.c, "mem")], [x["id"] for x in mine])   # same company, same list
+        self.assertNotIn(self.case, [x["id"] for x in app.my_cases(self.c, "stranger-xyz")])
+
     def test_person_without_company_keeps_full_rights_on_own_work(self):
         self.assertEqual(permissions.my_role(self.c, who("solo")), "owner")
         self.assertEqual(app.handle_plan({"plan": "parti"}, who("solo"))[0], 200)
