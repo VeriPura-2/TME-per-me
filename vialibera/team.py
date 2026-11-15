@@ -2,9 +2,33 @@
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from . import db, permissions
+import re
+
+from . import db, notify, permissions
 
 INVITE_DAYS = 14
+INVITE_EMAILS_PER_DAY = 20  # per company: an invitation email goes to an address the owner types, so it is capped
+_EMAIL = re.compile(r"^[^@\s<>,;\"']{1,64}@[A-Za-z0-9.-]{1,180}\.[A-Za-z]{2,24}$")
+
+INVITE_MAIL = {
+    "it": ("Invito a entrare nel team di {co} su MioTEM",
+           "Buongiorno,\n\n{by} La invita a entrare nel team di {co} su MioTEM, con il ruolo {role}.\n\n"
+           "Per accettare apra questo link e acceda, o si registri, con questo indirizzo email:\n{link}\n\n"
+           "Il link vale {days} giorni e può essere usato una sola volta. Se non conosce chi La invita, ignori questo messaggio.\n\n"
+           "MioTEM è gestito da A&O CONSULT S.A.S., Vesime (AT), Italia."),
+    "en": ("Invitation to join the team of {co} on MioTEM",
+           "Hello,\n\n{by} invites you to join the team of {co} on MioTEM, with the role {role}.\n\n"
+           "To accept, open this link and sign in, or sign up, with this email address:\n{link}\n\n"
+           "The link is valid for {days} days and can be used once. If you do not know the person inviting you, ignore this message.\n\n"
+           "MioTEM is operated by A&O CONSULT S.A.S., Vesime (AT), Italy."),
+}
+ROLE_NAMES = {"it": {"owner": "Titolare", "manager": "Manager", "member": "Membro", "reviewer": "Revisore"},
+              "en": {"owner": "Owner", "manager": "Manager", "member": "Member", "reviewer": "Reviewer"}}
+
+
+def valid_email(raw):
+    e = str(raw or "").strip()
+    return e if _EMAIL.match(e) and ".." not in e else None
 
 
 def _label(con, who, label):
@@ -103,18 +127,48 @@ def remove(con, who, user, company=None):
     return 200, {"ok": True}
 
 
-def invite(con, who, role, company=None):
+def invite(con, who, role, company=None, email=None, lang="en", base_url=""):
+    """Create a single-use invite link. With an email address, also send the link to that person.
+    The response says what happened to the email: sent, not_configured (no mail settings), failed, or limit."""
     cid = _owner_only(con, who, company, "invite")
     if not cid:
         return 403, {"error": "forbidden"}
     if role not in permissions.ROLES:
         return 400, {"error": "unknown role"}
+    to = None
+    if email not in (None, ""):
+        to = valid_email(email)
+        if not to:
+            return 400, {"error": "invalid_email"}
     token = secrets.token_urlsafe(24)
     exp = (datetime.now(timezone.utc) + timedelta(days=INVITE_DAYS)).isoformat(timespec="seconds")
     con.execute("INSERT INTO team_invites(token, company_id, role, created_by, expires_at, created_at) VALUES (?,?,?,?,?,?)",
                 (token, cid, role, who["user"], exp, db.now()))
     con.commit()
-    return 200, {"token": token, "role": role, "expires_at": exp}
+    out = {"token": token, "role": role, "expires_at": exp}
+    if to:
+        out["email"] = to
+        out["email_state"] = _mail_invite(con, who, cid, role, token, to, "it" if lang == "it" else "en", base_url)
+    return 200, out
+
+
+def _mail_invite(con, who, cid, role, token, to, lang, base_url):
+    if not notify.can_send() or not base_url:
+        return "not_configured"
+    since = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(timespec="seconds")
+    sent = con.execute("SELECT data FROM events WHERE kind='team_invite_emailed' AND at>=?", (since,)).fetchall()
+    if sum(1 for r in sent if ('"company": "%s"' % cid) in (r["data"] or "")) >= INVITE_EMAILS_PER_DAY:
+        return "limit"
+    co = con.execute("SELECT legal_name, vat FROM companies WHERE id=?", (cid,)).fetchone()
+    me = con.execute("SELECT label FROM memberships WHERE company_id=? AND user_sub=?", (cid, who["user"])).fetchone()
+    subject, body = INVITE_MAIL[lang]
+    name = (co["legal_name"] or co["vat"]) if co else ""
+    by = (me["label"] if me and me["label"] else None) or {"it": "Un collega", "en": "A colleague"}[lang]
+    text = body.format(by=by, co=name, role=ROLE_NAMES[lang][role], link=base_url.rstrip("/") + "/?team=" + token, days=INVITE_DAYS)
+    if not notify.send_to(to, subject.format(co=name), text):
+        return "failed"
+    db.log_event(con, None, who["user"], "team_invite_emailed", {"company": cid, "to": to, "role": role})
+    return "sent"
 
 
 def accept(con, who, token):

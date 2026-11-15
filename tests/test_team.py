@@ -111,6 +111,34 @@ class TeamTest(unittest.TestCase):
         self.c.execute("UPDATE team_invites SET expires_at=? WHERE token=?", (past, old)); self.c.commit()
         self.assertEqual(team.accept(self.c, who("late"), old)[0], 400)
 
+    def test_invite_by_email(self):
+        from unittest import mock
+        from vialibera import notify
+        own = who("own")
+        self.assertEqual(team.invite(self.c, own, "member", email="not an address")[1]["error"], "invalid_email")
+        self.assertEqual(team.invite(self.c, who("mem"), "member", email="x@example.it")[0], 403)
+        n = self.c.execute("SELECT COUNT(*) AS n FROM team_invites").fetchone()["n"]
+        self.assertEqual(n, 0)                                             # a refused request creates no invite
+        out = team.invite(self.c, own, "member", email="x@example.it", base_url="https://app.test")[1]
+        self.assertEqual(out["email_state"], "not_configured")            # no mail settings: link still created
+        self.assertTrue(out["token"])
+        sent = []
+        with mock.patch.object(notify, "can_send", return_value=True), \
+             mock.patch.object(notify, "send_to", side_effect=lambda to, sub, body: sent.append((to, sub, body)) or True):
+            out = team.invite(self.c, own, "reviewer", email=" Y@Example.it ", lang="it", base_url="https://app.test/")[1]
+            self.assertEqual(out["email_state"], "sent")
+            to, sub, body = sent[0]
+            self.assertEqual(to, "Y@Example.it")
+            self.assertIn("https://app.test/?team=" + out["token"], body)
+            self.assertIn("Revisore", body)
+            self.assertNotIn("\u2014", sub + body)
+            self.assertEqual(team.invite(self.c, own, "member", email="z@example.it", base_url="")[1]["email_state"], "not_configured")
+            with mock.patch.object(team, "INVITE_EMAILS_PER_DAY", 1):
+                self.assertEqual(team.invite(self.c, own, "member", email="z@example.it", base_url="https://app.test")[1]["email_state"], "limit")
+        with mock.patch.object(notify, "can_send", return_value=True), mock.patch.object(notify, "send_to", return_value=False):
+            self.assertEqual(team.invite(self.c, own, "member", email="z@example.it", base_url="https://app.test")[1]["email_state"], "failed")
+        self.assertEqual(team.accept(self.c, who("newbie"), out["token"])[0], 200)   # the emailed link joins like any other
+
     def test_person_without_company_keeps_full_rights_on_own_work(self):
         self.assertEqual(permissions.my_role(self.c, who("solo")), "owner")
         self.assertEqual(app.handle_plan({"plan": "parti"}, who("solo"))[0], 200)

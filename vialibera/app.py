@@ -753,7 +753,7 @@ def handle_tools(path, body, who):
     return 404, {}
 
 
-def handle_team(path, body, who):
+def handle_team(path, body, who, host=None):
     """Team screen and owner actions. Everyone active may look; only owners change people."""
     if not who:
         return 400, {"error": "sign-in required"}
@@ -771,7 +771,8 @@ def handle_team(path, body, who):
     if path == "/team/consent":
         return handle_company_consent(body, who)
     if path == "/team/invite":
-        return team.invite(c, who, str(body.get("role") or "member"), body.get("company"))
+        return team.invite(c, who, str(body.get("role") or "member"), body.get("company"),
+                           email=body.get("email"), lang=str(body.get("lang") or "en"), base_url=_base(host))
     return 404, {}
 
 
@@ -1292,7 +1293,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.wfile.write(out)
                 return self._send(code, out)
             if self.path.startswith("/team"):
-                return self._send(*handle_team(self.path, body, who))
+                return self._send(*handle_team(self.path, body, who, self.headers.get("X-Forwarded-Host") or self.headers.get("Host")))
             if self.path.startswith("/admin/"):
                 return self._send(*handle_admin(self.path, body, who))
             if self.path.startswith("/core/"):
