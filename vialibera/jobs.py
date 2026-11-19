@@ -11,7 +11,6 @@ or by a superadmin from the staff panel. Each run:
 Findings go to data_changes, shown in the staff panel. Nothing here changes a figure that a
 client sees without staff seeing it first, except fresher official duty values.
 """
-import difflib
 import hashlib
 import html
 import json
@@ -58,20 +57,51 @@ def page_text(raw):
 CONFIRM_HOURS = 20   # a changed text is flagged only if it is still there at a run this many hours later
 SHRINK_MIN = 400     # a page of at least this many characters that loses more than half its text was not read properly
 TEXT_KEEP = 500_000  # characters of a page kept for tomorrow's comparison (only the latest version is stored)
-DIFF_LINES = 40  # changed lines saved with a Data changes alert
+DIFF_LINES = 200  # changed lines saved with a Data changes alert (was 40; a cut-off hid the end of long amendment lists, 19 Nov 2026)
+
+# Lines that carry no rule and change on their own. Dropped before two versions of a page are compared (19 Nov 2026).
+NOISE_ANY = re.compile(r"(?i)^(skip to (main )?content|saltar al contenido principal|aller au contenu principal|zum hauptinhalt|"
+                       r"passer au contenu|vai al contenuto)")
+NOISE_BY_HOST = {  # host fragment -> pattern of lines to ignore (taken from the alerts of 10 to 19 Nov)
+    "cscb.ca": re.compile(r'^["\u201c\u201e\u00ab].*["\u201d\u00bb]$'),        # rotating customer quotes
+    "aida.ineris.fr": re.compile(r"(?i)^th[ée]matiques li[ée]es"),
+    "xtares.admin.ch": re.compile(r"(?i)maintenance|wartung|entretien|manutenzione"),
+}
 
 
-def text_diff(old, new, limit=DIFF_LINES):
-    """{"removed": [...], "added": [...]} lines that differ, at most `limit` in total, each cut to 300 characters."""
-    removed, added = [], []
-    for line in difflib.unified_diff((old or "").splitlines(), (new or "").splitlines(), lineterm="", n=0):
-        if line.startswith(("---", "+++", "@@")):
+def comparable_lines(url, text):
+    """Lines of a page that matter for a comparison: no menu, language or rotating-quote lines.
+    EUR-Lex pages also lose short lines without a digit (menus, series labels); a legal change always carries a number."""
+    host_re = next((rx for h, rx in NOISE_BY_HOST.items() if h in (url or "")), None)
+    eurlex = "eur-lex.europa.eu" in (url or "")
+    out = []
+    for line in (text or "").splitlines():
+        if NOISE_ANY.match(line) or (host_re and host_re.search(line)):
             continue
-        (removed if line.startswith("-") else added).append(line[1:][:300])
+        if eurlex and len(line) < 60 and not re.search(r"\d", line):
+            continue
+        out.append(line)
+    return out
+
+
+def fingerprint(url, text):
+    """Same hash for the same set of lines, in any order. A reordered amendment list is not a change."""
+    return hashlib.sha256("\n".join(sorted(set(comparable_lines(url, text)))).encode()).hexdigest()
+
+
+def text_diff(old, new, limit=DIFF_LINES, url=None):
+    """{"removed": [...], "added": [...], "more": n} lines that differ as sets (order ignored), at most `limit` in total,
+    each cut to 300 characters; `more` counts what did not fit."""
+    o, n = comparable_lines(url, old), comparable_lines(url, new)
+    so, sn = set(o), set(n)
+    removed = [l[:300] for l in dict.fromkeys(o) if l not in sn]
+    added = [l[:300] for l in dict.fromkeys(n) if l not in so]
+    total = len(removed) + len(added)
     # share the limit, so a page replaced as a whole still shows what came in its place (14 Nov 2026)
     keep_removed = max(limit // 2, limit - len(added))
     removed = removed[:keep_removed]
-    return {"removed": removed, "added": added[:limit - len(removed)]}
+    added = added[:limit - len(removed)]
+    return {"removed": removed, "added": added, "more": total - len(removed) - len(added)}
 
 
 # 1 + 2: tariffs ---------------------------------------------------------------------
@@ -145,14 +175,14 @@ def check_sources(con, fetch=_fetch_text):
             _change(con, "source_unreachable", url, "Checklist source could not be read today", {"error": type(text).__name__})
             continue
         text = text[:TEXT_KEEP]
-        sha = hashlib.sha256(text.encode()).hexdigest()
+        sha = fingerprint(url, text)
         prev = _read_snapshot(con, url)
         if prev is None:
             con.execute("INSERT INTO source_snapshots(url, sha256, checked_at, page_text) VALUES (?,?,?,?)", (url, sha, db.now(), text))
         elif prev["page_text"] is None:
             # first run that keeps text: take it as the starting point, no alert (the fingerprint format changed too)
             con.execute("UPDATE source_snapshots SET sha256=?, page_text=?, checked_at=? WHERE url=?", (sha, text, db.now(), url))
-        elif prev["sha256"] == sha:
+        elif fingerprint(url, prev["page_text"]) == sha:  # yesterday's text under today's rules, so a rule change here raises nothing
             con.execute("UPDATE source_snapshots SET checked_at=?, pending_sha=NULL, pending_at=NULL WHERE url=?", (db.now(), url))
         elif len(prev["page_text"]) >= SHRINK_MIN and len(text) < len(prev["page_text"]) / 2:
             # most of the page is gone: a bot check or an error page, not a rule change. Yesterday's text is kept.
@@ -168,7 +198,7 @@ def check_sources(con, fetch=_fetch_text):
             rows = [r["id"] for r in requirements.ROWS if r["source"] and requirements.watch_url(r["source"]) == url
                     and not requirements.importer_only(r)]
             _change(con, "source_changed", url, f"Checklist source changed: {len(rows)} item(s) to re-verify",
-                    {"items": rows, **text_diff(prev["page_text"], text)})
+                    {"items": rows, **text_diff(prev["page_text"], text, url=url)})
             # only the newest text is kept: yesterday's is replaced, the changed lines stay with the alert
             con.execute("UPDATE source_snapshots SET sha256=?, page_text=?, checked_at=?, changed_at=?, pending_sha=NULL, pending_at=NULL "
                         "WHERE url=?", (sha, text, db.now(), db.now(), url))
