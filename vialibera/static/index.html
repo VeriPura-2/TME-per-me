@@ -255,6 +255,8 @@ const T = {
     w_req: "Cosa serve per un prodotto e un paese", w_q: "Ho una domanda", w_continue: "Riprendi la mia pratica", w_new: "Inizia una nuova pratica",
     account_created: "Account azienda creato dalla partita IVA.",
     account_access: "Esiste già un'azienda con questa partita IVA. Abbiamo inviato una richiesta di accesso al titolare.",
+    account_confirm: "Esiste già un'azienda con questa partita IVA. Se invia la richiesta, il titolare vedrà che ha chiesto di entrare e potrà approvare o rifiutare. Non condividiamo nient'altro con lui. Vuole inviarla?",
+    account_send: "Invia richiesta", account_not_now: "No, grazie", account_sent: "Richiesta inviata al titolare dell'azienda.",
     account_invalid: "La partita IVA non risulta valida. Controlli il numero.", theme: ["Chiaro", "Scuro"]
   },
   en: {
@@ -291,6 +293,8 @@ const T = {
     w_req: "What is needed for one product and country", w_q: "I have a question", w_continue: "Continue my case", w_new: "Start a new case",
     account_created: "Company account created from your VAT number.",
     account_access: "A company with this VAT number already exists. We sent an access request to its owner.",
+    account_confirm: "A company with this VAT number already exists. If you send a request, its owner will see that you asked to join and can approve or refuse. We share nothing else with them. Send the request?",
+    account_send: "Send request", account_not_now: "No, thanks", account_sent: "Request sent to the company owner.",
     account_invalid: "This VAT number does not look valid. Please check it.", theme: ["Light", "Dark"]
   }
 };
@@ -1594,13 +1598,26 @@ function dutiesBox(parent, du) {
       if (["chat", "req", "duties", "docs", "eori", "tools"].includes(key)) { const b = document.createElement("button"); b.textContent = TL[lang].go; b.className = "primary"; b.onclick = () => goTo(key); $("opts").appendChild(b); }
     } else add("bot", reply, true);
   }
+  function accountNotice(a, cid) {  // what the app tells the person about the VAT number they gave
+    if (a.status === "confirm_access") {  // nothing has been sent yet: the person decides
+      add("bot", "ℹ " + T[lang].account_confirm);
+      const yes = mk("button", T[lang].account_send), no = mk("button", T[lang].account_not_now); no.style.marginLeft = "8px";
+      const row = mk("div"); row.append(yes, no); $("log").appendChild(row);
+      yes.onclick = async () => { yes.disabled = no.disabled = true; const [r] = await call("/team/request_access", {case_id: cid});
+        row.remove(); add("bot", r.ok ? "ℹ " + T[lang].account_sent : T[lang].err + r.status); };
+      no.onclick = () => row.remove();
+      return;
+    }
+    const k = {created: "account_created", access_requested: "account_access", invalid_vat: "account_invalid"}[a.status];
+    if (k) add("bot", "ℹ " + T[lang][k]);
+  }
   async function send(text) {
     const m = (typeof text === "string" ? text : $("msg").value).trim(); if (!m) return;
     $("msg").value = ""; $("opts").innerHTML = ""; add("me", m);
     const [r, j] = await call("/chat", {message: m, case_id: caseId, lang, path_type: pathType});
     if (r.ok) {
       caseId = j.case_id; setPersona(j.persona); show(j.reply);
-      if (j.account) { const k = {created: "account_created", access_requested: "account_access", invalid_vat: "account_invalid"}[j.account.status]; if (k) add("bot", "ℹ " + T[lang][k]); }
+      if (j.account) accountNotice(j.account, j.case_id);
     } else if (j.error === "ai_unavailable") {  // AI service down (credit, overload, timeout): keep the message to resend
       add("bot", T[lang].ai_down); if (!$("msg").value) $("msg").value = m;
     } else add("bot", j.error === "forbidden" ? T[lang].forbidden : T[lang].err + (j.error || r.status));
