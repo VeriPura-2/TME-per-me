@@ -1438,6 +1438,15 @@ function dutiesBox(parent, du) {
           lo.textContent = r2.ok ? " removed " + j2.removed + "." : " " + (j2.error || r2.status) + (j2.count != null ? " (now " + j2.count + "), count again." : ""); };
         lo.appendChild(ok); };
       lt.append(lb, lo); box.appendChild(lt); }
+    if (full && j.changes.length) { const da = mk("div"), db2 = mk("button", "Dismiss all open alerts"), dm = mk("span", "", "muted");
+      db2.onclick = async () => { db2.disabled = true; const [r, k] = await call("/admin/changes", {}); db2.disabled = false;
+        const n = r.ok ? k.changes.length : 0; if (!n) { dm.textContent = " none open."; return; }
+        dm.textContent = " " + (n >= 200 ? "200 or more" : n) + " open alerts will be dismissed. ";
+        const ok = mk("button", "Dismiss all"); ok.onclick = async () => { ok.disabled = true;
+          const [r2, j2] = await call("/admin/change_dismiss_all", n >= 200 ? {} : {expected: n});
+          if (r2.ok) staffChanges(); else dm.textContent = " " + (j2.error || r2.status) + (j2.count != null ? " (now " + j2.count + "), try again." : ""); };
+        dm.appendChild(ok); };
+      da.append(db2, dm); box.appendChild(da); }
     j.changes.forEach(c => { const row = mk("div", sd(c.at) + " · " + c.kind + " · " + c.summary + " · " + c.ref + " ", "muted");
       if (c.detail && Object.keys(c.detail).length) row.title = JSON.stringify(c.detail);
       const d = c.detail || {}; let pre = null;
