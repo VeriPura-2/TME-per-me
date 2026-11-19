@@ -183,13 +183,17 @@ def accept(con, who, token):
         # Before 19 Nov 2026 this rewrote the person's role to the invite's role, so an owner could demote themselves.
         db.log_event(con, None, who["user"], "team_accept_already_member", {"company": r["company_id"]})
         return 200, {"ok": True, "role": existing["role"], "already_member": True}
+    other = permissions.company_of(con, who["user"])
+    if other and other != r["company_id"]:
+        # the app works with one company per person; joining a second would burn the link and change nothing the person sees
+        return 400, {"error": "already_in_company"}
     if existing:
         con.execute("UPDATE memberships SET status='active', role=? WHERE company_id=? AND user_sub=?", (r["role"], r["company_id"], who["user"]))
     else:
         con.execute("INSERT INTO memberships(company_id, user_sub, role, status, created_at) VALUES (?,?,?,?,?)",
                     (r["company_id"], who["user"], r["role"], "active", db.now()))
     con.execute("UPDATE team_invites SET used_by=? WHERE token=?", (who["user"], token))
-    con.execute("UPDATE documents SET company_id=? WHERE owner_sub=? AND company_id IS NULL", (r["company_id"], who["user"]))
+    moved = con.execute("UPDATE documents SET company_id=? WHERE owner_sub=? AND company_id IS NULL", (r["company_id"], who["user"])).rowcount
     con.commit()
-    db.log_event(con, None, who["user"], "team_joined", {"company": r["company_id"], "role": r["role"]})
-    return 200, {"ok": True, "role": r["role"]}
+    db.log_event(con, None, who["user"], "team_joined", {"company": r["company_id"], "role": r["role"], "documents_moved": moved})
+    return 200, {"ok": True, "role": r["role"], "documents_moved": moved}
