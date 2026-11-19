@@ -307,3 +307,13 @@ def dismiss(con, who, change_id):
                 (who["user"], db.now(), change_id))
     con.commit()
     return 200, {"ok": True}
+
+
+def dismiss_all(con, who, expected=None):
+    """Dismiss every open alert. With `expected`, refuse if the open count changed since the person saw it."""
+    n = con.execute("SELECT COUNT(*) AS n FROM data_changes WHERE status='open'").fetchone()["n"]
+    if expected is not None and int(expected) != n:
+        return 409, {"error": "count_changed", "count": n}
+    con.execute("UPDATE data_changes SET status='dismissed', dismissed_by=?, dismissed_at=? WHERE status='open'", (who["user"], db.now()))
+    con.commit()
+    return 200, {"ok": True, "dismissed": n}
