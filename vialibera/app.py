@@ -514,7 +514,8 @@ def handle_docs(query, who):
         return 403, {"error": "consent_required"}
     q = {k: v[0] for k, v in parse_qs(query).items()}
     return 200, {"documents": docs.listing(con(), who, q.get("case"), q.get("product"), q.get("type")),
-                 "types": [{"id": t[0], "it": t[1], "en": t[2]} for t in docs.TYPES]}
+                 "types": [{"id": t[0], "it": t[1], "en": t[2]} for t in docs.TYPES],
+                 "can_write": bool(permissions.can(con(), who, "write"))}  # a Reviewer or support person gets no upload control
 
 
 def handle_doc_update(doc_id, body, who):
