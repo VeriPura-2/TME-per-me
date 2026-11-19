@@ -13,9 +13,9 @@ from ..db import log_event, now
 
 
 class AdapterError(Exception):
-    """Typed error. kind is one of: unavailable, invalid_input, not_supported, needs_human."""
+    """Typed error. kind is one of: unavailable, invalid_input, not_supported, needs_human, busy, limit."""
 
-    KINDS = ("unavailable", "invalid_input", "not_supported", "needs_human")
+    KINDS = ("unavailable", "invalid_input", "not_supported", "needs_human", "busy", "limit")
 
     def __init__(self, kind, message=""):
         assert kind in self.KINDS
