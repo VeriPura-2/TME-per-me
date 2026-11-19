@@ -58,6 +58,20 @@ class RolesTest(unittest.TestCase):
         self.assertIsNone(app.con().execute("SELECT used_by FROM team_invites WHERE token=?", (tok,)).fetchone()["used_by"])
         self.assertEqual(team.accept(app.con(), who("new-person"), tok)[0], 200)  # the link still works for the invited person
 
+    def test_a_person_in_another_company_cannot_use_an_invite_and_the_link_stays_unused(self):
+        other, _ = company("B", {"bo": ("owner", "active")})
+        tok = team.invite(app.con(), who("own"), "member")[1]["token"]
+        code, out = team.accept(app.con(), who("bo"), tok)
+        self.assertEqual((code, out["error"]), (400, "already_in_company"))
+        self.assertIsNone(app.con().execute("SELECT used_by FROM team_invites WHERE token=?", (tok,)).fetchone()["used_by"])
+
+    def test_joining_reports_how_many_earlier_documents_moved_to_the_company(self):
+        tok = team.invite(app.con(), who("own"), "member")[1]["token"]
+        app.con().execute("INSERT INTO documents(id, owner_sub, title, filename, mime, size, sha256, store_key, created_at) VALUES ('d-solo','solo-x','a','a.pdf','application/pdf',1,'x','k',?)", (db.now(),))
+        app.con().commit()
+        out = team.accept(app.con(), who("solo-x"), tok)[1]
+        self.assertEqual(out["documents_moved"], 1)
+
     def test_only_owner_and_manager_can_order(self):
         sel = {"case_id": self.case, "selected": ["tariff_lookup"]}
         self.assertEqual(app.handle_simpay(dict(sel), who("mem"))[0], 403)
