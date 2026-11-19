@@ -15,6 +15,7 @@ import hashlib
 import html
 import json
 import re
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -33,9 +34,19 @@ def _change(con, kind, ref, summary, detail=None):
     con.commit()
 
 
+RETRY_PAUSE = 8  # seconds before the one retry of a page that answered "too many requests" or a server error (19 Nov 2026)
+
+
 def _fetch_text(url, timeout=15):  # fetched 8 at a time (_fetch_all): 42 sources stay well under the request limit
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html,application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    try:
+        r = urllib.request.urlopen(req, timeout=timeout)
+    except urllib.error.HTTPError as e:
+        if e.code not in (429, 500, 502, 503, 504):
+            raise
+        time.sleep(RETRY_PAUSE)  # EU PDFs answered 429 on some days; one more try before it counts as unreadable
+        r = urllib.request.urlopen(req, timeout=timeout)
+    with r:
         raw = r.read(3_000_000).decode("utf-8", "replace")
     return page_text(raw)
 
