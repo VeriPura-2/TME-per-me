@@ -844,6 +844,10 @@ def handle_admin(path, body, who):
         if not permissions.is_superadmin(who):
             return 403, {"error": "forbidden"}
         return jobs.dismiss(c, who, str(body.get("id") or ""))
+    if path == "/admin/change_dismiss_all":
+        if not permissions.is_superadmin(who):
+            return 403, {"error": "forbidden"}
+        return jobs.dismiss_all(c, who, body.get("expected"))
     if path == "/admin/run_daily":
         if not permissions.is_superadmin(who):
             return 403, {"error": "forbidden"}

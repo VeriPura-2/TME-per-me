@@ -270,6 +270,16 @@ class Watch(unittest.TestCase):
         t = "https://www.xtares.admin.ch/x"
         self.assertEqual(jobs.fingerprint(t, "Rule\nScheduled maintenance tonight"), jobs.fingerprint(t, "Rule"))
 
+    def test_dismiss_all_closes_open_alerts_and_checks_the_count(self):
+        con = db.connect()
+        for i in range(3):
+            jobs._change(con, "source_changed", f"u{i}", "x")
+        who = {"user": "staff@test"}
+        self.assertEqual(jobs.dismiss_all(con, who, expected=2)[0], 409)
+        self.assertEqual(len(jobs.changes(con)), 3)
+        self.assertEqual(jobs.dismiss_all(con, who, expected=3), (200, {"ok": True, "dismissed": 3}))
+        self.assertEqual(jobs.changes(con), [])
+
     def test_reordering_a_page_raises_no_alert(self):
         con = db.connect()
         url = jobs.source_urls()[0]
