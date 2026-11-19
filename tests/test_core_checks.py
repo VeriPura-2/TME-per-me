@@ -16,8 +16,8 @@ PDF = b"%PDF-1.4 test invoice"
 
 def live_core(responses, calls):
     """A live-mode adapter whose HTTP layer returns canned responses and records calls."""
-    def http(method, url, key, body=None, timeout=60):
-        calls.append((method, url, key, body))
+    def http(method, url, key, body=None, timeout=60, headers=None):
+        calls.append((method, url, key, body, headers))
         r = responses.pop(0)
         if isinstance(r, Exception):
             raise r
@@ -71,10 +71,12 @@ class CoreChecks(unittest.TestCase):
         core = live_core([(200, json.dumps(resp))], calls)
         code, out = cc.send(self.con, STAFF, self.case, self.doc, core=core)
         self.assertEqual((code, out["outcome"], out["simulated"]), (200, "matched", False))
-        method, url, key, body = calls[0]
+        method, url, key, body, hdrs = calls[0]
+        self.assertTrue(hdrs["Idempotency-Key"].startswith("miotem-"))
         self.assertEqual((method, url, key), ("POST", "https://core.example/partnerApi/v1/documents", "k-test"))
         self.assertEqual(body["shipment"], {"exportFrom": "Italy", "importTo": "United Kingdom", "product": "Pasta X",
-                                            "hsCode": "1902", "sellerName": "Pastificio Test srl"})
+                                            "hsCode": "1902", "sellerName": "Pastificio Test srl",
+                                            "clientReference": self.case})
         self.assertEqual(body["docType"], "Commercial Invoice")
         # second document joins the same consignment
         _, o2 = docs.upload(self.con, CLIENT, "packing_list.pdf", PDF + b"2", case_id=self.case)
@@ -90,13 +92,25 @@ class CoreChecks(unittest.TestCase):
         for r in self.con.execute("SELECT body FROM raw_responses").fetchall():
             self.assertNotIn("fileBase64", r["body"])
 
-    def test_timeout_is_unknown_and_blocks_resend_until_status(self):
+    def test_timeout_is_unknown_and_retry_reuses_the_same_key(self):
         calls = []
-        core = live_core([AdapterError("unavailable", "TimeoutError")], calls)
+        resp = {"consignmentId": "abc", "docType": "Commercial Invoice", "status": "Validated", "validationLevel": "GREEN",
+                "requiresHumanReview": False, "alerts": []}
+        core = live_core([AdapterError("unavailable", "TimeoutError"), (200, json.dumps(resp))], calls)
         code, out = cc.send(self.con, STAFF, self.case, self.doc, core=core)
         self.assertEqual((code, out["error"]), (502, "unknown"))
+        self.assertEqual(cc.send(self.con, STAFF, self.case, self.doc, core=core)[0], 200)  # within 24 hours: safe retry
+        self.assertEqual(calls[0][4]["Idempotency-Key"], calls[1][4]["Idempotency-Key"])
+        # a later send of the same document after a finished one is a new upload: new key
+        core2 = live_core([(200, json.dumps(resp))], calls)
+        cc.send(self.con, STAFF, self.case, self.doc, core=core2)
+        self.assertNotEqual(calls[1][4]["Idempotency-Key"], calls[2][4]["Idempotency-Key"])
+
+    def test_unknown_older_than_24h_blocks_until_status(self):
+        core = live_core([AdapterError("unavailable", "TimeoutError")], [])
+        cc.send(self.con, STAFF, self.case, self.doc, core=core)
+        self.con.execute("UPDATE core_checks SET at='2020-01-01T00:00:00+00:00'")
         self.assertEqual(cc.send(self.con, STAFF, self.case, self.doc, core=core)[0], 409)
-        self.assertEqual(len(calls), 1)  # never retried
 
     def test_http_error_is_error_not_unknown(self):
         core = live_core([(400, json.dumps({"error": {"code": "INVALID_REQUEST", "message": "bad"}}))], [])

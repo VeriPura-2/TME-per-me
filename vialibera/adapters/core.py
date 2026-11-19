@@ -8,9 +8,10 @@ Auth: x-api-key header. Base URL per environment (dev, qa, demo, prod), from COR
 Mode: "live" only when both CORE_API_URL and CORE_API_KEY are set; otherwise "stub", which returns
 sample responses in the documented shapes, marked simulated. No secret is ever logged.
 
-Core has no idempotency key: a retried submission can create a duplicate. This adapter never retries
-a submission. When the outcome of a send is unknown (timeout, connection drop), the caller records it
-as unknown and staff check status before sending again.
+Every submission carries an Idempotency-Key header (required by Core). The same key may be reused only
+to retry the SAME upload (same file, docType and consignment or shipment); Core remembers a key for 24 hours.
+This adapter never retries by itself. When the outcome of a send is unknown (timeout, connection drop), the
+caller records it as unknown; a retry within 24 hours reuses the key, after that staff check status first.
 """
 import json
 import os
@@ -28,9 +29,13 @@ COUNTRY = {"UK": "United Kingdom", "US": "United States", "CA": "Canada", "DE": 
            "SI": "Slovenia", "SK": "Slovakia"}
 HS = {"pasta": "1902", "wine": "2204", "oil": "1509", "cheese": "0406"}
 PRODUCT = {"pasta": "Dried pasta", "wine": "Wine", "oil": "Olive oil", "cheese": "Cheese"}
-# MioTEM document type -> Core docType. Anything else is left out and Core infers it from the file name.
+# MioTEM document type -> Core docType. docType is mandatory: a type with no entry here is NOT sent
+# (without docType Core guesses from the file name and may run no specialist check).
+# The certificate strings follow the integration spec and are to be confirmed with VeriPura (Onno).
 DOC_TYPE = {"invoice": "Commercial Invoice", "packing_list": "Packing List", "origin": "Certificate of Origin",
-            "lab_analysis": "Certificate of Analysis"}
+            "lab_analysis": "Certificate of Analysis",
+            "cert_organic": "Organic Certificate", "cert_dop_igp": "DOP/IGP Certificate",
+            "cert_doc_docg": "DOC/DOCG Certificate", "cert_voluntary": "Voluntary Scheme Certificate"}
 
 STATUSES = ("Pending", "Uploaded", "Validated", "Rejected", "Pending Review")
 
@@ -50,10 +55,10 @@ def _config():
     return os.environ.get("CORE_API_URL", "").rstrip("/"), os.environ.get("CORE_API_KEY", "")
 
 
-def _http(method, url, key, body=None, timeout=60):
+def _http(method, url, key, body=None, timeout=60, headers=None):
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method=method,
-                                 headers={"x-api-key": key, "Content-Type": "application/json", "Accept": "application/json"})
+                                 headers={"x-api-key": key, "Content-Type": "application/json", "Accept": "application/json", **(headers or {})})
     try:
         with db.outside_call(), urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, r.read().decode("utf-8")
@@ -66,10 +71,15 @@ def _http(method, url, key, body=None, timeout=60):
 def _error(code, text):
     try:
         err = json.loads(text).get("error", {})
-    except ValueError:
+    except (ValueError, AttributeError):
         err = {}
-    kind = {400: "invalid_input", 404: "invalid_input", 401: "unavailable"}.get(code, "unavailable")
-    raise AdapterError(kind, f"HTTP {code} {err.get('code', '')}: {err.get('message', '')}"[:300])
+    name = err.get("code", "")
+    # 409 REQUEST_IN_PROGRESS: the first attempt is still running, so the outcome is not known yet.
+    # 429: nothing was created (RATE_LIMITED: wait; QUOTA_EXCEEDED: the monthly allowance is used up).
+    # 422 IDEMPOTENCY_KEY_REUSED: the key was used for a different request.
+    kind = {400: "invalid_input", 404: "invalid_input", 422: "invalid_input", 401: "unavailable",
+            409: "busy", 429: "limit"}.get(code, "unavailable")
+    raise AdapterError(kind, f"HTTP {code} {name}: {err.get('message', '')}"[:300])
 
 
 class VeriPuraCore(Adapter):
@@ -83,10 +93,13 @@ class VeriPuraCore(Adapter):
         self._url, self._key = url, key
 
     # submit: one document
-    def _submit(self, con, case_id, file_name, content_type, file_b64, consignment_id=None, shipment=None, doc_type=None):
-        body = {"fileName": file_name, "contentType": content_type, "fileBase64": file_b64}
-        if doc_type:
-            body["docType"] = doc_type
+    def _submit(self, con, case_id, file_name, content_type, file_b64, consignment_id=None, shipment=None, doc_type=None,
+                idempotency_key=None):
+        if not doc_type:
+            raise AdapterError("invalid_input", "docType is required")
+        if not idempotency_key:
+            raise AdapterError("invalid_input", "idempotency_key is required")
+        body = {"fileName": file_name, "contentType": content_type, "fileBase64": file_b64, "docType": doc_type}
         if consignment_id:
             body["consignmentId"] = consignment_id
         elif shipment:
@@ -94,11 +107,12 @@ class VeriPuraCore(Adapter):
         else:
             raise AdapterError("invalid_input", "shipment is required for a new consignment")
         if self.mode != "live":
-            sample = {"consignmentId": consignment_id or "SIM-" + (case_id or "x")[:8], "docType": doc_type or "Commercial Invoice",
+            sample = {"consignmentId": consignment_id or "SIM-" + (case_id or "x")[:8], "docType": doc_type,
                       "status": "Pending Review", "validationLevel": "YELLOW", "requiresHumanReview": True,
                       "alerts": [{"severity": "warning", "message": "Simulated response. Core was not called."}]}
             return self.envelope(con, "stub:" + "/v1/documents", sample, {"simulated": True, "response": sample}, confidence="simulated")
-        code, text = self._http("POST", self._url + "/v1/documents", self._key, body)
+        code, text = self._http("POST", self._url + "/v1/documents", self._key, body,
+                                headers={"Idempotency-Key": idempotency_key})
         if code != 200:
             _error(code, text)
         return self.envelope(con, "/v1/documents", json.loads(text), text, confidence="provider_result")

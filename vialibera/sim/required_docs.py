@@ -39,6 +39,8 @@ LAYERS = {1: {"it": "Azienda", "en": "Company"}, 2: {"it": "Prodotto", "en": "Pr
 
 def required(category, on_file_types):
     """on_file_types: set of docs.TYPES ids the client already has. Real match, simulated list."""
+    from .. import docs as _docs
+    on_file_types = _docs.with_certificate(on_file_types)
     rows = []
     for tid, it, en, layer, dtype in BASE + EXTRA.get((category or "").lower(), []):
         rows.append({"id": tid, "it": it, "en": en, "layer": layer,

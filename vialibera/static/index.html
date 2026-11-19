@@ -577,7 +577,14 @@ applyLang();
   };
   let invitedNote = "";
   const mk0 = (tag, text, cls) => { const e = document.createElement(tag); if (text) e.textContent = text; if (cls) e.className = cls; return e; };
-  function dutiesBox(parent, du) {
+  // Two separate facts per document: read from the document, and confirmed by a control body. Never merged.
+function coreBasis(row, ck) {
+  const b = ck.basis; if (!b) return;
+  if (b.read_label) row.appendChild(mk0("div", "• " + b.read_label[lang], "muted"));
+  row.appendChild(mk0("div", "• " + b.confirmed_label[lang], b.confirmed === "yes" ? "core-matched" : (b.confirmed === "no" ? "core-flagged" : "muted")));
+  (b.flags || []).forEach(f => row.appendChild(mk0("div", "⚠ " + f.label[lang], "core-flagged")));
+}
+function dutiesBox(parent, du) {
     if (!du) return; const tt = TT[lang]; parent.appendChild(mk0("h3", tt.du_t));
     if (!du.eu) parent.appendChild(mk0("div", lang === "it" ? "I dazi doganali per il suo prodotto nel paese di destinazione, dalle tariffe ufficiali, aggiornati ogni settimana. Nessun dazio doganale per le destinazioni UE." : "Customs duties for your product in your destination, from the official tariffs, updated weekly. No customs duty for EU destinations.", "muted"));
     if (du.eu) { parent.appendChild(mk0("div", du.note[lang], "muted")); return; }
@@ -1051,6 +1058,7 @@ applyLang();
       sent.forEach(x => { const row = mk("div"); row.appendChild(document.createTextNode(x.filename + ": "));
         row.appendChild(mk("strong", x.check.label[lang], "core-" + x.check.result));
         if (x.check.simulated) row.appendChild(mk("span", " (" + t.j_core_test + ")", "sim"));
+        coreBasis(row, x.check);
         (x.check.alerts || []).forEach(a => row.appendChild(mk("div", a.severity + ": " + a.message, "muted")));
         cb.appendChild(row); });
     }
@@ -1217,7 +1225,7 @@ applyLang();
     j.documents.forEach(x => { const row = mk("div"); row.appendChild(document.createTextNode(x.filename + " [" + (x.doc_type || "?") + "] "));
       if (x.check) row.appendChild(mk("span", x.check.label.en + " · " + (x.check.core_status || "") + " " + (x.check.level || "") + " · " + x.check.via + " · " + sd(x.check.at) + (x.check.simulated ? " · test" : "") + (x.check.error ? " · " + x.check.error : ""), "muted"));
       if (full) { const sb = mk("button", (x.check ? "Send again" : "Send to CORE") + (j.mode === "live" ? " (real, paid call)" : ""));
-        twoClick(sb, async () => { const [rr, jj] = await call("/core/send", {case_id: caseId, document_id: x.id}); if (!rr.ok) return pageMsg(sb, jj.detail || jj.error); staffCore(caseId, box); });
+        twoClick(sb, async () => { const [rr, jj] = await call("/core/send", {case_id: caseId, document_id: x.id}); if (!rr.ok) return pageMsg(sb, (jj.message && jj.message[lang]) || jj.detail || jj.error); staffCore(caseId, box); });
         row.appendChild(sb); }
       box.appendChild(row); });
   }

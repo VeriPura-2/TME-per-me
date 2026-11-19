@@ -453,6 +453,8 @@ def required(category, country, on_file_types, vertical="food"):
     ln = lane(category, country, vertical)
     if not ln:
         return None
+    from . import docs as _docs  # local import: docs imports other modules that import requirements
+    on_file_types = _docs.with_certificate(on_file_types)
     p, d = ln
     items = []
     for r in ROWS:
