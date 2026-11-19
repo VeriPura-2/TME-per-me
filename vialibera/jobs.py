@@ -296,8 +296,9 @@ def run_daily(con, uk=None, us=None, fetch=_fetch_text, vies_http=None, tariff_r
 
 # staff -------------------------------------------------------------------------------
 
-def changes(con, include_dismissed=False):
-    q = "SELECT * FROM data_changes" + ("" if include_dismissed else " WHERE status='open'") + " ORDER BY at DESC LIMIT 200"
+def changes(con, include_dismissed=False, only_dismissed=False):
+    where = " WHERE status='dismissed'" if only_dismissed else ("" if include_dismissed else " WHERE status='open'")
+    q = "SELECT * FROM data_changes" + where + " ORDER BY at DESC LIMIT 200"
     return [{"id": r["id"], "at": r["at"], "kind": r["kind"], "ref": r["ref"], "summary": r["summary"],
              "detail": json.loads(r["detail"] or "{}"), "status": r["status"]} for r in con.execute(q).fetchall()]
 
@@ -317,3 +318,10 @@ def dismiss_all(con, who, expected=None):
     con.execute("UPDATE data_changes SET status='dismissed', dismissed_by=?, dismissed_at=? WHERE status='open'", (who["user"], db.now()))
     con.commit()
     return 200, {"ok": True, "dismissed": n}
+
+
+def restore(con, who, change_id):
+    """Bring a dismissed alert back to the open list."""
+    con.execute("UPDATE data_changes SET status='open', dismissed_by=NULL, dismissed_at=NULL WHERE id=? AND status='dismissed'", (change_id,))
+    con.commit()
+    return 200, {"ok": True}

@@ -280,6 +280,18 @@ class Watch(unittest.TestCase):
         self.assertEqual(jobs.dismiss_all(con, who, expected=3), (200, {"ok": True, "dismissed": 3}))
         self.assertEqual(jobs.changes(con), [])
 
+    def test_dismissed_alerts_can_be_listed_and_restored(self):
+        con = db.connect()
+        jobs._change(con, "source_changed", "u1", "x")
+        who = {"user": "staff@test"}
+        jobs.dismiss_all(con, who)
+        self.assertEqual(jobs.changes(con), [])
+        gone = jobs.changes(con, only_dismissed=True)
+        self.assertEqual(len(gone), 1)
+        jobs.restore(con, who, gone[0]["id"])
+        self.assertEqual(len(jobs.changes(con)), 1)
+        self.assertEqual(jobs.changes(con, only_dismissed=True), [])
+
     def test_reordering_a_page_raises_no_alert(self):
         con = db.connect()
         url = jobs.source_urls()[0]
