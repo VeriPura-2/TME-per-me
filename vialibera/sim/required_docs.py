@@ -33,6 +33,7 @@ EXTRA = {
     "preserves": [("process", "Convalida del trattamento termico", "Thermal process validation", 2, None)],
     "bakery": [],
 }
+FOOD_ONLY = {"facility", "haccp", "lab"}  # left out of the draft list when the product is not a known food category
 LAYERS = {1: {"it": "Azienda", "en": "Company"}, 2: {"it": "Prodotto", "en": "Product"},
           3: {"it": "Mercato", "en": "Destination"}, 4: {"it": "Spedizione", "en": "Shipment"}}
 
@@ -42,7 +43,10 @@ def required(category, on_file_types):
     from .. import docs as _docs
     on_file_types = _docs.with_certificate(on_file_types)
     rows = []
+    known_food = (category or "").lower() in EXTRA  # "other" or an empty category may be anything, cosmetics included (19 Nov 2026)
     for tid, it, en, layer, dtype in BASE + EXTRA.get((category or "").lower(), []):
+        if not known_food and tid in FOOD_ONLY:
+            continue
         rows.append({"id": tid, "it": it, "en": en, "layer": layer,
                      "on_file": bool(dtype and dtype in on_file_types)})
     return tag("required_docs_other", {"layers": LAYERS, "items": rows,
