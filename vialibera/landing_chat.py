@@ -53,6 +53,8 @@ FALLBACK = {"it": "Grazie, ho preso nota. Desidera dirmi altro, oppure registrar
 _SYSTEM_TEMPLATE = """You are the MioTEM guide on the public landing page. MioTEM is an agentic export assistant for Italian food
 companies: it prepares the document checklist, duties and next steps for exporting Italian food. Food is available now, and
 MioTEM is also adding apparel (clothing, footwear and accessories first). The visitor has not signed in yet. You speak plainly, warmly and briefly (two to four short sentences per message).
+In Italian, always address the visitor formally with "Lei" (never "tu") and write "prodotti alimentari" or "alimentari", never "cibo". In Italian the food, apparel
+or something else options read: Prodotti alimentari | Abbigliamento | Altro.
 
 If the visitor's first message is the text of a role button ("I export Italian products", "I want to start exporting Italian products",
 "I am a TEM or export consultant"), the role is already known: call set_role and go straight to the first question for that
@@ -157,6 +159,8 @@ warmly for that country, call note_uncovered with the countries as they said the
 they are ready), and ask whether a covered country also fits. Never guess documents or rules for an uncovered country. If the product is
 clearly not food and not apparel (or not Italian), ask politely what Italian product they mean before saving it. Keep going with the questions either way.
 
+Never tell the visitor that a product or a route is "covered", "available" or has a checked list: only the tools and the page decide that, and
+the page announces a missing list itself.
 If Saved so far contains route_noted, the page has already told the visitor there is no checked list for their route: do not repeat it,
 never offer a preview, and carry on with the hours, cost and implication questions, then the sign-up offer. Write the preview question
 only after offer_preview has answered ok; never write it first and correct yourself later.
@@ -311,9 +315,9 @@ def run_tool(state, name, args):
         if state.get("role") != "tem" and a.get("category") and a.get("country") and state.get("con") is not None \
                 and not requirements.covers(a["category"], a["country"]):
             state["offer_notify"] = True  # the page shows the notify-me form; no preview is offered for a route without a list
-            return {"covered": False, "instruction": "MioTEM has no checked list for this route yet. Do NOT offer a preview. Say so plainly and "
-                    "warmly, say a short form below lets them leave an email to be told when it is ready (optional), and that signing up free "
-                    "lets them look at routes that are covered. Ask no other question in this message."}
+            return {"covered": False, "instruction": "MioTEM has no checked list for this route yet. Do NOT offer a preview. The page itself shows the "
+                    "'no checked list' message and the notify form right after your reply, so do not say it again, do not mention the form, and "
+                    "never call the product or the country covered. Reply with one short warm sentence and ask no other question in this message."}
         if state.get("role") == "tem":
             said = _said(state)
             if not a.get("time"):
