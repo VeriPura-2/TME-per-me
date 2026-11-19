@@ -1285,7 +1285,7 @@ function dutiesBox(parent, du) {
       else if (m.status === "pending") ["Approve", "Refuse"].forEach((x, i) => { const b = mk("button", x); b.onclick = async () => { await call("/team/decide", {company: id, user: m.user, approve: i === 0}); openStaffCompany(id, plans); }; row.appendChild(b); });
       else { const sel = mk("select"); ["owner", "manager", "member", "reviewer"].forEach(x => { const o = mk("option", x); o.value = x; if (x === m.role) o.selected = true; sel.appendChild(o); });
         sel.onchange = async () => { await call("/team/role", {company: id, user: m.user, role: sel.value}); openStaffCompany(id, plans); };
-        const rm = mk("button", "Remove"); rm.onclick = async () => { await call("/team/remove", {company: id, user: m.user}); openStaffCompany(id, plans); }; row.append(sel, rm); }
+        const rm = mk("button", "Remove"); twoClick(rm, async () => { await call("/team/remove", {company: id, user: m.user}); openStaffCompany(id, plans); }); row.append(sel, rm); }
       d.appendChild(row);
     });
     d.appendChild(mk("h4", "Cases"));
