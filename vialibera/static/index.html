@@ -623,7 +623,7 @@ function dutiesBox(parent, du) {
   }
   try {  // a team invite is accepted before the terms gate: the company's acceptance may already cover the person
     const tk = localStorage.getItem("vl_team");
-    if (tk) { const [rt] = await call("/team/accept", {token: tk}); localStorage.removeItem("vl_team"); invitedNote = rt.ok ? "t_welcome" : "t_bad"; }
+    if (tk) { const [rt, jt] = await call("/team/accept", {token: tk}); localStorage.removeItem("vl_team"); invitedNote = rt.ok ? (jt.already_member ? null : "t_welcome") : "t_bad"; }
   } catch (e) {}
   try {
     const tf = localStorage.getItem("vl_tem");
