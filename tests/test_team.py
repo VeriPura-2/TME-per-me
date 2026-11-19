@@ -44,6 +44,12 @@ class RolesTest(unittest.TestCase):
         self.assertEqual(app.handle_eori_pdf({"case_id": self.case, "values": {}}, who("rev"))[0], 403)
         self.assertEqual(app.handle_doc_update("x", {"doc_type": "label"}, who("rev"))[0], 403)
 
+    def test_reviewer_cannot_upload_and_the_documents_list_says_so(self):
+        self.assertEqual(app.handle_upload({"X-Case": self.case, "X-Filename": "a.pdf"}, b"%PDF-1.4", who("rev"))[0], 403)
+        self.assertEqual(app.handle_upload({"X-Filename": "a.pdf"}, b"%PDF-1.4", who("rev"))[0], 403)
+        self.assertIs(app.handle_docs("", who("rev"))[1]["can_write"], False)
+        self.assertIs(app.handle_docs("", who("mem"))[1]["can_write"], True)
+
     def test_only_owner_and_manager_can_order(self):
         sel = {"case_id": self.case, "selected": ["tariff_lookup"]}
         self.assertEqual(app.handle_simpay(dict(sel), who("mem"))[0], 403)

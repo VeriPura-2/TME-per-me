@@ -682,6 +682,7 @@ function dutiesBox(parent, du) {
   async function loadDocs() {
     const q = $("d-proj").checked && caseId ? "?case=" + caseId : "";
     const r = await api("/docs" + q); const j = await r.json(); types = j.types || [];
+    $("d-file").hidden = j.can_write === false;  // read-only roles can look, not upload
     const t = T[lang], box = $("d-list"); box.innerHTML = "";
     if (!(j.documents || []).length) { box.textContent = t.d_empty; return; }
     j.documents.forEach(d => {
