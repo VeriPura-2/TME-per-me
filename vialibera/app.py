@@ -839,11 +839,15 @@ def handle_admin(path, body, who):
     if path == "/admin/changes":
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
-        return 200, {"changes": jobs.changes(c)}
+        return 200, {"changes": jobs.changes(c, only_dismissed=bool(body.get("dismissed")))}
     if path == "/admin/change_dismiss":
         if not permissions.is_superadmin(who):
             return 403, {"error": "forbidden"}
         return jobs.dismiss(c, who, str(body.get("id") or ""))
+    if path == "/admin/change_restore":
+        if not permissions.is_superadmin(who):
+            return 403, {"error": "forbidden"}
+        return jobs.restore(c, who, str(body.get("id") or ""))
     if path == "/admin/change_dismiss_all":
         if not permissions.is_superadmin(who):
             return 403, {"error": "forbidden"}

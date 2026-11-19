@@ -1447,6 +1447,18 @@ function dutiesBox(parent, du) {
           if (r2.ok) staffChanges(); else dm.textContent = " " + (j2.error || r2.status) + (j2.count != null ? " (now " + j2.count + "), try again." : ""); };
         dm.appendChild(ok); };
       da.append(db2, dm); box.appendChild(da); }
+    if (full) { const sd2 = mk("div"), sb = mk("button", "Show dismissed alerts"), sbox = mk("div");
+      sb.onclick = async () => { sb.disabled = true; const [r, k] = await call("/admin/changes", {dismissed: true}); sb.disabled = false; sbox.textContent = "";
+        if (!r.ok || !k.changes.length) { sbox.appendChild(mk("span", r.ok ? " none dismissed." : " " + (k.error || r.status), "muted")); return; }
+        k.changes.forEach(c => { const row = mk("div", sd(c.at) + " · " + c.kind + " · " + c.summary + " · " + c.ref + " ", "muted");
+          const d = c.detail || {}; let pre = null;
+          if ((d.removed && d.removed.length) || (d.added && d.added.length)) {
+            pre = mk("pre", (d.removed || []).map(l => "- " + l).concat((d.added || []).map(l => "+ " + l)).concat(d.more ? ["... " + d.more + " more changed lines not shown"] : []).join("\n"));
+            pre.style.cssText = "display:none;white-space:pre-wrap;font-size:12px;margin:4px 0 8px";
+            const show = mk("button", "What changed"); show.onclick = () => { pre.style.display = pre.style.display === "none" ? "block" : "none"; }; row.appendChild(show); }
+          const x = mk("button", "Restore"); x.onclick = async () => { await call("/admin/change_restore", {id: c.id}); staffChanges(); }; row.appendChild(x);
+          if (pre) row.appendChild(pre); sbox.appendChild(row); }); };
+      sd2.append(sb, sbox); box.appendChild(sd2); }
     // colour by weight: red = a rule source changed and items need re-verifying (or any other kind of data change),
     // amber = source could not be read, grey = changed but nothing on the checklist depends on it. Red first.
     const level = c => (c.kind === "source_unreachable" || c.kind === "tariff_unreadable") ? 1 : c.kind === "vies_rechecked" ? 2 : (c.kind === "source_changed" && !((c.detail || {}).items || []).length) ? 2 : 0;
