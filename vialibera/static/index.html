@@ -1447,7 +1447,13 @@ function dutiesBox(parent, du) {
           if (r2.ok) staffChanges(); else dm.textContent = " " + (j2.error || r2.status) + (j2.count != null ? " (now " + j2.count + "), try again." : ""); };
         dm.appendChild(ok); };
       da.append(db2, dm); box.appendChild(da); }
-    j.changes.forEach(c => { const row = mk("div", sd(c.at) + " · " + c.kind + " · " + c.summary + " · " + c.ref + " ", "muted");
+    // colour by weight: red = a rule source changed and items need re-verifying (or any other kind of data change),
+    // amber = source could not be read, grey = changed but nothing on the checklist depends on it. Red first.
+    const level = c => c.kind === "source_unreachable" ? 1 : (c.kind === "source_changed" && !((c.detail || {}).items || []).length) ? 2 : 0;
+    const LCOL = ["#ff8a80", "#ffcc66", ""];
+    j.changes.map((c, i) => [c, i]).sort((a, b) => level(a[0]) - level(b[0]) || a[1] - b[1]).map(x => x[0]).forEach(c => {
+      const row = mk("div", sd(c.at) + " · " + c.kind + " · " + c.summary + " · " + c.ref + " ", "muted");
+      if (LCOL[level(c)]) row.style.cssText = "color:" + LCOL[level(c)] + ";border-left:3px solid " + LCOL[level(c)] + ";padding-left:8px;margin:4px 0";
       if (c.detail && Object.keys(c.detail).length) row.title = JSON.stringify(c.detail);
       const d = c.detail || {}; let pre = null;
       if ((d.removed && d.removed.length) || (d.added && d.added.length)) {  // what changed on the page: old (-) and new (+) lines
