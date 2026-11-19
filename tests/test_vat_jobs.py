@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import unittest
+import urllib.error
 from unittest import mock
 
 os.environ.setdefault("LOCAL_STORE", tempfile.mkdtemp())
@@ -292,6 +293,33 @@ class Watch(unittest.TestCase):
         self.assertEqual(len(jobs.changes(con)), 1)
         self.assertEqual(jobs.changes(con, only_dismissed=True), [])
 
+    def _resp(self, body=b"<p>Rule 1</p>"):
+        m = mock.MagicMock()
+        m.read.return_value = body
+        m.__enter__.return_value = m
+        return m
+
+    def test_a_page_that_answers_429_is_tried_once_more(self):
+        err = urllib.error.HTTPError("u", 429, "Too Many Requests", {}, None)
+        with mock.patch.object(jobs, "RETRY_PAUSE", 0), \
+                mock.patch("urllib.request.urlopen", side_effect=[err, self._resp()]) as op:
+            self.assertEqual(jobs._fetch_text("https://x.test/a.pdf"), "Rule 1")
+        self.assertEqual(op.call_count, 2)
+
+    def test_a_missing_page_is_not_retried(self):
+        err = urllib.error.HTTPError("u", 404, "Not Found", {}, None)
+        with mock.patch.object(jobs, "RETRY_PAUSE", 0), mock.patch("urllib.request.urlopen", side_effect=err) as op:
+            with self.assertRaises(urllib.error.HTTPError):
+                jobs._fetch_text("https://x.test/gone")
+        self.assertEqual(op.call_count, 1)
+
+    def test_a_page_that_keeps_answering_429_is_still_unreadable(self):
+        err = urllib.error.HTTPError("u", 429, "Too Many Requests", {}, None)
+        with mock.patch.object(jobs, "RETRY_PAUSE", 0), mock.patch("urllib.request.urlopen", side_effect=[err, err]) as op:
+            with self.assertRaises(urllib.error.HTTPError):
+                jobs._fetch_text("https://x.test/a.pdf")
+        self.assertEqual(op.call_count, 2)
+
     def test_reordering_a_page_raises_no_alert(self):
         con = db.connect()
         url = jobs.source_urls()[0]
@@ -323,7 +351,8 @@ class Watch(unittest.TestCase):
             self.assertNotIn(requirements.WATCH.get(k, "-"), urls, k)
         self.assertIn(requirements.SRC["ca_rawcheese"], urls)
         self.assertIn(requirements.watch_url(requirements.SRC["fda_ffr"]), urls)
-        self.assertIn(requirements.SRC["ttb"], urls)  # shared with COLA, which the exporter acts on
+        self.assertIn(requirements.SRC["ttb_import"], urls)  # COLA, which the exporter acts on
+        self.assertIn(requirements.SRC["ttb_cert"], urls)
         self.assertIn(requirements.SRC["ca_label"], urls)  # Canadian label rules (exporter)
         self.assertIn(requirements.WATCH["eu_fic"], urls)  # EUR-Lex: the amendments page, not the original act
         self.assertNotIn(requirements.SRC["eu_fic"], urls)
