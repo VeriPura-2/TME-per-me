@@ -235,11 +235,52 @@ class Watch(unittest.TestCase):
     def test_diff_shows_added_lines_when_a_whole_page_is_replaced(self):
         d = jobs.text_diff("\n".join(f"a{i}" for i in range(100)), "challenge page")
         self.assertEqual(d["added"], ["challenge page"])
-        self.assertEqual(len(d["removed"]), jobs.DIFF_LINES - 1)
+        self.assertEqual(len(d["removed"]), 100)
 
-    def test_diff_is_capped(self):
-        d = jobs.text_diff("\n".join(f"a{i}" for i in range(100)), "\n".join(f"b{i}" for i in range(100)))
+    def test_diff_is_capped_and_says_how_many_did_not_fit(self):
+        d = jobs.text_diff("\n".join(f"a{i}" for i in range(300)), "\n".join(f"b{i}" for i in range(300)))
         self.assertEqual(len(d["removed"]) + len(d["added"]), jobs.DIFF_LINES)
+        self.assertEqual(d["more"], 600 - jobs.DIFF_LINES)
+
+    def test_reordered_lines_are_no_change(self):
+        a = "Title\nAmended by 2020/1\nAmended by 2021/2\nAmended by 2022/3"
+        b = "Title\nAmended by 2022/3\nAmended by 2020/1\nAmended by 2021/2"
+        self.assertEqual(jobs.fingerprint("https://x.test/p", a), jobs.fingerprint("https://x.test/p", b))
+        d = jobs.text_diff(a, b)
+        self.assertEqual((d["removed"], d["added"], d["more"]), ([], [], 0))
+
+    def test_a_new_amendment_is_still_a_change(self):
+        a = "Title\nAmended by 2020/1\nAmended by 2021/2"
+        b = a + "\nAmended by 2026/99"
+        self.assertNotEqual(jobs.fingerprint("https://x.test/p", a), jobs.fingerprint("https://x.test/p", b))
+        self.assertEqual(jobs.text_diff(a, b)["added"], ["Amended by 2026/99"])
+
+    def test_eurlex_menu_lines_are_ignored_but_numbered_lines_count(self):
+        u = "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32006L0112"
+        a = "Skip to main content\nSeries L\nArticle 169 exemption for certain goods applies in the Member State"
+        b = "Series C\nArticle 169 exemption for certain goods applies in the Member State"
+        self.assertEqual(jobs.fingerprint(u, a), jobs.fingerprint(u, b))
+        c = b.replace("Article 169", "Article 170")
+        self.assertNotEqual(jobs.fingerprint(u, b), jobs.fingerprint(u, c))
+        self.assertNotEqual(jobs.fingerprint("https://x.test/p", a), jobs.fingerprint("https://x.test/p", b))  # only EUR-Lex gets the menu filter
+
+    def test_rotating_quotes_and_maintenance_notices_are_ignored_per_site(self):
+        q = "https://www.cscb.ca/x"
+        self.assertEqual(jobs.fingerprint(q, "Rule\n\u201cGreat cheese, thanks\u201d"), jobs.fingerprint(q, "Rule\n\u201cLovely service\u201d"))
+        t = "https://www.xtares.admin.ch/x"
+        self.assertEqual(jobs.fingerprint(t, "Rule\nScheduled maintenance tonight"), jobs.fingerprint(t, "Rule"))
+
+    def test_reordering_a_page_raises_no_alert(self):
+        con = db.connect()
+        url = jobs.source_urls()[0]
+        pages = {u: "A rule\nline 1\nline 2" for u in jobs.source_urls()}
+        jobs.check_sources(con, lambda u: pages[u])
+        pages[url] = "A rule\nline 2\nline 1"
+        with mock.patch.object(jobs, "CONFIRM_HOURS", 0):
+            for _ in range(3):
+                out = jobs.check_sources(con, lambda u: pages[u])
+        self.assertEqual(out["changed"], 0)
+        self.assertTrue(self._quiet(con))
 
     def test_page_text_keeps_one_line_per_block(self):
         t = jobs.page_text("<html><nav>menu</nav><h1>Rule</h1><p>Aged <b>60</b> days</p><li>one</li>"
