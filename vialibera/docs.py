@@ -17,7 +17,11 @@ TYPES = [
     ("company_registration", "Visura camerale / registrazione", "Company registration", ["visura", "camerale", "registrazione", "registration", "chamber"]),
     ("tax_ids", "Partita IVA / EORI", "VAT / EORI", ["eori", "vat", "partita"]),
     ("insurance", "Assicurazione", "Insurance", ["assicurazione", "insurance", "polizza"]),
-    ("certificate", "Certificato", "Certificate", ["certificat", "brc", "ifs", "iso", "halal", "kosher", "biologico", "organic", "dop", "docg", "igp"]),
+    ("cert_organic", "Certificato biologico", "Organic certificate", ["biologic", "organic", "bio_cert", "traces"]),
+    ("cert_dop_igp", "Certificato DOP / IGP", "DOP / IGP certificate", ["dop", "igp", "denominazione di origine protetta"]),
+    ("cert_doc_docg", "Certificato DOC / DOCG", "DOC / DOCG certificate", ["docg", "igt", "vqprd"]),
+    ("cert_voluntary", "Certificato volontario (IFS, BRC, ISO...)", "Voluntary scheme certificate (IFS, BRC, ISO...)", ["ifs", "brc", "iso", "halal", "kosher", "csqa"]),
+    ("certificate", "Certificato (altro)", "Certificate (other)", ["certificat", "brc", "ifs", "iso", "halal", "kosher", "biologico", "organic", "dop", "docg", "igp"]),
     ("facility_approval", "Autorizzazione stabilimento", "Facility approval", ["stabilimento", "approval", "autorizzazione", "haccp"]),
     ("spec_sheet", "Scheda tecnica", "Spec sheet", ["scheda", "spec", "datasheet", "ingredient"]),
     ("label", "Etichetta", "Label", ["etichetta", "label", "artwork", "packaging"]),
@@ -33,6 +37,13 @@ TYPES = [
     ("other", "Altro", "Other", []),
 ]
 TYPE_IDS = [t[0] for t in TYPES]
+CERT_IDS = {"cert_organic", "cert_dop_igp", "cert_doc_docg", "cert_voluntary"}  # kinds of certificate; "certificate" stays the generic one
+
+
+def with_certificate(on_file_types):
+    """A specific certificate type on file also satisfies a checklist line that asks for "a certificate"."""
+    s = set(on_file_types or ())
+    return s | {"certificate"} if s & CERT_IDS else s
 COMPANY_LEVEL = {"company_registration", "tax_ids", "insurance", "facility_approval", "template"}
 
 
