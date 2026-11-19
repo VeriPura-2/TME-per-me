@@ -177,7 +177,12 @@ def accept(con, who, token):
     r = con.execute("SELECT * FROM team_invites WHERE token=?", (token,)).fetchone()
     if r is None or r["used_by"] or r["expires_at"] < db.now():
         return 400, {"error": "invite_invalid"}
-    existing = con.execute("SELECT status FROM memberships WHERE company_id=? AND user_sub=?", (r["company_id"], who["user"])).fetchone()
+    existing = con.execute("SELECT status, role FROM memberships WHERE company_id=? AND user_sub=?", (r["company_id"], who["user"])).fetchone()
+    if existing and existing["status"] == "active":
+        # already in this company (the owner testing their own link, say): change nothing, keep the link unused.
+        # Before 19 Nov 2026 this rewrote the person's role to the invite's role, so an owner could demote themselves.
+        db.log_event(con, None, who["user"], "team_accept_already_member", {"company": r["company_id"]})
+        return 200, {"ok": True, "role": existing["role"], "already_member": True}
     if existing:
         con.execute("UPDATE memberships SET status='active', role=? WHERE company_id=? AND user_sub=?", (r["role"], r["company_id"], who["user"]))
     else:
