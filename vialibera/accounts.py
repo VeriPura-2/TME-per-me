@@ -113,10 +113,27 @@ def attach_company(con, case_id, who):
             con.execute("UPDATE documents SET company_id=? WHERE owner_sub=? AND company_id IS NULL", (cid, who["user"]))
             con.commit()
         return {"status": status, "vat": vat}
+    # the VAT number belongs to a company the person is not part of: nothing is sent until they confirm (request_access)
+    return {"status": "confirm_access", "vat": vat}
+
+
+def request_access(con, case_id, who):
+    """The person confirmed: ask the owner of the company with this case's VAT number for access."""
+    row = con.execute("SELECT * FROM cases WHERE id=?", (case_id,)).fetchone()
+    if row is None or who is None or row["company_id"] or not can_access(con, row, who):
+        return 404, {"error": "not found"}
+    from . import vat_check
+    vat, err = vat_check.italian(db.case_read(con, case_id)["company"].get("vat_number"))
+    co = None if err else con.execute("SELECT id FROM companies WHERE vat=?", (vat,)).fetchone()
+    if co is None:
+        return 404, {"error": "no company with this VAT number"}
+    if is_member(con, co["id"], who["user"], active_only=False):
+        return 200, {"status": "joined" if is_member(con, co["id"], who["user"]) else "access_requested", "vat": vat}
     con.execute("INSERT INTO memberships(company_id, user_sub, role, status, created_at) VALUES (?,?,?,?,?)",
-                (cid, who["user"], "member", "pending", t))
+                (co["id"], who["user"], "member", "pending", db.now()))
     db.log_event(con, case_id, "system", "access_requested", {"vat": vat, "user": who["user"]})
-    return {"status": "access_requested", "vat": vat}
+    con.commit()
+    return 200, {"status": "access_requested", "vat": vat}
 
 
 def has_consent(con, user_sub, terms_version):

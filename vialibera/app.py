@@ -768,6 +768,8 @@ def handle_team(path, body, who, host=None):
         return team.set_role(c, who, str(body.get("user") or ""), str(body.get("role") or ""), body.get("company"))
     if path == "/team/remove":
         return team.remove(c, who, str(body.get("user") or ""), body.get("company"))
+    if path == "/team/request_access":  # the person confirmed the request to the owner of an existing company
+        return accounts.request_access(c, str(body.get("case_id") or ""), who)
     if path == "/team/consent":
         return handle_company_consent(body, who)
     if path == "/team/invite":
