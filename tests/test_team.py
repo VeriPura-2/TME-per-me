@@ -50,6 +50,14 @@ class RolesTest(unittest.TestCase):
         self.assertIs(app.handle_docs("", who("rev"))[1]["can_write"], False)
         self.assertIs(app.handle_docs("", who("mem"))[1]["can_write"], True)
 
+    def test_an_owner_opening_their_own_link_changes_nothing(self):
+        tok = team.invite(app.con(), who("own"), "member")[1]["token"]
+        code, out = team.accept(app.con(), who("own"), tok)
+        self.assertEqual((code, out.get("already_member")), (200, True))
+        self.assertEqual(permissions.role_in(app.con(), self.cid, "own"), "owner")
+        self.assertIsNone(app.con().execute("SELECT used_by FROM team_invites WHERE token=?", (tok,)).fetchone()["used_by"])
+        self.assertEqual(team.accept(app.con(), who("new-person"), tok)[0], 200)  # the link still works for the invited person
+
     def test_only_owner_and_manager_can_order(self):
         sel = {"case_id": self.case, "selected": ["tariff_lookup"]}
         self.assertEqual(app.handle_simpay(dict(sel), who("mem"))[0], 403)
