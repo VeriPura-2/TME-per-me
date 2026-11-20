@@ -115,6 +115,27 @@ class Daily(unittest.TestCase):
         jobs.apply_source_flags(self.con, "case1", req)
         self.assertTrue([i for i in req["data"]["items"] if i["id"] == "ca_zoo"][0]["verified"])
 
+    def test_dismissed_source_alert_clears_the_flag_in_every_project(self):
+        self.run_job()
+        url = requirements.SRC["ca_rawcheese"]
+        self.pages[url] = "the rules changed"
+        self.run_job()
+        with mock.patch.object(jobs, "CONFIRM_HOURS", 0):
+            self.run_job()
+
+        def flag(case_id):
+            req = requirements.required("cheese and dairy", "Canada", set())
+            tems.apply_confirmations(self.con, case_id, req)
+            jobs.apply_source_flags(self.con, case_id, req)
+            return [i for i in req["data"]["items"] if i["id"] == "ca_zoo"][0].get("source_changed")
+
+        self.assertTrue(flag("case2"))
+        self.assertEqual(jobs.dismiss_all(self.con, {"user": "staff"})[0], 200)
+        self.assertFalse(flag("case2"))  # dismissed after the change: reviewed, also for a project created later
+        self.assertFalse(flag("case3"))
+        self.con.execute("UPDATE source_snapshots SET changed_at='9999' WHERE url=?", (url,))
+        self.assertTrue(flag("case2"))  # a newer change flags the rows again
+
     def test_unreachable_source_is_reported(self):
         def boom(u):
             raise OSError("down")

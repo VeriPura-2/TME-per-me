@@ -266,10 +266,17 @@ def apply_source_flags(con, case_id, req, staff=True):
         return req
     changed = {r["url"]: r["changed_at"] for r in con.execute(
         "SELECT url, changed_at FROM source_snapshots WHERE changed_at IS NOT NULL").fetchall()}
+    # a "source changed" alert that staff dismissed after the change counts as reviewed, for every project (decision 20 Nov 2026)
+    reviewed = {r["ref"]: r["at"] for r in con.execute(
+        "SELECT ref, MAX(dismissed_at) AS at FROM data_changes WHERE kind='source_changed' AND status='dismissed' "
+        "AND dismissed_at IS NOT NULL GROUP BY ref").fetchall()}
     for i in req["data"]["items"]:
-        at = changed.get(requirements.watch_url(i.get("source")))
+        url = requirements.watch_url(i.get("source"))
+        at = changed.get(url)
         if not at:
             continue
+        if reviewed.get(url) and reviewed[url] >= at:
+            continue  # staff dismissed the alert for this change
         conf = i.get("confirmed")
         if conf and conf["at"] >= at:
             continue  # confirmed again after the change
