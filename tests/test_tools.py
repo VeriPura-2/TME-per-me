@@ -106,7 +106,6 @@ class FundingCard(unittest.TestCase):
         self.assertNotIn("updated weekly", cards["duties"]["today"]["text"]["en"])
         self.assertIn("where we have one", cards["checklist"]["today"]["text"]["en"])
         self.assertIn("draft", cards["eori"]["today"]["text"]["en"])
-        self.assertNotIn("pay through", cards["mode2"]["coming"]["text"]["en"])
         self.assertNotIn("free tools", cards["label_design"]["today"]["text"]["en"])
         self.assertNotIn("United States", cards["label_design"]["today"]["text"]["en"])
         self.assertIn("Example, not a real shipment", cards["buyer_verification"]["coming"]["example"][0]["en"])
@@ -292,17 +291,12 @@ class StepTags(unittest.TestCase):
 
 
 class Mode2Card(unittest.TestCase):
-    def test_mode2_is_coming_soon_and_recordable(self):
+    def test_help_with_a_project_is_merged_into_the_tem_card(self):  # 20 Nov 2026: same thing as finding a TEM
         cards = {c["id"]: c for c in tools.for_case("wine", "USA")}
-        self.assertEqual(cards["mode2"]["coming"]["status"], "soon")
-        self.assertNotIn("today", cards["mode2"])
-        self.assertIn("mode2", tools.TOOL_IDS)
-
-    def test_duties_text_does_not_claim_weekly_updates_until_the_first_automatic_run(self):
-        # 8 Nov 2026: the weekly run is proven only by hand; restore "updated weekly" after the automatic run on 16 Nov.
-        cards = {c["id"]: c for c in tools.for_case("wine", "USA")}
-        self.assertIn("checked against the official tariffs", cards["duties"]["today"]["text"]["en"])
-
+        self.assertNotIn("mode2", cards)
+        self.assertIn("single project", cards["consultants"]["coming"]["text"]["en"])
+        self.assertIn("solo progetto", cards["consultants"]["coming"]["text"]["it"])
+        self.assertEqual(tools.record_interest(app.con(), None, "m2-tem", "mode2")[0], 200)  # TEM workspace button still records
 
 class PublicCatalog(unittest.TestCase):
     def test_public_catalog_has_every_tool_and_no_partner_names(self):
