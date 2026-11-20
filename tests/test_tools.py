@@ -393,7 +393,7 @@ class GuidedTour(unittest.TestCase):
 class TemTour(unittest.TestCase):
     """20 Nov 2026: TEM tour, workspace then the first client project, closing with five consent questions."""
     def test_stops_bilingual_and_valid(self):
-        self.assertEqual(len(tools.TEM_TOUR), 18)
+        self.assertEqual(len(tools.TEM_TOUR), 19)
         texts = []
         for st in tools.TEM_TOUR:
             texts += [st["t"], st["text"]]
@@ -420,7 +420,7 @@ class TemTour(unittest.TestCase):
         self.assertNotIn("partner", sace["q"]["en"].lower())  # no partnership agreed with SACE yet
 
     def test_endpoint_by_kind(self):
-        self.assertEqual(len(app.handle_tools("/tools/tour", {"kind": "tem"}, user("tt-a"))[1]["stops"]), 18)
+        self.assertEqual(len(app.handle_tools("/tools/tour", {"kind": "tem"}, user("tt-a"))[1]["stops"]), 19)
         self.assertEqual(len(app.handle_tools("/tools/tour", {}, user("tt-a"))[1]["stops"]), 14)
 
     def test_tem_questions_need_consent(self):
