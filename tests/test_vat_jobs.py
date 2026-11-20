@@ -343,7 +343,7 @@ class Watch(unittest.TestCase):
 
     def test_the_fda_allergen_row_is_watched_on_the_us_code_not_the_fda_page(self):
         urls = jobs.source_urls()
-        self.assertTrue(any("uscode.house.gov" in u for u in urls))
+        self.assertTrue(any("govinfo.gov/link/uscode/21/343" in u for u in urls))
         self.assertFalse(any("food-allergen-labeling-edition-5" in u for u in urls))
 
     def test_a_missing_page_is_not_retried(self):
