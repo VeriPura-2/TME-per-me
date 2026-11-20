@@ -53,8 +53,8 @@ CORE = [  # MioTEM's own tools: always shown (no switch for the TEM); "go" is wh
     {"id": "consultants", "name": L("Export consultants (TEM)", "Consulenti export (TEM)"),
      "today": {"text": L("Work with your temporary export manager on MioTEM: they see your projects only after you engage them.",
                          "Lavora con il suo temporary export manager su MioTEM: vede i suoi progetti solo dopo che Lei lo ha incaricato.")},
-     "coming": {"status": "soon", "text": L("Find a TEM on MioTEM. TEMs can offer their services to exporters on MioTEM.",
-                                           "Trova un TEM su MioTEM. I TEM possono offrire i propri servizi agli esportatori su MioTEM.")}},
+     "coming": {"status": "soon", "text": L("Find a TEM on MioTEM, for ongoing work or for a single project. TEMs can offer their services to exporters on MioTEM.",
+                                           "Trovi un TEM su MioTEM, per un rapporto continuativo o per un solo progetto. I TEM possono offrire i propri servizi agli esportatori su MioTEM.")}},
 ]
 for _c in CORE:
     _c["by"], _c["always"] = {"kind": "miotem"}, True
@@ -227,15 +227,10 @@ CARDS = [
      "coming": {"status": "soon",
                 "text": L("Notices of new food-safety rules for your product and destination, from official WTO notifications and from changes to official sources.",
                           "Avvisi sulle nuove norme di sicurezza alimentare per il suo prodotto e la sua destinazione, dalle notifiche ufficiali WTO e dalle modifiche alle fonti ufficiali.")}},
-    {"id": "mode2", "by": {"kind": "miotem"},
-     "name": L("Help with a project", "Aiuto per un progetto"),
-     "coming": {"status": "soon",
-                "text": L("Need help with one project, not a long-term arrangement? Soon you will be able to find temporary export managers who offer their services on MioTEM and hire one for a defined project. Prices and payment: to be decided.",
-                          "Hai bisogno di aiuto per un solo progetto, non per un rapporto continuativo? Presto potrai trovare temporary export manager che offrono i loro servizi su MioTEM, incaricarne uno per un progetto definito. Prezzi e pagamento: da definire.")}},
 ]
 TOOL_IDS = {c["id"] for c in CORE + CARDS} | {"refcheck"}
 STEP = {"label_check": 2, "label_design": 2, "ttb_agent": 3, "shipping": 4}  # the checklist step where the tool helps (1 Company, 2 Product, 3 Destination, 4 Shipment)
-INTEREST_ONLY = {"funding_calls", "tem_intro", "bank_financing"}  # interest buttons that are not a card of their own
+INTEREST_ONLY = {"funding_calls", "tem_intro", "bank_financing", "mode2"}  # interest buttons that are not a card of their own; mode2: a TEM offering single-project work (TEM workspace), the exporter card was merged into the TEM card on 20 Nov 2026
 CONSENT_NEEDED = {"tem_intro", "bank_financing"}  # tour closing questions: staff contact the person, so consent is required (20 Nov 2026)
 CLIENT_OFF = {"shipping", "label_check", "importers"}  # hidden from a TEM's client unless the TEM switches them on
 
