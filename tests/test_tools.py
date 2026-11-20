@@ -346,7 +346,7 @@ class VeroItalianoWalkthrough(unittest.TestCase):
 class GuidedTour(unittest.TestCase):
     """20 Nov 2026: exporter tour with 'Interested?' at tool stops and two consent questions at the end (no AI call)."""
     def test_stops_are_bilingual_and_point_at_real_tools(self):
-        self.assertEqual(len(tools.TOUR), 12)
+        self.assertEqual(len(tools.TOUR), 14)
         texts = []
         for st in tools.TOUR:
             texts += [st["t"], st["text"]]
@@ -368,7 +368,7 @@ class GuidedTour(unittest.TestCase):
     def test_tour_endpoint(self):
         code, out = app.handle_tools("/tools/tour", {}, user("tour-a"))
         self.assertEqual(code, 200)
-        self.assertEqual(len(out["stops"]), 12)
+        self.assertEqual(len(out["stops"]), 14)
         self.assertEqual(app.handle_tools("/tools/tour", {}, None)[0], 400)
 
     def test_closing_questions_need_consent(self):

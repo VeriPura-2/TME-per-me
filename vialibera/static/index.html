@@ -970,7 +970,7 @@ function dutiesBox(parent, du) {
     else if (st.go === "team") { if (!$("tbtn").hidden && $("team").hidden) $("tbtn").click(); sel = "#team"; }
     else if (st.go === "chat") { goTo("chat"); sel = "#log"; }
     else if (st.go === "docs") { goTo("docs"); sel = "#docs"; }
-    else if (st.go) { goTo(st.go); sel = "#" + ({req: "j-req", duties: "j-core"}[st.go] || "journey"); }
+    else if (st.go) { goTo(st.go); sel = "#" + ({req: "j-req", duties: "j-core", eori: "j-eori"}[st.go] || "journey"); }
     if (!sel) return;
     if (moved) await new Promise(r => setTimeout(r, 700));  // let the section finish loading before highlighting it
     const e = await tourFind(sel); if (!e || at !== tourAt || !$("tourbox")) return;
