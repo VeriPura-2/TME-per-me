@@ -147,6 +147,8 @@ WATCH = {
     "fr_lang": "https://www.culture.gouv.fr/thematiques/langue-francaise-et-langues-de-france/agir-pour-les-langues/garantir-l-emploi-du-francais",
     # eCFR: watch the official amendment list, not the rendered page.
     "us_label": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=101",
+    # FDA's guidance page answers our server 401 (20 Nov 2026): watch the law it explains, 21 USC 343(w), on the US House site.
+    "us_allergen": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title21-section343&num=0&edition=prelim",
     "us_cheese": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=133",
     "us_fsvp": "https://www.ecfr.gov/api/versioner/v1/versions/title-21.json?part=1&subpart=L",
     # FDA page answers our server only some of the time: watch the rule itself, 21 CFR 1 subpart H
