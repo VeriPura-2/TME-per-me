@@ -318,6 +318,11 @@ const store = {
   get(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 };
+try {  // ?tour=new: both tours look new again in this browser (for rehearsing demos); nothing changes on the server
+  const q0 = new URLSearchParams(location.search);
+  if (q0.get("tour") === "new") { localStorage.removeItem("vl_tour_done"); localStorage.removeItem("vl_tem_tour_done"); q0.delete("tour");
+    history.replaceState({}, "", location.pathname + (q0.toString() ? "?" + q0 : "") + location.hash); }
+} catch (e) {}
 try { const q = new URLSearchParams(location.search); const ic = q.get("invite"); if (ic) localStorage.setItem("vl_invite", ic.slice(0, 40)); const tt = q.get("team"); if (tt) localStorage.setItem("vl_team", tt.slice(0, 80)); const tf = q.get("tem"); if (tf) localStorage.setItem("vl_tem", tf.slice(0, 80)); const eg = q.get("engage"); if (eg) localStorage.setItem("vl_engage", eg.slice(0, 80)); if (tf || eg || tt) history.replaceState({}, "", "/"); const pd = q.get("paid"); if (pd) localStorage.setItem("vl_paid", pd.slice(0, 120)); if (q.get("paycancel")) localStorage.setItem("vl_paycancel", "1"); if (pd || q.get("paycancel")) history.replaceState({}, "", "/"); } catch (e) {}
 let lang = store.get("vl_lang", "it");
 let theme = store.get("vl_theme", "");

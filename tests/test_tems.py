@@ -139,27 +139,58 @@ class Tems(unittest.TestCase):
 
 
 class DemoClient(unittest.TestCase):
-    """20 Nov 2026: staff add an invented DEMO client with a cheese to USA project to a TEM firm, for demonstrations."""
-    def test_demo_client_for_a_firm(self):
+    """20 Nov 2026: every new TEM firm gets its own invented DEMO client with a cheese to USA project, outside its limits."""
+    def _lead(self):
+        import uuid
+        return {"user": "demo-lead-" + uuid.uuid4().hex[:8], "org": None, "roles": []}
+
+    def test_staff_firm_gets_its_own_demo_client(self):
+        import uuid
         from vialibera import app, tems
         c = app.con()
-        import uuid
         _, f = tems.create_firm(c, ADMIN, "Demo Firm " + uuid.uuid4().hex[:6])
-        lead = {"user": "demo-lead-" + uuid.uuid4().hex[:8], "org": None, "roles": []}
+        lead = self._lead()
         tems.join(c, lead, f["lead_token"])
-        self.assertEqual(tems.demo_client(c, lead, f["firm"])[0], 403)  # staff only
-        code, out = tems.demo_client(c, ADMIN, f["firm"])
-        self.assertEqual(code, 200)
-        self.assertTrue(tems.has_access(c, lead, out["company"]))
-        code, p = tems.project(c, lead, out["case_id"])
-        self.assertEqual(code, 200)
-        self.assertEqual(p["case"]["product"]["category"], "cheese")
-        self.assertEqual(p["case"]["market"]["country"], "USA")
-        self.assertEqual(p["case"]["product"]["denomination"], "Parmigiano Reggiano")
-        again = tems.demo_client(c, ADMIN, f["firm"])[1]  # running it twice adds nothing
-        self.assertEqual(again["case_id"], out["case_id"])
-        n = c.execute("SELECT COUNT(*) AS n FROM tem_clients WHERE firm_id=? AND company_id=?", (f["firm"], out["company"])).fetchone()["n"]
-        self.assertEqual(n, 1)
-        co = c.execute("SELECT legal_name, vat FROM companies WHERE id=?", (out["company"],)).fetchone()
+        co = c.execute("SELECT id, legal_name, vat, status FROM companies WHERE vat=?", (tems.demo_vat(f["firm"]),)).fetchone()
+        self.assertIsNotNone(co)
         self.assertIn("DEMO", co["legal_name"])
+        self.assertTrue(tems.has_access(c, lead, co["id"]))
+        case = c.execute("SELECT id FROM cases WHERE company_id=?", (co["id"],)).fetchone()["id"]
+        code, p = tems.project(c, lead, case)
+        self.assertEqual(code, 200)
+        self.assertEqual((p["case"]["product"]["category"], p["case"]["market"]["country"], p["case"]["product"]["denomination"]),
+                         ("cheese", "USA", "Parmigiano Reggiano"))
+        self.assertEqual(tems.client_count(c, f["firm"]), 0)  # outside the limits
+        self.assertEqual(tems.project_count(c, f["firm"]), 0)
+        self.assertEqual(tems.demo_client(c, lead, f["firm"])[0], 403)  # the staff button stays staff only
+        self.assertEqual(tems.demo_client(c, ADMIN, f["firm"])[1]["case_id"], case)  # and adds nothing twice
+        self.assertEqual(c.execute("SELECT COUNT(*) AS n FROM cases WHERE company_id=?", (co["id"],)).fetchone()["n"], 1)
         self.assertEqual(tems.demo_client(c, ADMIN, "no-such-firm")[0], 404)
+        from vialibera import admin
+        q = admin.queue(c, ADMIN)[1]
+        self.assertNotIn(co["id"], {x["id"] for x in q["unverified"]} | {x["id"] for x in q["owners_to_confirm"]})
+
+    def test_two_firms_do_not_share_the_demo(self):
+        import uuid
+        from vialibera import app, tems
+        c = app.con()
+        _, a = tems.create_firm(c, ADMIN, "A " + uuid.uuid4().hex[:6])
+        _, b = tems.create_firm(c, ADMIN, "B " + uuid.uuid4().hex[:6])
+        self.assertNotEqual(tems.demo_vat(a["firm"]), tems.demo_vat(b["firm"]))
+        la, lb = self._lead(), self._lead()
+        tems.join(c, la, a["lead_token"]); tems.join(c, lb, b["lead_token"])
+        cb = c.execute("SELECT id FROM companies WHERE vat=?", (tems.demo_vat(b["firm"]),)).fetchone()["id"]
+        self.assertFalse(tems.has_access(c, la, cb))
+
+    def test_trial_firm_starts_with_the_demo_and_keeps_its_limits(self):
+        from vialibera import app, tems
+        c = app.con()
+        lead = self._lead()
+        accounts_ok = __import__("vialibera.accounts", fromlist=["x"])
+        accounts_ok.record_consent(c, lead["user"], app.TERMS_VERSION, "en", True)
+        code, out = tems.create_trial_firm(c, lead, "Studio Prova", "p@prova.it")
+        self.assertEqual(code, 200)
+        co = c.execute("SELECT id FROM companies WHERE vat=?", (tems.demo_vat(out["firm"]),)).fetchone()
+        self.assertTrue(tems.has_access(c, lead, co["id"]))
+        self.assertEqual(tems.client_count(c, out["firm"]), 0)
+        self.assertEqual(tems.project_count(c, out["firm"]), 0)

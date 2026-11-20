@@ -78,6 +78,7 @@ def build_tem():
     txt = re.sub(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(\+00:00|Z)?", "<ts>", txt)
     txt = re.sub(r'"(token|lead_token)": "[^"]+"', r'"\1": "<tok>"', txt)
     txt = re.sub(r"engagement_[0-9a-f]{8}\.txt", "engagement_<id>.txt", txt)
+    txt = re.sub(r"DEMO-[0-9A-F]{10}", "DEMO-<firm>", txt)  # the demo client's VAT comes from the firm id (20 Nov 2026)
     return json.loads(txt)
 
 
