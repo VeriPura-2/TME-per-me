@@ -90,6 +90,7 @@ def create_firm(con, who, name, vat=None, seats=None):
                 (token, fid, "lead", who["user"], _exp(LINK_DAYS), db.now()))
     con.commit()
     db.log_event(con, None, who["user"], "staff_change", {"action": "tem_firm_created", "firm": fid})
+    add_demo(con, fid, who["user"])
     return 200, {"firm": fid, "lead_token": token}
 
 
@@ -120,6 +121,7 @@ def create_trial_firm(con, who, name, email=None, note=None):
                 (str(uuid.uuid4()), name, em or "unknown", "", "", db.now(), "trial", str(note or "")[:1500], who["user"]))
     con.commit()
     db.log_event(con, None, who["user"], "tem_trial_firm", {"firm": fid})
+    add_demo(con, fid, who["user"])  # a trial firm starts with the DEMO client, so the tour and workspace are never empty
     return 200, {"firm": fid}
 
 
@@ -130,8 +132,9 @@ def client_cap(con, firm_id):
     return int(v) if v not in (None, "") else None
 
 
-def client_count(con, firm_id):
-    return con.execute("SELECT COUNT(*) AS n FROM tem_clients WHERE firm_id=? AND status='active'", (firm_id,)).fetchone()["n"]
+def client_count(con, firm_id):  # the DEMO client does not count toward a firm's limits
+    return con.execute("SELECT COUNT(*) AS n FROM tem_clients t JOIN companies co ON co.id=t.company_id WHERE t.firm_id=? AND t.status='active' "
+                       "AND NOT " + DEMO_SQL.replace("vat", "co.vat"), (firm_id,)).fetchone()["n"]
 
 
 def list_firms(con, who):
@@ -464,35 +467,38 @@ def project_cap(con, firm_id):
 
 
 def project_count(con, firm_id):
-    return con.execute("SELECT COUNT(*) AS n FROM cases k JOIN tem_clients t ON t.company_id=k.company_id "
-                       "WHERE t.firm_id=? AND t.status='active'", (firm_id,)).fetchone()["n"]
+    return con.execute("SELECT COUNT(*) AS n FROM cases k JOIN tem_clients t ON t.company_id=k.company_id JOIN companies co ON co.id=k.company_id "
+                       "WHERE t.firm_id=? AND t.status='active' AND NOT " + DEMO_SQL.replace("vat", "co.vat"), (firm_id,)).fetchone()["n"]
 
 
-DEMO_VAT = "IT00000000000"  # invented: passes the format check, belongs to no company
 DEMO_NAME = "Caseificio Esempio Srl (DEMO)"
+DEMO_SQL = "(vat LIKE 'DEMO-%' OR vat='IT00000000000')"  # invented demo clients; IT00000000000 was the first, shared version (PR 211)
 
 
-def demo_client(con, who, firm_id):
-    """Staff add an invented client with a cheese to USA project to a TEM firm, for demonstrations (Thomas, 20 Nov 2026).
-    No client signs in or accepts anything: the client is fictional, marked DEMO, and shared by every firm that adds it."""
-    if not permissions.is_superadmin(who):
-        return 403, {"error": "forbidden"}
-    if not con.execute("SELECT 1 FROM tem_firms WHERE id=?", (firm_id,)).fetchone():
-        return 404, {"error": "no such firm"}
+def demo_vat(firm_id):
+    """Each firm gets its own invented demo client, so no firm sees another firm's notes. Not an Italian VAT number,
+    so the nightly VIES job (vat LIKE 'IT%') never checks it."""
+    return "DEMO-" + firm_id.replace("-", "")[:10].upper()
+
+
+def add_demo(con, firm_id, actor):
+    """The invented DEMO client with a cheese to USA project, for this firm (Thomas, 20 Nov 2026). Every new firm gets it,
+    staff can add it to older firms. No client signs in or accepts anything. Not counted toward a firm's limits."""
     t = db.now()
-    co = con.execute("SELECT id FROM companies WHERE vat=?", (DEMO_VAT,)).fetchone()
+    vat = demo_vat(firm_id)
+    co = con.execute("SELECT id FROM companies WHERE vat=?", (vat,)).fetchone()
     if co is None:
         cid = str(uuid.uuid4())
-        con.execute("INSERT INTO companies(id, vat, legal_name, plan, created_by, created_at) VALUES (?,?,?,?,?,?)",
-                    (cid, DEMO_VAT, DEMO_NAME, None, who["user"], t))
+        con.execute("INSERT INTO companies(id, vat, legal_name, status, plan, created_by, created_at, owner_confirmed) VALUES (?,?,?,?,?,?,?,?)",
+                    (cid, vat, DEMO_NAME, "demo", None, actor, t, "demo"))  # status and owner set: kept out of the staff queues
     else:
         cid = co["id"]
     have = con.execute("SELECT status FROM tem_clients WHERE firm_id=? AND company_id=?", (firm_id, cid)).fetchone()
     if not (have and have["status"] == "active"):
         con.execute("DELETE FROM tem_clients WHERE firm_id=? AND company_id=?", (firm_id, cid))
-        sig = {"name": "DEMO", "role": "invented client for demonstrations, added by MioTEM staff", "email": ""}
+        sig = {"name": "DEMO", "role": "invented client for demonstrations, added by MioTEM", "email": ""}
         con.execute("INSERT INTO tem_clients(firm_id, company_id, status, engaged_at, engaged_by, signatory, scope, engagement_doc) "
-                    "VALUES (?,?,?,?,?,?,?,?)", (firm_id, cid, "active", t, who["user"], json.dumps(sig), json.dumps(SCOPE["en"]), None))
+                    "VALUES (?,?,?,?,?,?,?,?)", (firm_id, cid, "active", t, actor, json.dumps(sig), json.dumps(SCOPE["en"]), None))
     for m in con.execute("SELECT user_sub FROM tem_members WHERE firm_id=?", (firm_id,)).fetchall():
         con.execute("INSERT INTO tem_assignments(firm_id, company_id, user_sub, created_at) VALUES (?,?,?,?) "
                     "ON CONFLICT (firm_id, company_id, user_sub) DO NOTHING", (firm_id, cid, m["user_sub"], t))
@@ -503,14 +509,24 @@ def demo_client(con, who, firm_id):
             case = k["id"]
             break
     if case is None:
-        case = db.create_case(con, 1, owner_sub=who["user"])
+        case = db.create_case(con, 1, owner_sub=actor)
         con.execute("UPDATE cases SET company_id=? WHERE id=?", (cid, case))
         db.case_write(con, case, "product", {"category": "cheese", "name_brand": "Parmigiano Reggiano DOP (demo)",
-                                             "denomination": "Parmigiano Reggiano"}, actor=who["user"])
-        db.case_write(con, case, "market", {"country": "USA"}, actor=who["user"])
-        db.case_write(con, case, "company", {"legal_name": DEMO_NAME, "vat_number": DEMO_VAT}, actor=who["user"])
+                                             "denomination": "Parmigiano Reggiano"}, actor=actor)
+        db.case_write(con, case, "market", {"country": "USA"}, actor=actor)
+        db.case_write(con, case, "company", {"legal_name": DEMO_NAME, "vat_number": vat}, actor=actor)
     con.commit()
-    db.log_event(con, case, who["user"], "tem_demo_client", {"firm": firm_id, "company": cid})
+    db.log_event(con, case, actor, "tem_demo_client", {"firm": firm_id, "company": cid})
+    return cid, case
+
+
+def demo_client(con, who, firm_id):
+    """Staff add the DEMO client to a firm created before 20 Nov 2026. Running it twice adds nothing."""
+    if not permissions.is_superadmin(who):
+        return 403, {"error": "forbidden"}
+    if not con.execute("SELECT 1 FROM tem_firms WHERE id=?", (firm_id,)).fetchone():
+        return 404, {"error": "no such firm"}
+    cid, case = add_demo(con, firm_id, who["user"])
     return 200, {"ok": True, "company": cid, "case_id": case}
 
 

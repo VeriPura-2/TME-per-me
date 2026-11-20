@@ -440,3 +440,4 @@ class TemTour(unittest.TestCase):
         for el in ("tw-firm", "tw-team", "tw-engage", "tw-client", "tw-newp", "tw-case", "tw-req", "tw-duties", "tw-tools", "tw-docs", "tw-tour"):
             self.assertIn('"' + el + '"', html)
         self.assertIn('startTour(temFirst, "tem")', html)
+        self.assertIn('if (q0.get("tour") === "new") { localStorage.removeItem("vl_tour_done"); localStorage.removeItem("vl_tem_tour_done");', html)
