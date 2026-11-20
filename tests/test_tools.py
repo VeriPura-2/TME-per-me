@@ -384,7 +384,59 @@ class GuidedTour(unittest.TestCase):
         html = open(os.path.join(os.path.dirname(app.__file__), "static", "index.html"), encoding="utf-8").read()
         self.assertIn('<div id="j-tour"></div>', html)
         self.assertIn("tourButton(cid);", html)
-        self.assertIn('call("/tools/tour", {})', html)
+        self.assertIn('call("/tools/tour", kind === "tem" ? {kind: "tem"} : {})', html)
         self.assertIn('tour_take: "Take the tour"', html)
         self.assertIn('tour_take: "Faccia il tour"', html)
         self.assertIn('call("/admin/contact_requests", {})', html)
+
+
+class TemTour(unittest.TestCase):
+    """20 Nov 2026: TEM tour, workspace then the first client project, closing with five consent questions."""
+    def test_stops_bilingual_and_valid(self):
+        self.assertEqual(len(tools.TEM_TOUR), 18)
+        texts = []
+        for st in tools.TEM_TOUR:
+            texts += [st["t"], st["text"]]
+            if st.get("tool"):
+                self.assertIn(st["tool"], tools.TOOL_IDS)
+                self.assertEqual(st["area"], "proj")
+            if st.get("ask"):
+                self.assertIn(st["ask"], tools.TOOL_IDS)
+            if st["id"] != "close":
+                self.assertIn(st["area"], ("ws", "proj"))
+                self.assertTrue(st.get("el") or st.get("tool"))
+            for q in st.get("questions", []):
+                self.assertIn(q["ask"], tools.CONSENT_NEEDED)
+                texts += [q["q"], q["note"], q["consent"]]
+        for x in texts:
+            for lg in ("en", "it"):
+                self.assertTrue(x[lg])
+                self.assertNotIn(EM_DASH, x[lg])
+                for banned in ("saas", "traceability", "ai-powered"):
+                    self.assertNotIn(banned, x[lg].lower())
+        self.assertEqual({q["ask"] for q in tools.TEM_TOUR[-1]["questions"]},
+                         {"tem_single_projects", "tem_funding", "tem_bank_clients", "tem_sace", "tem_setup_call"})
+        sace = [q for q in tools.TEM_TOUR[-1]["questions"] if q["ask"] == "tem_sace"][0]
+        self.assertNotIn("partner", sace["q"]["en"].lower())  # no partnership agreed with SACE yet
+
+    def test_endpoint_by_kind(self):
+        self.assertEqual(len(app.handle_tools("/tools/tour", {"kind": "tem"}, user("tt-a"))[1]["stops"]), 18)
+        self.assertEqual(len(app.handle_tools("/tools/tour", {}, user("tt-a"))[1]["stops"]), 14)
+
+    def test_tem_questions_need_consent(self):
+        c = app.con()
+        for tool in ("tem_single_projects", "tem_funding", "tem_bank_clients", "tem_sace", "tem_setup_call"):
+            self.assertEqual(tools.record_interest(c, None, "tt-b", tool)[0], 400)
+            self.assertEqual(tools.record_interest(c, None, "tt-b", tool, consent=True, email="t@example.com")[0], 200)
+
+    def test_outreach_card_is_coming_soon_and_off_for_clients(self):
+        cards = {c["id"]: c for c in tools.for_case("cheese", "USA")}
+        self.assertEqual(cards["outreach"]["coming"]["status"], "soon")
+        self.assertNotIn("today", cards["outreach"])
+        self.assertIn("outreach", tools.CLIENT_OFF)
+
+    def test_frontend_anchors(self):
+        html = open(os.path.join(os.path.dirname(app.__file__), "static", "index.html"), encoding="utf-8").read()
+        for el in ("tw-firm", "tw-team", "tw-engage", "tw-client", "tw-newp", "tw-case", "tw-req", "tw-duties", "tw-tools", "tw-docs", "tw-tour"):
+            self.assertIn('"' + el + '"', html)
+        self.assertIn('startTour(temFirst, "tem")', html)
