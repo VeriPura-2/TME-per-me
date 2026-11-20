@@ -136,3 +136,30 @@ class Tems(unittest.TestCase):
         _, l = tems.engage_link(self.con, LEAD)
         self.assertEqual(tems.engage_accept(self.con, MEMBER, l["token"], accept_body("IT02812600134", "G"), "v1")[0], 403)
         self.assertEqual(tems.engage_accept(self.con, ADMIN, l["token"], accept_body("IT02812600134", "G"), "v1")[0], 403)
+
+
+class DemoClient(unittest.TestCase):
+    """20 Nov 2026: staff add an invented DEMO client with a cheese to USA project to a TEM firm, for demonstrations."""
+    def test_demo_client_for_a_firm(self):
+        from vialibera import app, tems
+        c = app.con()
+        import uuid
+        _, f = tems.create_firm(c, ADMIN, "Demo Firm " + uuid.uuid4().hex[:6])
+        lead = {"user": "demo-lead-" + uuid.uuid4().hex[:8], "org": None, "roles": []}
+        tems.join(c, lead, f["lead_token"])
+        self.assertEqual(tems.demo_client(c, lead, f["firm"])[0], 403)  # staff only
+        code, out = tems.demo_client(c, ADMIN, f["firm"])
+        self.assertEqual(code, 200)
+        self.assertTrue(tems.has_access(c, lead, out["company"]))
+        code, p = tems.project(c, lead, out["case_id"])
+        self.assertEqual(code, 200)
+        self.assertEqual(p["case"]["product"]["category"], "cheese")
+        self.assertEqual(p["case"]["market"]["country"], "USA")
+        self.assertEqual(p["case"]["product"]["denomination"], "Parmigiano Reggiano")
+        again = tems.demo_client(c, ADMIN, f["firm"])[1]  # running it twice adds nothing
+        self.assertEqual(again["case_id"], out["case_id"])
+        n = c.execute("SELECT COUNT(*) AS n FROM tem_clients WHERE firm_id=? AND company_id=?", (f["firm"], out["company"])).fetchone()["n"]
+        self.assertEqual(n, 1)
+        co = c.execute("SELECT legal_name, vat FROM companies WHERE id=?", (out["company"],)).fetchone()
+        self.assertIn("DEMO", co["legal_name"])
+        self.assertEqual(tems.demo_client(c, ADMIN, "no-such-firm")[0], 404)

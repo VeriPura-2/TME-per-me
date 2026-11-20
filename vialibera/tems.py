@@ -468,6 +468,52 @@ def project_count(con, firm_id):
                        "WHERE t.firm_id=? AND t.status='active'", (firm_id,)).fetchone()["n"]
 
 
+DEMO_VAT = "IT00000000000"  # invented: passes the format check, belongs to no company
+DEMO_NAME = "Caseificio Esempio Srl (DEMO)"
+
+
+def demo_client(con, who, firm_id):
+    """Staff add an invented client with a cheese to USA project to a TEM firm, for demonstrations (Thomas, 20 Nov 2026).
+    No client signs in or accepts anything: the client is fictional, marked DEMO, and shared by every firm that adds it."""
+    if not permissions.is_superadmin(who):
+        return 403, {"error": "forbidden"}
+    if not con.execute("SELECT 1 FROM tem_firms WHERE id=?", (firm_id,)).fetchone():
+        return 404, {"error": "no such firm"}
+    t = db.now()
+    co = con.execute("SELECT id FROM companies WHERE vat=?", (DEMO_VAT,)).fetchone()
+    if co is None:
+        cid = str(uuid.uuid4())
+        con.execute("INSERT INTO companies(id, vat, legal_name, plan, created_by, created_at) VALUES (?,?,?,?,?,?)",
+                    (cid, DEMO_VAT, DEMO_NAME, None, who["user"], t))
+    else:
+        cid = co["id"]
+    have = con.execute("SELECT status FROM tem_clients WHERE firm_id=? AND company_id=?", (firm_id, cid)).fetchone()
+    if not (have and have["status"] == "active"):
+        con.execute("DELETE FROM tem_clients WHERE firm_id=? AND company_id=?", (firm_id, cid))
+        sig = {"name": "DEMO", "role": "invented client for demonstrations, added by MioTEM staff", "email": ""}
+        con.execute("INSERT INTO tem_clients(firm_id, company_id, status, engaged_at, engaged_by, signatory, scope, engagement_doc) "
+                    "VALUES (?,?,?,?,?,?,?,?)", (firm_id, cid, "active", t, who["user"], json.dumps(sig), json.dumps(SCOPE["en"]), None))
+    for m in con.execute("SELECT user_sub FROM tem_members WHERE firm_id=?", (firm_id,)).fetchall():
+        con.execute("INSERT INTO tem_assignments(firm_id, company_id, user_sub, created_at) VALUES (?,?,?,?) "
+                    "ON CONFLICT (firm_id, company_id, user_sub) DO NOTHING", (firm_id, cid, m["user_sub"], t))
+    case = None
+    for k in con.execute("SELECT id FROM cases WHERE company_id=? ORDER BY created_at", (cid,)).fetchall():
+        c = db.case_read(con, k["id"])
+        if (c["product"].get("category") or "").lower() == "cheese" and (c["market"].get("country") or "").lower() == "usa":
+            case = k["id"]
+            break
+    if case is None:
+        case = db.create_case(con, 1, owner_sub=who["user"])
+        con.execute("UPDATE cases SET company_id=? WHERE id=?", (cid, case))
+        db.case_write(con, case, "product", {"category": "cheese", "name_brand": "Parmigiano Reggiano DOP (demo)",
+                                             "denomination": "Parmigiano Reggiano"}, actor=who["user"])
+        db.case_write(con, case, "market", {"country": "USA"}, actor=who["user"])
+        db.case_write(con, case, "company", {"legal_name": DEMO_NAME, "vat_number": DEMO_VAT}, actor=who["user"])
+    con.commit()
+    db.log_event(con, case, who["user"], "tem_demo_client", {"firm": firm_id, "company": cid})
+    return 200, {"ok": True, "company": cid, "case_id": case}
+
+
 def set_project_limit(con, who, firm_id, limit):
     if not permissions.is_superadmin(who):
         return 403, {"error": "forbidden"}
