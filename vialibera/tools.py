@@ -177,9 +177,9 @@ CARDS = [
                     {"t": L("What it is", "Che cos'è"),
                      "lines": [L("Voluntary: you choose what to share, and you can stop at any time.",
                                  "Volontario: Lei sceglie cosa condividere e può fermarsi in qualsiasi momento."),
-                               L("The scale: A fully verified (DOP or single origin), B substantially verified (100% Italian), C made in Italy from foreign raw material, "
+                               L("The scale: A DOP or single Italian origin, B 100% Italian ingredients, C made in Italy from foreign raw material, "
                                  "D packed abroad from Italian ingredients, E Italian brand made abroad, F Italian sounding only, G false origin claim.",
-                                 "La scala: A verificato in pieno (DOP o origine unica), B verificato in sostanza (100% italiano), C prodotto in Italia da materia prima estera, "
+                                 "La scala: A DOP o origine italiana unica, B ingredienti 100% italiani, C prodotto in Italia da materia prima estera, "
                                  "D confezionato all'estero da ingredienti italiani, E marchio italiano prodotto all'estero, F solo nome che richiama l'Italia, G falsa indicazione d'origine."),
                                L("C, D and E are legitimate when disclosed. The aim is an accurate result that protects honest producers.",
                                  "C, D ed E sono legittimi se dichiarati. Lo scopo è un risultato esatto, che tutela i produttori onesti."),
