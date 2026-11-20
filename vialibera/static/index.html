@@ -42,7 +42,7 @@ a{color:var(--link)}
 .muted{color:var(--muted);font-size:.9rem}
 .sim{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:10px;border:1px dashed #b26a00;color:#b26a00;margin-left:6px;vertical-align:middle}
 .tour-hl{outline:3px solid var(--accent);outline-offset:4px;border-radius:8px;scroll-margin:120px}
-#tourbox{position:fixed;right:16px;bottom:16px;max-width:380px;width:calc(100% - 32px);z-index:1000;box-shadow:0 6px 24px rgba(0,0,0,.3);margin:0}
+#tourbox{position:fixed;right:16px;bottom:16px;max-width:380px;width:calc(100% - 32px);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;box-sizing:border-box;z-index:1000;box-shadow:0 6px 24px rgba(0,0,0,.3);margin:0}
 .simnote{font-size:.85rem;color:#b26a00;margin:4px 0 8px}
 .plans{display:flex;gap:8px;flex-wrap:wrap}.plans .card{flex:1 1 150px;margin:0;cursor:pointer}.plans .card.on{border-color:var(--accent);outline:2px solid var(--accent)}
 .plans .card.tool,.card.tool{flex:1 1 240px;cursor:default;margin:6px 0}.card.tool>div{margin:3px 0}.by{font-size:.75em;letter-spacing:.04em;text-transform:uppercase;border:1px solid currentColor;border-radius:4px;padding:0 5px}.by.miotem{color:var(--link)}.by.partner{color:var(--muted)}
@@ -214,11 +214,11 @@ const TT = {
        tc_log: "Consultant access log", tem_joined: "You have joined the consultant firm.", c_notes: "Messages from your export consultant", du_t: "Duties and VAT (official source)", du_src: "source", du_read: "read on", du_na: "Duty service unavailable right now. Staff will check.", du_none: "n/a", vs_check: "Check", vs_valid: "VAT number confirmed in VIES (EU). Details filled in.", vs_not: "VAT number not in VIES: fine to continue. Staff will check it.", vs_na: "VIES service unavailable right now: carry on, we will check again.", vs_ok: "VAT confirmed in VIES", vs_no: "VAT not in VIES", vs_pend: "VIES check pending", src_changed: "source changed, to re-verify"},
 };
 const TL = {  // tool cards on the project (tools.py)
-  it: {st_open: "Aperto", st_closed: "Chiuso", st_check: "Da verificare", st_new: "Nuovo", chk_on: "Ultimo controllo", notify: "Avvisami dei nuovi bandi", imp_show: "Mostra gli importatori", imp_hide: "Nascondi", imp_none: "Nessun importatore in elenco per questa destinazione.", imp_nonef: "Nessun importatore in elenco per questa destinazione e questo prodotto.", imp_upd: "Elenco aggiornato regolarmente. Ultimo aggiornamento: {d}", imp_paid: "Il sito web di ogni importatore è disponibile con un piano a pagamento.", imp_n: "{n} importatori", title: "Strumenti per questo progetto", ask: "Chiedi al mio TEM", ask_other: "Chiedi al mio TEM altri strumenti", ask_other_n: "Per tutto ciò che qui non compare, senza dover conoscere lo strumento.", ask_note: "Una nota per il TEM (facoltativa)", ask_send: "Invia richiesta", ask_sent: "Richiesta inviata.", ask_seen: "Il TEM la vede nel suo studio. Nessun costo.", link: "Si apre in una nuova scheda", preview: "In sviluppo", soon: "In arrivo", ex: "Esempio", wk_open: "Vedi un esempio", tour_take: "Faccia il tour", tour_new: "Prima volta qui? Un tour di due minuti delle parti principali.", tour_of: "Tour {i} di {n}", tour_yes: "Mi interessa", tour_no: "Non ora", tour_noted: "Registrato, grazie.", tour_back: "Indietro", tour_next: "Avanti", tour_done: "Fine", tour_skip: "Chiudi il tour", tour_send: "Sì, mi interessa", wk_prev: "Indietro", wk_next: "Avanti", wk_close: "Chiudi l'esempio", tell: "Avvisami quando è pronto",
+  it: {st_open: "Aperto", st_closed: "Chiuso", st_check: "Da verificare", st_new: "Nuovo", chk_on: "Ultimo controllo", notify: "Avvisami dei nuovi bandi", imp_show: "Mostra gli importatori", imp_hide: "Nascondi", imp_none: "Nessun importatore in elenco per questa destinazione.", imp_nonef: "Nessun importatore in elenco per questa destinazione e questo prodotto.", imp_upd: "Elenco aggiornato regolarmente. Ultimo aggiornamento: {d}", imp_paid: "Il sito web di ogni importatore è disponibile con un piano a pagamento.", imp_n: "{n} importatori", title: "Strumenti per questo progetto", ask: "Chiedi al mio TEM", ask_other: "Chiedi al mio TEM altri strumenti", ask_other_n: "Per tutto ciò che qui non compare, senza dover conoscere lo strumento.", ask_note: "Una nota per il TEM (facoltativa)", ask_send: "Invia richiesta", ask_sent: "Richiesta inviata.", ask_seen: "Il TEM la vede nel suo studio. Nessun costo.", link: "Si apre in una nuova scheda", preview: "In sviluppo", soon: "In arrivo", ex: "Esempio", wk_open: "Vedi un esempio", tour_take: "Faccia il tour", tour_new_tem: "Prima volta qui? Un tour dello studio e di un progetto cliente.", tour_noproj: "Crei un progetto per un cliente per vedere questa parte.", tour_new: "Prima volta qui? Un tour di due minuti delle parti principali.", tour_of: "Tour {i} di {n}", tour_yes: "Mi interessa", tour_no: "Non ora", tour_noted: "Registrato, grazie.", tour_back: "Indietro", tour_next: "Avanti", tour_done: "Fine", tour_skip: "Chiudi il tour", tour_send: "Sì, mi interessa", wk_prev: "Indietro", wk_next: "Avanti", wk_close: "Chiudi l'esempio", tell: "Avvisami quando è pronto",
        told: "Grazie: La avviseremo quando sarà pronto.", ref_t: "Verifica di un riferimento di esportazione", ref_help: "Verifichi il formato di un MRN (dichiarazione di esportazione) o di un ARC (e-AD per il vino) prima di usarlo nei documenti.",
        mrn: "MRN", arc: "ARC (e-AD)", check: "Controlla il formato", lookup: "Servizio UE di verifica MRN", steps: "Come funzionerà",
        vis: "Visibile al cliente", today: "Oggi", next: "Poi", miotem: "MioTEM", partner: "Partner", go: "Portami lì", tour: "I suoi strumenti: cosa fa MioTEM per Lei", tour_t: "Strumenti di MioTEM e dei partner", count: "Il suo cliente vede {n} strumenti su {m}. Attivi o disattivi ciascuno qui sotto."},
-  en: {st_open: "Open", st_closed: "Closed", st_check: "Check the page", st_new: "New", chk_on: "Last checked", notify: "Tell me about new calls", imp_show: "Show importers", imp_hide: "Hide", imp_none: "No importers listed yet for this destination.", imp_nonef: "No importers listed yet for this destination and product.", imp_upd: "List updated regularly. Last updated: {d}", imp_paid: "Each importer's website is available on a paid plan.", imp_n: "{n} importers", title: "Tools for this project", ask: "Ask my TEM", ask_other: "Ask my TEM about other tools", ask_other_n: "For anything you do not see here, without needing to know the tool.", ask_note: "A note for your TEM (optional)", ask_send: "Send request", ask_sent: "Request sent.", ask_seen: "Your TEM sees it in their workspace. No cost.", link: "Opens in a new tab", preview: "In development", soon: "Coming soon", ex: "Example", wk_open: "See an example", tour_take: "Take the tour", tour_new: "New here? A two-minute tour of the main parts.", tour_of: "Tour {i} of {n}", tour_yes: "Interested", tour_no: "Not now", tour_noted: "Noted, thank you.", tour_back: "Back", tour_next: "Next", tour_done: "Finish", tour_skip: "End tour", tour_send: "Yes, I am interested", wk_prev: "Back", wk_next: "Next", wk_close: "Close the example", tell: "Tell me when it's ready",
+  en: {st_open: "Open", st_closed: "Closed", st_check: "Check the page", st_new: "New", chk_on: "Last checked", notify: "Tell me about new calls", imp_show: "Show importers", imp_hide: "Hide", imp_none: "No importers listed yet for this destination.", imp_nonef: "No importers listed yet for this destination and product.", imp_upd: "List updated regularly. Last updated: {d}", imp_paid: "Each importer's website is available on a paid plan.", imp_n: "{n} importers", title: "Tools for this project", ask: "Ask my TEM", ask_other: "Ask my TEM about other tools", ask_other_n: "For anything you do not see here, without needing to know the tool.", ask_note: "A note for your TEM (optional)", ask_send: "Send request", ask_sent: "Request sent.", ask_seen: "Your TEM sees it in their workspace. No cost.", link: "Opens in a new tab", preview: "In development", soon: "Coming soon", ex: "Example", wk_open: "See an example", tour_take: "Take the tour", tour_new_tem: "New here? A tour of your workspace and a client project.", tour_noproj: "Create a client project to see this part.", tour_new: "New here? A two-minute tour of the main parts.", tour_of: "Tour {i} of {n}", tour_yes: "Interested", tour_no: "Not now", tour_noted: "Noted, thank you.", tour_back: "Back", tour_next: "Next", tour_done: "Finish", tour_skip: "End tour", tour_send: "Yes, I am interested", wk_prev: "Back", wk_next: "Next", wk_close: "Close the example", tell: "Tell me when it's ready",
        told: "Thank you: we will let you know when it is ready.", ref_t: "Check an export reference", ref_help: "Check the format of an MRN (export declaration) or an ARC (e-AD for wine) before you use it in your documents.",
        mrn: "MRN", arc: "ARC (e-AD)", check: "Check format", lookup: "EU MRN follow-up service", steps: "How it will work",
        vis: "Visible to client", today: "Today", next: "Next", miotem: "MioTEM", partner: "Partner", go: "Take me there", tour: "Your tools: what MioTEM does for you", tour_t: "MioTEM and partner tools", count: "Your client sees {n} of {m} tools. Switch each one on or off below."},
@@ -943,21 +943,27 @@ function dutiesBox(parent, du) {
     card.append(open, box);
   }
   // Guided tour (20 Nov 2026): stops come from tools.TOUR; "Interested" records tool interest; no AI call.
-  let tourStops = null, tourAt = 0, tourCid = null;
+  let tourStops = null, tourAt = 0, tourCid = null, tourKind = "exp", temFirst = null, temOpen = null; const tourCache = {};
+  const tourDoneKey = k => k === "tem" ? "vl_tem_tour_done" : "vl_tour_done";
+  function temTourButton() {  // the TEM tour starts from the workspace
+    const box = $("tw-tour"); if (!box) return; box.innerHTML = "";
+    const t = TL[lang], done = store.get(tourDoneKey("tem"), "") === "1", b = mk("button", t.tour_take, done ? "" : "primary");
+    b.onclick = () => startTour(temFirst, "tem"); if (!done) box.appendChild(mk("span", t.tour_new_tem + " ", "muted")); box.appendChild(b);
+  }
   function tourButton(cid) {
     const box = $("j-tour"); box.innerHTML = ""; if (!cid) return;
-    const t = TL[lang], done = store.get("vl_tour_done", "") === "1", b = mk("button", t.tour_take, done ? "" : "primary");
-    b.onclick = () => startTour(cid);
+    const t = TL[lang], done = store.get(tourDoneKey("exp"), "") === "1", b = mk("button", t.tour_take, done ? "" : "primary");
+    b.onclick = () => startTour(cid, "exp");
     if (!done) box.appendChild(mk("span", t.tour_new + " ", "muted"));
     box.appendChild(b);
   }
-  async function startTour(cid) {
-    if (!tourStops) { const [r, j] = await call("/tools/tour", {}); if (!r.ok) return; tourStops = j.stops; }
-    tourCid = cid; tourAt = 0; tourShow();
+  async function startTour(cid, kind) {
+    if (!tourCache[kind]) { const [r, j] = await call("/tools/tour", kind === "tem" ? {kind: "tem"} : {}); if (!r.ok) return; tourCache[kind] = j.stops; }
+    tourStops = tourCache[kind]; tourKind = kind; tourCid = cid; tourAt = 0; tourShow();
   }
   function tourEnd() {
-    store.set("vl_tour_done", "1"); document.querySelectorAll(".tour-hl").forEach(e => e.classList.remove("tour-hl"));
-    const b = $("tourbox"); if (b) b.remove(); tourButton(tourCid);
+    store.set(tourDoneKey(tourKind), "1"); document.querySelectorAll(".tour-hl").forEach(e => e.classList.remove("tour-hl"));
+    const b = $("tourbox"); if (b) b.remove(); if (tourKind === "tem") { if (temOpen) loadTem(); else temTourButton(); } else tourButton(tourCid);  // the TEM tour ends back in the workspace
   }
   async function tourFind(sel) {  // the page loads parts as it goes: wait briefly for the element
     for (let i = 0; i < 30; i++) { const e = document.querySelector(sel); if (e && e.offsetParent !== null) return e; await new Promise(r => setTimeout(r, 100)); }
@@ -966,7 +972,10 @@ function dutiesBox(parent, du) {
   async function tourGo(st) {
     document.querySelectorAll(".tour-hl").forEach(e => e.classList.remove("tour-hl"));
     let sel = null, moved = true; const at = tourAt;
-    if (st.tool) { sel = '#journey [data-tool="' + st.tool + '"]'; if ($("journey").hidden || !document.querySelector(sel)) goTo("tools"); else moved = false; }
+    if (st.area === "ws") { moved = false; if ($("temws").hidden || !$("tw-firm")) { showPanel("temws", false, true); await loadTem(); } sel = "#" + st.el; }
+    else if (st.area === "proj") { moved = false; if (!temFirst) return; if ($("temws").hidden || temOpen !== temFirst) { showPanel("temws", false, true); await temProject(temFirst); }
+      sel = st.el ? "#" + st.el : '#temws [data-tool="' + st.tool + '"]'; }
+    else if (st.tool) { sel = '#journey [data-tool="' + st.tool + '"]'; if ($("journey").hidden || !document.querySelector(sel)) goTo("tools"); else moved = false; }
     else if (st.go === "team") { if (!$("tbtn").hidden && $("team").hidden) $("tbtn").click(); sel = "#team"; }
     else if (st.go === "chat") { goTo("chat"); sel = "#log"; }
     else if (st.go === "docs") { goTo("docs"); sel = "#docs"; }
@@ -982,6 +991,7 @@ function dutiesBox(parent, du) {
     box.innerHTML = "";
     box.appendChild(mk("div", t.tour_of.replace("{i}", tourAt + 1).replace("{n}", tourStops.length), "muted"));
     box.appendChild(mk("strong", st.t[lang])); box.appendChild(mk("div", st.text[lang]));
+    if (st.area === "proj" && !temFirst) box.appendChild(mk("div", t.tour_noproj, "muted"));
     const answer = (parent, tool, consent) => async () => {
       const [r] = await call("/tools/interest", consent ? {case_id: tourCid, tool, consent, email: ctx.email} : {case_id: tourCid, tool}); if (r.ok) parent.replaceWith(mk("div", t.tour_noted, "tick")); };
     if (st.ask) { const row = mk("div"), y = mk("button", t.tour_yes, "primary"), n = mk("button", t.tour_no);
@@ -1394,10 +1404,13 @@ function dutiesBox(parent, du) {
     const tt = TT[lang], box = $("temws"); box.innerHTML = "";
     const [r, j] = await call("/tem/me", {}); if (!r.ok || !j.firm) { box.textContent = T[lang].err + (j.error || r.status); return; }
     const lead = j.role === "lead";
-    box.appendChild(mk("h2", tt.ws_title));
+    box.appendChild(mk("h2", tt.ws_title)); temOpen = null;
+    temFirst = ((j.clients || []).flatMap(c => c.projects || [])[0] || {}).id || null;
+    const tb0 = mk("div"); tb0.id = "tw-tour"; box.appendChild(tb0); temTourButton();
     box.appendChild(mk("p", tt.ws_firm + ": " + j.firm.name + " · " + (lead ? tt.ws_lead : tt.ws_member) + " · " + tt.ws_seats + ": " + (j.firm.seats || tt.ws_unlimited) + " · " + tt.ws_pj + ": " + j.firm.projects.used + " " + T[lang].j_of + " " + j.firm.projects.cap, "muted"));
+    box.lastChild.id = "tw-firm";
     if (lead) {
-      box.appendChild(mk("h3", tt.ws_team));
+      box.appendChild(mk("h3", tt.ws_team)); box.lastChild.id = "tw-team";
       j.members.forEach(m => { const row = mk("div", (m.label || m.user.slice(-8)) + " · " + (m.role === "lead" ? tt.ws_lead : tt.ws_member) + " ");
         if (m.role !== "lead") { const b = mk("button", tt.ws_remove); b.onclick = async () => { await call("/tem/remove", {user: m.user}); loadTem(); }; row.appendChild(b); }
         box.appendChild(row); });
@@ -1406,12 +1419,12 @@ function dutiesBox(parent, du) {
       box.append(ib, io);
     }
     box.appendChild(mk("h3", tt.ws_clients));
-    const eb = mk("button", tt.ws_engage), eo = mk("div"); eb.onclick = async () => { eo.innerHTML = ""; const [rr, jj] = await call("/tem/engage_link", {});
+    const eb = mk("button", tt.ws_engage), eo = mk("div"); eb.id = "tw-engage"; eb.onclick = async () => { eo.innerHTML = ""; const [rr, jj] = await call("/tem/engage_link", {});
       if (rr.ok) linkBox(eo, location.origin + "/?engage=" + jj.token, tt.ws_engage_note); else eo.textContent = T[lang].err + (jj.error || rr.status); };
     box.append(eb, eo);
     if (!j.clients.length) { const em = mk("div", null, "card"); em.style.cssText = "background:var(--card);border:1px dashed var(--line)"; em.append(mk("strong", tt.ws_empty_h), mk("br"), tt.ws_empty_p); box.appendChild(em); }
     j.clients.forEach(c => {
-      const cd = mk("div", null, "card"); cd.appendChild(mk("strong", c.name + " (" + c.vat + ")"));
+      const cd = mk("div", null, "card"); if (!$("tw-client")) cd.id = "tw-client"; cd.appendChild(mk("strong", c.name + " (" + c.vat + ")"));
       cd.appendChild(mk("span", " · " + tt.tc_since + " " + sd(c.since), "muted"));
       (c.requests || []).forEach(q => { const row = mk("div", null, "verify");
         row.append(mk("strong", tt.rq_h + ": "), q.project + (q.tool ? " · " + ((q.tool_name && q.tool_name[lang]) || q.tool) : " · " + tt.rq_other) + (q.note ? " · \u201c" + q.note + "\u201d" : "") + " ");
@@ -1419,7 +1432,7 @@ function dutiesBox(parent, du) {
         row.appendChild(d); cd.appendChild(row); });
       c.projects.forEach(p => { const row = mk("div", (p.product || "-") + " → " + (p.country || "-") + " · " + p.status + (p.docs ? " · " + p.docs.have + " " + T[lang].j_of + " " + p.docs.total + " " + tt.ws_docsn : "") + " ");
         const ob = mk("button", tt.ws_open); ob.onclick = () => temProject(p.id); row.appendChild(ob); cd.appendChild(row); });
-      const np = mk("div"); const cs = sel0(CATS), co = sel0(COUNTRIES), nn = mk("input"); nn.type = "text"; nn.placeholder = tt.ws_name; nn.style.width = "30%";
+      const np = mk("div"); if (!$("tw-newp")) np.id = "tw-newp"; const cs = sel0(CATS), co = sel0(COUNTRIES), nn = mk("input"); nn.type = "text"; nn.placeholder = tt.ws_name; nn.style.width = "30%";
       const cb = mk("button", tt.ws_create); cb.onclick = async () => { const [rr, jj] = await call("/tem/new_project", {company: c.id, category: cs.value, country: co.value, name: nn.value});
         if (rr.ok) temProject(jj.case_id); else pageMsg(cb, jj.error === "tem_project_limit" ? tt.ws_limit.replace("{n}", jj.limit) : (jj.error || rr.status)); };
       np.append(mk("span", tt.ws_newp + ": ", "muted"), cs, " ", co, " ", nn, " ", cb); cd.appendChild(np);
@@ -1439,15 +1452,15 @@ function dutiesBox(parent, du) {
   async function temProject(caseId0) {
     const tt = TT[lang], t = T[lang], box = $("temws"); box.innerHTML = "";
     const [r, j] = await call("/tem/project", {case_id: caseId0}); if (!r.ok) { box.textContent = t.err + (j.error || r.status); return; }
-    const back = mk("button", "← " + tt.ws_back); back.onclick = loadTem; box.appendChild(back);
+    const back = mk("button", "← " + tt.ws_back); back.onclick = loadTem; box.appendChild(back); temOpen = caseId0;
     const k = j.case; setVertical(k.vertical); box.appendChild(mk("h2", k.client.name + " · " + (k.product.name_brand || k.product.category || "-") + " → " + (k.market.country || "-")));
     const chat = mk("button", tt.ws_chat); chat.onclick = () => { caseId = caseId0; $("welcome").hidden = true; $("app").hidden = false; add("bot", tt.ws_chat_on); $("msg").focus(); };
     box.appendChild(chat);
-    box.appendChild(mk("h3", tt.ws_case));
+    box.appendChild(mk("h3", tt.ws_case)); box.lastChild.id = "tw-case";
     box.appendChild(mk("div", j.progress.answered + " / " + j.progress.total + " " + tt.ws_answered, "muted"));
     [["product", k.product], ["market", k.market], ["company", k.company]].forEach(([sec, obj]) => Object.entries(obj).forEach(([key, v]) => box.appendChild(mk("div", sec + " · " + key + ": " + (typeof v === "string" ? v : JSON.stringify(v)), "muted"))));
     if (j.progress.missing.length) box.appendChild(mk("div", tt.ws_todo + ": " + j.progress.missing.map(m => m.label + (m.later ? " (later)" : "")).join(", "), "muted"));
-    box.appendChild(mk("h3", tt.ws_req));
+    box.appendChild(mk("h3", tt.ws_req)); box.lastChild.id = "tw-req";
     const d = j.required_docs;
     if (!d) box.appendChild(mk("div", t.j_nocase, "muted"));
     else [1, 2, 3, 4].forEach(l => { const rows = d.data.items.filter(i => i.layer === l); if (!rows.length) return; box.appendChild(mk("strong", d.data.layers[l][lang]));
@@ -1464,9 +1477,9 @@ function dutiesBox(parent, du) {
             cn.onclick = () => { f.remove(); b.hidden = false; }; f.append(ni, " ", sv, " ", cn); b.hidden = true; row.appendChild(f); ni.focus(); }; row.appendChild(b); }
         if (i.only_if) row.appendChild(mk("div", t.j_onlyif + ": " + i.only_if[lang], "muted"));
         box.appendChild(row); }); });
-    dutiesBox(box, j.duties);
-    const tb = mk("div"); box.appendChild(tb); toolsBox(tb, j.tools, caseId0, true);
-    box.appendChild(mk("h3", tt.ws_docs));
+    const dbx = mk("div"); dbx.id = "tw-duties"; box.appendChild(dbx); dutiesBox(dbx, j.duties);
+    const tb = mk("div"); tb.id = "tw-tools"; box.appendChild(tb); toolsBox(tb, j.tools, caseId0, true);
+    box.appendChild(mk("h3", tt.ws_docs)); box.lastChild.id = "tw-docs";
     const dl = async (doc) => { const rr = await api("/doc/" + doc.id); const bl = await rr.blob(); const a = document.createElement("a"); a.href = URL.createObjectURL(bl); a.download = doc.filename; a.click(); };
     const inProj = new Set(j.documents.map(x => x.id));
     j.documents.forEach(x => { const row = mk("div", x.filename + " [" + (x.doc_type || "?") + "] "); const o = mk("button", t.d_open); o.onclick = () => dl(x); row.appendChild(o);
@@ -1594,9 +1607,10 @@ function dutiesBox(parent, du) {
       if (!j5.total) box.appendChild(mk("div", "None yet.", "muted"));
       j5.requests.forEach(q => box.appendChild(mk("div", (q.product || "?") + " → " + (q.country || "?") + " · " + q.email + (q.name ? " · " + q.name : "") + " · " + q.created_at.slice(0, 10), "muted"))); }
     const [r6, j6] = await call("/admin/contact_requests", {});
-    if (r6.ok) { box.appendChild(mk("h3", "Contact requests from the tour (" + j6.total + "): TEM introduction and Crédit Agricole Italia financing, consent given"));
+    if (r6.ok) { box.appendChild(mk("h3", "Contact requests from the tours (" + j6.total + "): exporters and TEMs, consent given"));
       if (!j6.total) box.appendChild(mk("div", "None yet.", "muted"));
-      j6.requests.forEach(q => box.appendChild(mk("div", (q.tool === "tem_intro" ? "TEM introduction" : "Export financing (Crédit Agricole Italia)") + " · " + (q.company || "no company yet") + " · " + (q.email || "no email on file") + " · " + q.created_at.slice(0, 10), "muted"))); }
+      j6.requests.forEach(q => box.appendChild(mk("div", ({tem_intro: "TEM introduction", bank_financing: "Export financing (Crédit Agricole Italia)", tem_single_projects: "TEM: single-project work",
+        tem_funding: "TEM: funding for TEM costs", tem_bank_clients: "TEM: Crédit Agricole Italia for clients", tem_sace: "TEM: SACE for clients", tem_setup_call: "TEM: setup call"}[q.tool] || q.tool) + " · " + (q.company || "no company yet") + " · " + (q.email || "no email on file") + " · " + q.created_at.slice(0, 10), "muted"))); }
     const [r2, j2] = await call("/admin/tool_interest", {}); if (!r2.ok) return;
     box.appendChild(mk("h3", "Tool interest (" + j2.total + "): \"Tell me when it's ready\" clicks"));
     if (!j2.total) { box.appendChild(mk("div", "No clicks yet.", "muted")); return; }

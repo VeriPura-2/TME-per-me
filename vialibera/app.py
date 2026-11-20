@@ -733,7 +733,7 @@ def handle_tools(path, body, who):
                 return err
         return tools.record_interest(c, cid, who["user"], str(body.get("tool") or ""), body.get("consent") is True, body.get("email"))
     if path == "/tools/tour":  # the guided tour of a project: stops, texts and which ones ask "Interested?" (no AI call)
-        return 200, {"stops": tools.TOUR}
+        return 200, {"stops": tools.TEM_TOUR if body.get("kind") == "tem" else tools.TOUR}
     if path == "/tools/catalog":  # the tool tour after sign-in: every tool, as this user would see it
         company = permissions.company_of(c, who["user"])
         viewer = "tem" if tems.firm_of(c, who["user"]) else ("client" if tools.has_tem(c, company) else "exporter")

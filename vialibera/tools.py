@@ -222,6 +222,11 @@ CARDS = [
      "coming": {"status": "soon",
                 "text": L("Contact importers through VeriPura Connect.",
                           "Contatta gli importatori tramite VeriPura Connect.")}},
+    {"id": "outreach", "by": {"kind": "miotem"},
+     "name": L("Outreach to importers", "Campagne verso gli importatori"),
+     "coming": {"status": "soon",
+                "text": L("Market development: plan and send outreach campaigns to importers for your product and market, from MioTEM.",
+                          "Sviluppo del mercato: pianifichi e invii campagne di contatto agli importatori per il suo prodotto e mercato, da MioTEM.")}},
     {"id": "alerts", "by": {"kind": "miotem"},
      "name": L("Rule changes ahead", "Novità normative in arrivo"),
      "coming": {"status": "soon",
@@ -230,9 +235,9 @@ CARDS = [
 ]
 TOOL_IDS = {c["id"] for c in CORE + CARDS} | {"refcheck"}
 STEP = {"label_check": 2, "label_design": 2, "ttb_agent": 3, "shipping": 4}  # the checklist step where the tool helps (1 Company, 2 Product, 3 Destination, 4 Shipment)
-INTEREST_ONLY = {"funding_calls", "tem_intro", "bank_financing", "mode2"}  # interest buttons that are not a card of their own; mode2: a TEM offering single-project work (TEM workspace), the exporter card was merged into the TEM card on 20 Nov 2026
-CONSENT_NEEDED = {"tem_intro", "bank_financing"}  # tour closing questions: staff contact the person, so consent is required (20 Nov 2026)
-CLIENT_OFF = {"shipping", "label_check", "importers"}  # hidden from a TEM's client unless the TEM switches them on
+INTEREST_ONLY = {"funding_calls", "tem_intro", "bank_financing", "mode2", "tem_single_projects", "tem_funding", "tem_bank_clients", "tem_sace", "tem_setup_call"}  # interest buttons that are not a card of their own; mode2: a TEM offering single-project work (TEM workspace), the exporter card was merged into the TEM card on 20 Nov 2026
+CONSENT_NEEDED = {"tem_intro", "bank_financing", "tem_single_projects", "tem_funding", "tem_bank_clients", "tem_sace", "tem_setup_call"}  # tour closing questions: staff contact the person, so consent is required (20 Nov 2026)
+CLIENT_OFF = {"shipping", "label_check", "importers", "outreach"}  # hidden from a TEM's client unless the TEM switches them on
 
 
 # Guided tour of a project for exporters (Thomas, 20 Nov 2026): one stop per part of the page; tool stops ask "Interested?".
@@ -257,12 +262,12 @@ TOUR = [
     {"id": "cert", "go": "tools", "tool": "cert_evidence", "ask": "cert_evidence", "t": L("Certification evidence", "Prove delle certificazioni"),
      "text": L("Tell us which protected name your product carries and which control body certifies you, then upload the certificate. For Parmigiano Reggiano you can also check your VAT number against the public list of OCQ PR.",
                "Indichi quale denominazione protetta ha il prodotto e quale organismo di controllo La certifica, poi carichi il certificato. Per il Parmigiano Reggiano può anche controllare la partita IVA nell'elenco pubblico di OCQ PR.")},
-    {"id": "label", "go": "tools", "tool": "label_check", "ask": "label_check", "t": L("Your label", "La sua etichetta"),
-     "text": L("Check your label artwork with the VeriPura label validator, or create one with partner design tools.",
-               "Verifichi la grafica dell'etichetta con il validatore etichette VeriPura, oppure la crei con gli strumenti di progettazione dei partner.")},
     {"id": "label_design", "go": "tools", "tool": "label_design", "ask": "label_design", "t": L("Label design", "Progettazione etichette"),
      "text": L("Create nutrition panels and labels with partner tools, then upload the label in your project.",
                "Crei tabelle nutrizionali ed etichette con strumenti dei partner, poi carichi l'etichetta nel progetto.")},
+    {"id": "label", "go": "tools", "tool": "label_check", "ask": "label_check", "t": L("Your label", "La sua etichetta"),
+     "text": L("Check your label artwork with the VeriPura label validator, or create one with partner design tools.",
+               "Verifichi la grafica dell'etichetta con il validatore etichette VeriPura, oppure la crei con gli strumenti di progettazione dei partner.")},
     {"id": "shipping", "go": "tools", "tool": "shipping", "ask": "shipping", "t": L("Shipping", "Spedizioni"),
      "text": L("Parcels for samples and small orders, booked with partner services. Pallets and containers are coming.",
                "Pacchi per campioni e piccoli ordini, da prenotare con servizi partner. Pallet e container sono in arrivo.")},
@@ -292,6 +297,88 @@ TOUR = [
                     "Il nostro staff registra il suo interesse e La contatta. Nulla viene condiviso con la banca senza prima chiederlo a Lei."),
           "consent": L("I agree that MioTEM staff may contact me about export financing.", "Acconsento a essere contattato dallo staff MioTEM per il finanziamento all'export.")}]},
 ]
+
+# TEM tour (Thomas, 20 Nov 2026): the workspace, then the TEM's first client project, then five questions staff follow up.
+# area: ws (workspace) or proj (first client project); el: element id to highlight; tool: card to highlight. No AI call.
+TEM_TOUR = [
+    {"id": "ws", "area": "ws", "el": "tw-firm", "t": L('Your workspace', 'Il suo studio'),
+     "text": L("Your firm's home on MioTEM: your role, seats, and how many client projects your plan allows.",
+               'La casa del suo studio su MioTEM: il suo ruolo, i posti e quanti progetti dei clienti consente il suo piano.')},
+    {"id": "team", "area": "ws", "el": "tw-team", "t": L('Firm team', 'Squadra dello studio'),
+     "text": L('Invite colleagues to your firm. Only the lead can invite or remove people.',
+               'Inviti i colleghi nel suo studio. Solo il responsabile può invitare o rimuovere persone.')},
+    {"id": "engage", "area": "ws", "el": "tw-engage", "t": L('Engagement link', 'Link di incarico'),
+     "text": L('Send this link to a client. When they accept, they engage you on MioTEM and their projects appear here.',
+               'Invii questo link a un cliente. Quando accetta, La incarica su MioTEM e i suoi progetti compaiono qui.')},
+    {"id": "clients", "area": "ws", "el": "tw-client", "t": L('Clients and requests', 'Clienti e richieste'),
+     "text": L('Each client, their projects and document progress. When a client asks you for help with a tool, the request shows here, and you mark it done.',
+               "Ogni cliente, i suoi progetti e l'avanzamento dei documenti. Quando un cliente Le chiede aiuto per uno strumento, la richiesta compare qui e Lei la segna come fatta.")},
+    {"id": "newp", "area": "ws", "el": "tw-newp", "t": L('New client project', 'Nuovo progetto per un cliente'),
+     "text": L('Create a project for a client by choosing the product and the destination.',
+               'Crei un progetto per un cliente scegliendo il prodotto e la destinazione.')},
+    {"id": "proj", "area": "proj", "el": "tw-case", "t": L('Project and chat', 'Progetto e chat'),
+     "text": L("The project details collected so far and what is still missing. Open the chat to continue on your client's behalf.",
+               'I dati del progetto raccolti finora e cosa manca ancora. Apra la chat per proseguire per conto del cliente.')},
+    {"id": "req", "area": "proj", "el": "tw-req", "t": L('Required documents', 'Documenti richiesti'),
+     "text": L('The documents your client needs. You can confirm rows still to be verified, with a note. Your client sees your name on each confirmation.',
+               'I documenti di cui il cliente ha bisogno. Può confermare le righe ancora da verificare, con una nota. Il cliente vede il suo nome su ogni conferma.')},
+    {"id": "duties", "area": "proj", "el": "tw-duties", "t": L('Duties and taxes', 'Dazi e imposte'),
+     "text": L('Customs duties for this product in this destination, checked against the official tariffs.',
+               'I dazi doganali per questo prodotto in questa destinazione, verificati rispetto alle tariffe ufficiali.')},
+    {"id": "vis", "area": "proj", "el": "tw-tools", "t": L('Tools and what your client sees', 'Strumenti e cosa vede il cliente'),
+     "text": L('You decide which tools each client sees, with the visibility switch on each card. Some start switched off, for work you may prefer to do or arrange yourself.',
+               "Lei decide quali strumenti vede ogni cliente, con l'interruttore di visibilità su ogni scheda. Alcuni sono spenti in partenza, per il lavoro che preferisce svolgere o organizzare Lei.")},
+    {"id": "importers", "area": "proj", "tool": "importers", "ask": "importers", "t": L('Importer discovery', 'Ricerca importatori'),
+     "text": L("Researched importers for your client's product category and destination market.",
+               'Importatori ricercati per la categoria di prodotto e il mercato di destinazione del cliente.')},
+    {"id": "outreach", "area": "proj", "tool": "outreach", "ask": "outreach", "t": L('Outreach to importers', 'Campagne verso gli importatori'),
+     "text": L("Coming soon: plan and send outreach campaigns to importers for your client's product and market.",
+               'In arrivo: pianificare e inviare campagne di contatto agli importatori per il prodotto e il mercato del cliente.')},
+    {"id": "label_design", "area": "proj", "tool": "label_design", "ask": "label_design", "t": L('Label creation', "Creazione dell'etichetta"),
+     "text": L('Create nutrition panels and labels with partner tools, then upload the label in the project.',
+               "Crei tabelle nutrizionali ed etichette con strumenti dei partner, poi carichi l'etichetta nel progetto.")},
+    {"id": "label", "area": "proj", "tool": "label_check", "ask": "label_check", "t": L('Label validation', "Verifica dell'etichetta"),
+     "text": L("Check a client's label artwork with the VeriPura label validator. Your client can use it directly, or you use it for them.",
+               "Verifichi la grafica dell'etichetta del cliente con il validatore etichette VeriPura. Il cliente può usarlo direttamente, oppure Lei lo usa per lui.")},
+    {"id": "shipping", "area": "proj", "tool": "shipping", "ask": "shipping", "t": L('Shipment options', 'Opzioni di spedizione'),
+     "text": L('Parcels for samples and small orders, booked with partner services. Pallets and containers are coming.',
+               'Pacchi per campioni e piccoli ordini, da prenotare con servizi partner. Pallet e container sono in arrivo.')},
+    {"id": "doc_checks", "area": "proj", "tool": "doc_checks", "ask": "doc_checks", "t": L('VeriPura Document Checker', 'VeriPura Document Checker'),
+     "text": L("In preview: compares your client's invoice, packing list and transport document with each other.",
+               'In anteprima: confronta tra loro fattura, packing list e documento di trasporto del cliente.')},
+    {"id": "vero", "area": "proj", "tool": "vero_italiano", "ask": "vero_italiano", "t": L('Vero Italiano', 'Vero Italiano'),
+     "text": L('In development: voluntary validation of the claims your client makes about the product. Open the example on the card to see how it will work.',
+               "In sviluppo: convalida volontaria delle dichiarazioni del cliente sul prodotto. Apra l'esempio sulla scheda per vedere come funzionerà.")},
+    {"id": "docs", "area": "proj", "el": "tw-docs", "t": L('Client documents', 'Documenti del cliente'),
+     "text": L('The files your client uploaded for this project.',
+               'I file che il cliente ha caricato per questo progetto.')},
+    {"id": "close", "t": L("A few last questions", "Alcune ultime domande"),
+     "text": L("All optional. Your answers only tell our staff how to help you.",
+               "Tutte facoltative. Le risposte servono solo al nostro staff per capire come aiutarLa."),
+     "questions": [
+         {"ask": "tem_single_projects", "q": L('Interested in offering your services on MioTEM for single projects, so exporters who need short-term help can find you?',
+                              'Le interessa offrire i suoi servizi su MioTEM per singoli progetti, così che gli esportatori che cercano un aiuto a breve termine possano trovarLa?'),
+          "note": L('Optional.', 'Facoltativo.'),
+          "consent": L('I agree that MioTEM staff may contact me about this.', 'Acconsento a essere contattato dallo staff MioTEM su questo tema.')},
+         {"ask": "tem_funding", "q": L('Interested in help finding funding calls that cover TEM costs for your clients?',
+                              'Le interessa un aiuto per trovare bandi che coprano i costi del TEM per i suoi clienti?'),
+          "note": L('Optional.', 'Facoltativo.'),
+          "consent": L('I agree that MioTEM staff may contact me about this.', 'Acconsento a essere contattato dallo staff MioTEM su questo tema.')},
+         {"ask": "tem_bank_clients", "q": L('Would your clients be interested in export financing from Crédit Agricole Italia?',
+                              "I suoi clienti sarebbero interessati a un finanziamento all'export di Crédit Agricole Italia?"),
+          "note": L('Our staff note the interest and contact you. Nothing is shared with the bank without asking first.', "Il nostro staff registra l'interesse e La contatta. Nulla viene condiviso con la banca senza chiederlo prima."),
+          "consent": L('I agree that MioTEM staff may contact me about this.', 'Acconsento a essere contattato dallo staff MioTEM su questo tema.')},
+         {"ask": "tem_sace", "q": L("Interested in export support from SACE, Italy's export credit agency, for your clients?",
+                              "Le interessa il supporto all'export di SACE, l'agenzia italiana per il credito all'esportazione, per i suoi clienti?"),
+          "note": L('Our staff note the interest and contact you. Nothing is shared with SACE without asking first.', "Il nostro staff registra l'interesse e La contatta. Nulla viene condiviso con SACE senza chiederlo prima."),
+          "consent": L('I agree that MioTEM staff may contact me about this.', 'Acconsento a essere contattato dallo staff MioTEM su questo tema.')},
+         {"ask": "tem_setup_call", "q": L('Would you like a call with MioTEM staff to set up your firm and first clients?',
+                              'Desidera una chiamata con lo staff MioTEM per configurare il suo studio e i primi clienti?'),
+          "note": L('Optional.', 'Facoltativo.'),
+          "consent": L('I agree that MioTEM staff may contact me to arrange the call.', 'Acconsento a essere contattato dallo staff MioTEM per fissare la chiamata.')},
+     ]},
+]
+
 
 def _norm(s):
     return (s or "").strip().lower()
