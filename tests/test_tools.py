@@ -316,3 +316,28 @@ class PublicCatalog(unittest.TestCase):
     def test_public_endpoint_is_registered(self):
         src = open(os.path.join(os.path.dirname(app.__file__), "app.py"), encoding="utf-8").read()
         self.assertIn('"/tools/public.json"', src)
+
+
+class VeroItalianoWalkthrough(unittest.TestCase):
+    """20 Nov 2026: Vero Italiano shown as an In development card with a scripted example (no AI call, nothing stored)."""
+    def test_card_is_a_preview_with_six_bilingual_screens(self):
+        cards = {c["id"]: c for c in tools.for_case("cheese", "USA")}
+        vi = cards["vero_italiano"]
+        self.assertNotIn("today", vi)
+        self.assertEqual(vi["coming"]["status"], "preview")
+        walk = vi["coming"]["walk"]
+        self.assertEqual(len(walk), 6)
+        texts = [vi["name"], vi["coming"]["text"]] + [s["t"] for s in walk] + [x for s in walk for x in s["lines"]]
+        for x in texts:
+            for lg in ("en", "it"):
+                self.assertTrue(x[lg])
+                self.assertNotIn(EM_DASH, x[lg])
+                for banned in ("SaaS", "traceability", "AI-powered"):
+                    self.assertNotIn(banned.lower(), x[lg].lower())
+        self.assertIn("vero_italiano", tools.TOOL_IDS)
+
+    def test_frontend_renders_the_walkthrough(self):
+        html = open(os.path.join(os.path.dirname(app.__file__), "static", "index.html"), encoding="utf-8").read()
+        self.assertIn("if (n.walk) walkthrough(card, n.walk, t);", html)
+        self.assertIn('wk_open: "See an example"', html)
+        self.assertIn('wk_open: "Vedi un esempio"', html)
