@@ -17,6 +17,7 @@ import json
 import re
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -38,7 +39,39 @@ LAST_SEEN = {}  # url -> what the last fetch of it saw (status, size, bot-check 
 RETRY_PAUSE = 8  # seconds before the one retry of a page that answered "too many requests" or a server error (19 Nov 2026)
 
 
-def _fetch_text(url, timeout=15):  # fetched 8 at a time (_fetch_all): 42 sources stay well under the request limit
+EU_MARK = "EU amendments list (EU Publications Office)"
+EU_SPARQL = "https://publications.europa.eu/webapi/rdf/sparql"
+EURLEX_CELEX = re.compile(r"eur-lex\.europa\.eu/.*CELEX:(\w+)")
+_XSD_STRING = "<http://www.w3.org/2001/XMLSchema#string>"
+
+
+def _sparql(query, timeout=30):
+    """Rows of a SELECT query on the EU Publications Office (CELLAR) service, as a list of {variable: value}."""
+    req = urllib.request.Request(EU_SPARQL + "?" + urllib.parse.urlencode({"query": query}),
+                                 headers={"User-Agent": UA, "Accept": "application/sparql-results+json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        data = json.loads(r.read(3_000_000).decode("utf-8", "replace"))
+    return [{k: v.get("value", "") for k, v in b.items()} for b in data["results"]["bindings"]]
+
+
+def _fetch_eu_amendments(celex):
+    """EUR-Lex answers our server with a bot check (HTTP 202, 20 Nov 2026), so the act's page cannot be read. The amending
+    acts of an EU act come from the Publications Office's official data service instead: a new amendment is a new line."""
+    head = "PREFIX cdm: <http://publications.europa.eu/ontology/cdm#> "
+    if not _sparql(head + f'SELECT ?w WHERE {{ ?w cdm:resource_legal_id_celex "{celex}"^^{_XSD_STRING} }} LIMIT 1'):
+        raise ValueError("act not found in the EU Publications Office data: " + celex)
+    rows = _sparql(head + f'SELECT DISTINCT ?c ?d WHERE {{ ?w cdm:resource_legal_id_celex "{celex}"^^{_XSD_STRING} . '
+                   '?a cdm:resource_legal_amends_resource_legal ?w . ?a cdm:resource_legal_id_celex ?c . '
+                   'OPTIONAL { ?a cdm:work_date_document ?d } } ORDER BY ?d ?c')
+    lines = [EU_MARK, "Act " + celex]
+    lines += [f"Amended by {r['c']} ({r.get('d') or 'no date'})" for r in rows] or ["No amending acts recorded"]
+    return "\n".join(lines)
+
+
+def _fetch_text(url, timeout=15):
+    m = EURLEX_CELEX.search(url or "")
+    if m:
+        return _fetch_eu_amendments(m.group(1))  # fetched 8 at a time (_fetch_all): 42 sources stay well under the request limit
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html,application/json"})
     try:
         r = urllib.request.urlopen(req, timeout=timeout)
@@ -196,8 +229,9 @@ def check_sources(con, fetch=_fetch_text):
         prev = _read_snapshot(con, url)
         if prev is None:
             con.execute("INSERT INTO source_snapshots(url, sha256, checked_at, page_text) VALUES (?,?,?,?)", (url, sha, db.now(), text))
-        elif prev["page_text"] is None:
-            # first run that keeps text: take it as the starting point, no alert (the fingerprint format changed too)
+        elif prev["page_text"] is None or (text.startswith(EU_MARK) and not prev["page_text"].startswith(EU_MARK)):
+            # first run that keeps text (the fingerprint format changed too), or the first run that reads an EU act from the
+            # amendments list instead of its page: take it as the starting point, no alert
             con.execute("UPDATE source_snapshots SET sha256=?, page_text=?, checked_at=? WHERE url=?", (sha, text, db.now(), url))
         elif fingerprint(url, prev["page_text"]) == sha:  # yesterday's text under today's rules, so a rule change here raises nothing
             con.execute("UPDATE source_snapshots SET checked_at=?, pending_sha=NULL, pending_at=NULL WHERE url=?", (db.now(), url))

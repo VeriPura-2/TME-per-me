@@ -306,6 +306,46 @@ class Watch(unittest.TestCase):
             self.assertEqual(jobs._fetch_text("https://x.test/a.pdf"), "Rule 1")
         self.assertEqual(op.call_count, 2)
 
+    def _sparql_resp(self, rows):
+        import json as _json
+        return self._resp(_json.dumps({"results": {"bindings": [{k: {"value": v} for k, v in r.items()} for r in rows]}}).encode())
+
+    def test_an_eur_lex_act_is_read_from_the_amendments_list_not_its_page(self):
+        ans = [self._sparql_resp([{"w": "x"}]),
+               self._sparql_resp([{"c": "32019R1381", "d": "2019-06-20"}, {"c": "32021R0382", "d": "2021-03-03"}])]
+        with mock.patch("urllib.request.urlopen", side_effect=ans) as op:
+            txt = jobs._fetch_text("https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32004R0852")
+        self.assertEqual(op.call_count, 2)
+        self.assertEqual(txt.splitlines(), [jobs.EU_MARK, "Act 32004R0852", "Amended by 32019R1381 (2019-06-20)",
+                                            "Amended by 32021R0382 (2021-03-03)"])
+
+    def test_an_act_with_no_amendments_reads_as_such_and_an_unknown_act_is_unreadable(self):
+        with mock.patch("urllib.request.urlopen", side_effect=[self._sparql_resp([{"w": "x"}]), self._sparql_resp([])]):
+            self.assertIn("No amending acts recorded", jobs._fetch_text("https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32022R2104"))
+        with mock.patch("urllib.request.urlopen", side_effect=[self._sparql_resp([])]):
+            with self.assertRaises(ValueError):
+                jobs._fetch_text("https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32099R9999")
+
+    def test_switching_an_eu_act_to_the_amendments_list_raises_no_alert_and_a_new_amendment_does(self):
+        con = db.connect()
+        url = [u for u in jobs.source_urls() if "eur-lex" in u][0]
+        pages = {u: "\n".join(f"Article {i}: rule text {i}" for i in range(60)) for u in jobs.source_urls()}
+        jobs.check_sources(con, lambda u: pages[u])
+        base = jobs.EU_MARK + "\nAct X\nAmended by 32019R1381 (2019-06-20)"
+        pages[url] = base
+        self.assertEqual(jobs.check_sources(con, lambda u: pages[u])["unreachable"], 0)
+        self.assertTrue(self._quiet(con))
+        pages[url] = base + "\nAmended by 32026R0001 (2026-01-05)"
+        with mock.patch.object(jobs, "CONFIRM_HOURS", 0):
+            for _ in range(3):
+                jobs.check_sources(con, lambda u: pages[u])
+        self.assertEqual([c["kind"] for c in jobs.changes(con) if c["ref"] == url], ["source_changed"])
+
+    def test_the_fda_allergen_row_is_watched_on_the_us_code_not_the_fda_page(self):
+        urls = jobs.source_urls()
+        self.assertTrue(any("uscode.house.gov" in u for u in urls))
+        self.assertFalse(any("food-allergen-labeling-edition-5" in u for u in urls))
+
     def test_a_missing_page_is_not_retried(self):
         err = urllib.error.HTTPError("u", 404, "Not Found", {}, None)
         with mock.patch.object(jobs, "RETRY_PAUSE", 0), mock.patch("urllib.request.urlopen", side_effect=err) as op:
