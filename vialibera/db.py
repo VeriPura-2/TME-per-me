@@ -331,6 +331,28 @@ CREATE TABLE IF NOT EXISTS tool_interest (
   user_type TEXT,                      -- exporter (no TEM), tem, client (of a TEM)
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS intro_requests (   -- an exporter asks for a TEM introduction, and TEMs on MioTEM see it (20 Nov 2026)
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  company_id TEXT,
+  user_sub TEXT NOT NULL,
+  email TEXT,                          -- sent by the exporter's browser from the sign-in, for staff only
+  consent TEXT NOT NULL,               -- what the exporter agreed to
+  status TEXT NOT NULL,                -- open, withdrawn, introduced
+  created_at TEXT NOT NULL,
+  closed_at TEXT,
+  closed_by TEXT
+);
+CREATE TABLE IF NOT EXISTS intro_offers (     -- a TEM firm offers to help with an open request
+  id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL,
+  case_id TEXT NOT NULL,
+  firm_id TEXT NOT NULL,
+  user_sub TEXT NOT NULL,
+  note TEXT,
+  created_at TEXT NOT NULL,
+  UNIQUE (request_id, firm_id)
+);
 CREATE TABLE IF NOT EXISTS tool_visibility (
   case_id TEXT NOT NULL,
   tool TEXT NOT NULL,

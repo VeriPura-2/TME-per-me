@@ -23,6 +23,7 @@ from urllib.parse import parse_qs, urlparse
 from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
 from .menu import MENU
 from . import plan_prices
+from . import intros
 from .secrets import get_secret
 
 from .terms import TERMS_VERSION  # noqa: E402 (kept here: app.TERMS_VERSION is used across the code and tests)
@@ -731,7 +732,20 @@ def handle_tools(path, body, who):
             row, err = _case_for(body, who)
             if err and tems._case_tem(c, who, cid) is None:  # a TEM works on client projects through the engagement
                 return err
-        return tools.record_interest(c, cid, who["user"], str(body.get("tool") or ""), body.get("consent") is True, body.get("email"))
+        code, out = tools.record_interest(c, cid, who["user"], str(body.get("tool") or ""), body.get("consent") is True, body.get("email"))
+        if code == 200 and cid and body.get("tool") == "tem_intro" and body.get("consent") is True:  # TEMs on MioTEM see the request
+            intros.open_request(c, cid, who, body.get("email"))
+        return code, out
+    if path == "/tools/intro_status":  # the exporter's TEM request on this project, and the firms that offered
+        row, err = _case_for(body, who)
+        return err or intros.status(c, row["id"])
+    if path == "/tools/intro_withdraw":
+        row, err = _case_for(body, who, "write")
+        return err or intros.withdraw(c, who, row["id"])
+    if path == "/tools/intro_list":  # TEM workspace: exporters looking for a TEM
+        return intros.tem_list(c, who)
+    if path == "/tools/intro_offer":
+        return intros.offer(c, who, str(body.get("request") or ""), body.get("note"))
     if path == "/tools/tour":  # the guided tour of a project: stops, texts and which ones ask "Interested?" (no AI call)
         return 200, {"stops": tools.TEM_TOUR if body.get("kind") == "tem" else tools.TOUR}
     if path == "/tools/catalog":  # the tool tour after sign-in: every tool, as this user would see it
@@ -833,6 +847,10 @@ def handle_admin(path, body, who):
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
         return 200, tools.interest_listing(c)
+    if path == "/admin/intro_requests":
+        return intros.staff_list(c, who)
+    if path == "/admin/intro_introduced":
+        return intros.mark_introduced(c, who, str(body.get("request") or ""))
     if path == "/admin/contact_requests":
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
