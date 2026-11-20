@@ -34,6 +34,7 @@ def _change(con, kind, ref, summary, detail=None):
     con.commit()
 
 
+LAST_SEEN = {}  # url -> what the last fetch of it saw (status, size, bot-check header)
 RETRY_PAUSE = 8  # seconds before the one retry of a page that answered "too many requests" or a server error (19 Nov 2026)
 
 
@@ -48,6 +49,10 @@ def _fetch_text(url, timeout=15):  # fetched 8 at a time (_fetch_all): 42 source
         r = urllib.request.urlopen(req, timeout=timeout)
     with r:
         raw = r.read(3_000_000).decode("utf-8", "replace")
+    # What the server answered, kept for the Data changes alert if the page then counts as unreadable (20 Nov 2026:
+    # ten EUR-Lex pages were unreadable and the alert did not say why).
+    LAST_SEEN[url] = {"status": getattr(r, "status", None), "bytes": len(raw), "waf": r.headers.get("x-amzn-waf-action"),
+                      "start": " ".join(raw[:160].split()) if len(raw) < 3000 else ""}
     return page_text(raw)
 
 
@@ -183,7 +188,8 @@ def check_sources(con, fetch=_fetch_text):
         text = pages[url]
         if isinstance(text, Exception):
             unreachable += 1
-            _change(con, "source_unreachable", url, "Checklist source could not be read today", {"error": type(text).__name__})
+            _change(con, "source_unreachable", url, "Checklist source could not be read today",
+                    {"error": type(text).__name__, "info": str(text)[:200]})
             continue
         text = text[:TEXT_KEEP]
         sha = fingerprint(url, text)
@@ -198,7 +204,8 @@ def check_sources(con, fetch=_fetch_text):
         elif len(prev["page_text"]) >= SHRINK_MIN and len(text) < len(prev["page_text"]) / 2:
             # most of the page is gone: a bot check or an error page, not a rule change. Yesterday's text is kept.
             unreachable += 1
-            _change(con, "source_unreachable", url, "Checklist source could not be read today", {"error": "page_shrank"})
+            _change(con, "source_unreachable", url, "Checklist source could not be read today",
+                    {"error": "page_shrank", "chars": len(text), "was": len(prev["page_text"]), **LAST_SEEN.get(url, {})})
         elif prev["pending_sha"] != sha or _hours_since(prev["pending_at"]) < CONFIRM_HOURS:
             # first sighting of this text: wait for a later run. Rotating page parts and pages that flip
             # between two versions never show the same new text twice in a row, so they stay quiet.
