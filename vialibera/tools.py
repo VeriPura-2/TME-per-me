@@ -235,9 +235,62 @@ CARDS = [
 ]
 TOOL_IDS = {c["id"] for c in CORE + CARDS} | {"refcheck"}
 STEP = {"label_check": 2, "label_design": 2, "ttb_agent": 3, "shipping": 4}  # the checklist step where the tool helps (1 Company, 2 Product, 3 Destination, 4 Shipment)
-INTEREST_ONLY = {"funding_calls"}  # interest buttons that are not a card of their own (new funding calls)
+INTEREST_ONLY = {"funding_calls", "tem_intro", "bank_financing"}  # interest buttons that are not a card of their own
+CONSENT_NEEDED = {"tem_intro", "bank_financing"}  # tour closing questions: staff contact the person, so consent is required (20 Nov 2026)
 CLIENT_OFF = {"shipping", "label_check", "importers"}  # hidden from a TEM's client unless the TEM switches them on
 
+
+# Guided tour of a project for exporters (Thomas, 20 Nov 2026): one stop per part of the page; tool stops ask "Interested?".
+# go: where the page goes (a goTo key, or "team"); tool: the card to highlight; ask: the interest recorded on "Yes".
+# The closing stop asks two questions that staff follow up, each with its own consent. No AI call anywhere.
+TOUR = [
+    {"id": "chat", "go": "chat", "t": L("Your export assistant", "Il suo assistente export"),
+     "text": L("Start here. The assistant asks one question at a time about your product, your market and your company, and builds your project from your answers.",
+               "Si parte da qui. L'assistente fa una domanda alla volta su prodotto, mercato e azienda, e costruisce il progetto con le sue risposte.")},
+    {"id": "req", "go": "req", "t": L("Required documents", "Documenti richiesti"),
+     "text": L("For your product and destination: each document you need, who prepares it, and the official source where we have one. Rows still to be confirmed by our staff are marked as such.",
+               "Per il suo prodotto e la sua destinazione: ogni documento necessario, chi lo prepara e la fonte ufficiale, quando disponibile. Le righe ancora da confermare dal nostro staff sono segnalate.")},
+    {"id": "duties", "go": "duties", "t": L("Duties and taxes", "Dazi e imposte"),
+     "text": L("Customs duties for your product in your destination, checked against the official tariffs.",
+               "I dazi doganali per il suo prodotto nel paese di destinazione, verificati rispetto alle tariffe ufficiali.")},
+    {"id": "docs", "go": "docs", "ask": "doc_checks", "t": L("Document library and checks", "Archivio documenti e controlli"),
+     "text": L("All your company documents in one place, filed by project. In preview: the VeriPura Document Checker compares your invoice, packing list and transport document with each other.",
+               "Tutti i documenti dell'azienda in un unico posto, archiviati per progetto. In anteprima: il VeriPura Document Checker confronta tra loro fattura, packing list e documento di trasporto.")},
+    {"id": "cert", "go": "tools", "tool": "cert_evidence", "ask": "cert_evidence", "t": L("Certification evidence", "Prove delle certificazioni"),
+     "text": L("Tell us which protected name your product carries and which control body certifies you, then upload the certificate. For Parmigiano Reggiano you can also check your VAT number against the public list of OCQ PR.",
+               "Indichi quale denominazione protetta ha il prodotto e quale organismo di controllo La certifica, poi carichi il certificato. Per il Parmigiano Reggiano può anche controllare la partita IVA nell'elenco pubblico di OCQ PR.")},
+    {"id": "label", "go": "tools", "tool": "label_check", "ask": "label_check", "t": L("Your label", "La sua etichetta"),
+     "text": L("Check your label artwork with the VeriPura label validator, or create one with partner design tools.",
+               "Verifichi la grafica dell'etichetta con il validatore etichette VeriPura, oppure la crei con gli strumenti di progettazione dei partner.")},
+    {"id": "shipping", "go": "tools", "tool": "shipping", "ask": "shipping", "t": L("Shipping", "Spedizioni"),
+     "text": L("Parcels for samples and small orders, booked with partner services. Pallets and containers are coming.",
+               "Pacchi per campioni e piccoli ordini, da prenotare con servizi partner. Pallet e container sono in arrivo.")},
+    {"id": "importers", "go": "tools", "tool": "importers", "ask": "importers", "t": L("Researched importers", "Importatori ricercati"),
+     "text": L("Importers of Italian food and wine for your destination. Contact through VeriPura Connect is coming.",
+               "Importatori di prodotti alimentari e vino italiani per la sua destinazione. Il contatto tramite VeriPura Connect è in arrivo.")},
+    {"id": "funding", "go": "tools", "tool": "funding", "ask": "funding", "t": L("Funding for exporting", "Finanziamenti per l'export"),
+     "text": L("Official programmes that fund export projects and temporary export managers, each marked open, closed or check the page.",
+               "Programmi ufficiali che finanziano progetti export e temporary export manager, ognuno indicato come aperto, chiuso o da verificare.")},
+    {"id": "vero", "go": "tools", "tool": "vero_italiano", "ask": "vero_italiano", "t": L("Vero Italiano", "Vero Italiano"),
+     "text": L("In development: voluntary validation of the claims you make about your product. Open the example on the card to see how it will work.",
+               "In sviluppo: convalida volontaria delle dichiarazioni sul suo prodotto. Apra l'esempio sulla scheda per vedere come funzionerà.")},
+    {"id": "team", "go": "team", "t": L("Your team", "Il suo team"),
+     "text": L("Invite colleagues and give each one a role. The plan belongs to the company.",
+               "Inviti i colleghi e assegni a ciascuno un ruolo. Il piano appartiene all'azienda.")},
+    {"id": "close", "t": L("Two last questions", "Due ultime domande"),
+     "text": L("Both are optional. Your answers only tell our staff how to help you.",
+               "Entrambe facoltative. Le risposte servono solo al nostro staff per capire come aiutarLa."),
+     "questions": [
+         {"ask": "tem_intro", "q": L("Would you like an introduction to a TEM (temporary export manager) on MioTEM?",
+                                     "Desidera essere presentato a un TEM (temporary export manager) su MioTEM?"),
+          "note": L("TEMs are joining MioTEM now, so we cannot promise a match.", "I TEM stanno entrando ora in MioTEM: non possiamo garantire un abbinamento."),
+          "consent": L("I agree that MioTEM staff may contact me about a TEM introduction.", "Acconsento a essere contattato dallo staff MioTEM per una presentazione a un TEM.")},
+         {"ask": "bank_financing", "q": L("Are you interested in export financing from Crédit Agricole Italia?",
+                                          "Le interessa un finanziamento all'export di Crédit Agricole Italia?"),
+          "note": L("Our staff note your interest and contact you. Nothing is shared with the bank without asking you first.",
+                    "Il nostro staff registra il suo interesse e La contatta. Nulla viene condiviso con la banca senza prima chiederlo a Lei."),
+          "consent": L("I agree that MioTEM staff may contact me about export financing.", "Acconsento a essere contattato dallo staff MioTEM per il finanziamento all'export.")}]},
+]
 
 def _norm(s):
     return (s or "").strip().lower()
@@ -365,9 +418,11 @@ def user_type(con, company_id, user_sub):
     return "client" if has_tem(con, company_id) else "exporter"
 
 
-def record_interest(con, case_id, user_sub, tool):
+def record_interest(con, case_id, user_sub, tool, consent=False, email=None):
     if tool not in TOOL_IDS and tool not in INTEREST_ONLY:
         return 400, {"error": "unknown tool"}
+    if tool in CONSENT_NEEDED and consent is not True:
+        return 400, {"error": "consent required"}
     company = None
     if case_id:
         r = con.execute("SELECT company_id FROM cases WHERE id=?", (case_id,)).fetchone()
@@ -379,8 +434,30 @@ def record_interest(con, case_id, user_sub, tool):
         con.execute("INSERT INTO tool_interest(id, case_id, company_id, user_sub, tool, user_type, created_at) VALUES (?,?,?,?,?,?,?)",
                     (str(uuid.uuid4()), case_id, company, user_sub, tool, utype, db.now()))
         con.commit()
-        db.log_event(con, case_id, user_sub, "tool_interest", {"tool": tool, "user_type": utype})
+        data = {"tool": tool, "user_type": utype}
+        if tool in CONSENT_NEEDED:
+            data["consent"] = "agreed that MioTEM staff may contact them about this"
+            data["email"] = str(email or "").strip()[:254] or None  # sent by the person's browser from the sign-in, for staff follow-up
+        db.log_event(con, case_id, user_sub, "tool_interest", data)
     return 200, {"ok": True}
+
+
+def contact_requests(con):
+    """Tour closing answers that staff must follow up: TEM introduction and Credit Agricole Italia financing interest.
+    The email is the one the person's browser sent from the sign-in when they answered, else the company membership label."""
+    import json
+    out = []
+    for r in con.execute("SELECT e.at, e.actor, e.case_id, e.data FROM events e WHERE e.kind='tool_interest' ORDER BY e.at DESC LIMIT 2000").fetchall():
+        d = json.loads(r["data"] or "{}")
+        if d.get("tool") not in CONSENT_NEEDED or not d.get("consent"):
+            continue
+        co = con.execute("SELECT co.legal_name AS company, m.label FROM memberships m JOIN companies co ON co.id=m.company_id "
+                         "WHERE m.user_sub=? AND m.status='active' LIMIT 1", (r["actor"],)).fetchone()
+        out.append({"tool": d["tool"], "created_at": r["at"], "company": co["company"] if co else None,
+                    "email": d.get("email") or (co["label"] if co else None)})
+        if len(out) >= 200:
+            break
+    return {"total": len(out), "requests": out}
 
 
 def interest_listing(con):

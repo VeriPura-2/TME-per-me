@@ -731,7 +731,9 @@ def handle_tools(path, body, who):
             row, err = _case_for(body, who)
             if err and tems._case_tem(c, who, cid) is None:  # a TEM works on client projects through the engagement
                 return err
-        return tools.record_interest(c, cid, who["user"], str(body.get("tool") or ""))
+        return tools.record_interest(c, cid, who["user"], str(body.get("tool") or ""), body.get("consent") is True, body.get("email"))
+    if path == "/tools/tour":  # the guided tour of a project: stops, texts and which ones ask "Interested?" (no AI call)
+        return 200, {"stops": tools.TOUR}
     if path == "/tools/catalog":  # the tool tour after sign-in: every tool, as this user would see it
         company = permissions.company_of(c, who["user"])
         viewer = "tem" if tems.firm_of(c, who["user"]) else ("client" if tools.has_tem(c, company) else "exporter")
@@ -831,6 +833,10 @@ def handle_admin(path, body, who):
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}
         return 200, tools.interest_listing(c)
+    if path == "/admin/contact_requests":
+        if not permissions.is_staff(who):
+            return 403, {"error": "forbidden"}
+        return 200, tools.contact_requests(c)
     if path == "/admin/ai_usage":
         if not permissions.is_staff(who):
             return 403, {"error": "forbidden"}

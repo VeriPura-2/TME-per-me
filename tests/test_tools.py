@@ -341,3 +341,56 @@ class VeroItalianoWalkthrough(unittest.TestCase):
         self.assertIn("if (n.walk) walkthrough(card, n.walk, t);", html)
         self.assertIn('wk_open: "See an example"', html)
         self.assertIn('wk_open: "Vedi un esempio"', html)
+
+
+class GuidedTour(unittest.TestCase):
+    """20 Nov 2026: exporter tour with 'Interested?' at tool stops and two consent questions at the end (no AI call)."""
+    def test_stops_are_bilingual_and_point_at_real_tools(self):
+        self.assertEqual(len(tools.TOUR), 12)
+        texts = []
+        for st in tools.TOUR:
+            texts += [st["t"], st["text"]]
+            if st.get("tool"):
+                self.assertIn(st["tool"], tools.TOOL_IDS)
+            if st.get("ask"):
+                self.assertIn(st["ask"], tools.TOOL_IDS)
+            for q in st.get("questions", []):
+                self.assertIn(q["ask"], tools.CONSENT_NEEDED)
+                texts += [q["q"], q["note"], q["consent"]]
+        for x in texts:
+            for lg in ("en", "it"):
+                self.assertTrue(x[lg])
+                self.assertNotIn(EM_DASH, x[lg])
+                for banned in ("saas", "traceability", "ai-powered"):
+                    self.assertNotIn(banned, x[lg].lower())
+        self.assertEqual({q["ask"] for q in tools.TOUR[-1]["questions"]}, {"tem_intro", "bank_financing"})
+
+    def test_tour_endpoint(self):
+        code, out = app.handle_tools("/tools/tour", {}, user("tour-a"))
+        self.assertEqual(code, 200)
+        self.assertEqual(len(out["stops"]), 12)
+        self.assertEqual(app.handle_tools("/tools/tour", {}, None)[0], 400)
+
+    def test_closing_questions_need_consent(self):
+        c = app.con()
+        self.assertEqual(tools.record_interest(c, None, "tour-b", "bank_financing")[0], 400)
+        self.assertEqual(tools.record_interest(c, None, "tour-b", "tem_intro", consent="yes")[0], 400)
+        self.assertEqual(tools.record_interest(c, None, "tour-b", "tem_intro", consent=True, email="b@example.com")[0], 200)
+        self.assertEqual(tools.record_interest(c, None, "tour-b", "funding")[0], 200)  # ordinary interest needs no consent
+        out = tools.contact_requests(c)
+        self.assertTrue(any(r["tool"] == "tem_intro" and r["email"] == "b@example.com" for r in out["requests"]))
+        self.assertFalse(any(r["tool"] == "funding" for r in out["requests"]))
+        ev = c.execute("SELECT data FROM events WHERE actor='tour-b' AND kind='tool_interest'").fetchall()
+        self.assertTrue(any("consent" in e["data"] for e in ev))
+
+    def test_contact_requests_staff_only(self):
+        self.assertEqual(app.handle_admin("/admin/contact_requests", {}, user("tour-c"))[0], 403)
+
+    def test_frontend_has_the_tour(self):
+        html = open(os.path.join(os.path.dirname(app.__file__), "static", "index.html"), encoding="utf-8").read()
+        self.assertIn('<div id="j-tour"></div>', html)
+        self.assertIn("tourButton(cid);", html)
+        self.assertIn('call("/tools/tour", {})', html)
+        self.assertIn('tour_take: "Take the tour"', html)
+        self.assertIn('tour_take: "Faccia il tour"', html)
+        self.assertIn('call("/admin/contact_requests", {})', html)
