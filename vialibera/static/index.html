@@ -1638,6 +1638,11 @@ function dutiesBox(parent, du) {
         pb.onclick = async () => { pm.textContent = ""; const [rr, jj] = await call("/admin/tem_project_limit", {firm: f.id, limit: pl.value});
           if (rr.ok) { await staffTems(); $("s-tems").prepend(mk("div", "Saved: " + f.name + " now has a limit of " + jj.limit + " projects.", "muted")); }
           else pm.textContent = " Not saved: " + (jj && jj.error ? jj.error : rr.status); }; row.append(pl, pb, pm); }
+      if (full) { const dbt = mk("button", "Add demo client (cheese to USA)"), dm = mk("span", "", "muted");  // invented client for demos, no client sign-in
+        dbt.onclick = async () => { dbt.disabled = true; dm.textContent = ""; const [rr, jj] = await call("/admin/tem_demo_client", {firm: f.id}); dbt.disabled = false;
+          if (rr.ok) { await staffTems(); $("s-tems").prepend(mk("div", "Added to " + f.name + ": Caseificio Esempio Srl (DEMO) with a cheese to USA project.", "muted")); }
+          else dm.textContent = " Not added: " + (jj && jj.error ? jj.error : rr.status); };
+        row.append(dbt, dm); }
       if (full) { const b = mk("button", "New lead link"), o = mk("div"); b.onclick = async () => { o.innerHTML = ""; const [rr, jj] = await call("/admin/tem_lead_link", {firm: f.id}); if (rr.ok) linkBox(o, location.origin + "/?tem=" + jj.token, "Single use, 14 days."); }; row.append(b, o); }
       box.appendChild(row); });
     if (full) { const n = mk("input"), v = mk("input"), st = mk("input"); n.placeholder = "Firm name"; v.placeholder = "VAT (optional)"; st.placeholder = "Seats (empty = not limited)"; st.type = "number";
