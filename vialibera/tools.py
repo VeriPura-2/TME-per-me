@@ -366,7 +366,7 @@ def _norm(s):
 
 
 # Display order (22 Nov 2026 research): compliance and its costs first, growth tools after, the lowest rated last
-# (introduction to a TEM, outreach). Importers rank low for exporters already shipping; first-time exporters see them right after the compliance tools.
+# (outreach). Importers move up, right after the compliance tools, for a first-time exporter or a new market (no importer there yet).
 ORDER = ["ai_manager", "checklist", "duties", "library", "eori",
          "doc_checks", "label_check", "ttb_agent", "cert_evidence", "alerts",
          "label_design", "shipping", "vero_italiano", "buyer_verification", "funding", "importers",
@@ -385,7 +385,8 @@ def _rank(first_time):
 
 def for_case(product_category, country, first_time=False):
     """The tool cards for one project, in display order (deep copies, safe to annotate).
-    first_time: the company has not exported yet (export_experience none)."""
+    first_time: researched importers move up. True for a first-time exporter or a new market for this project
+    (no importer in the destination yet), R1 22 Nov 2026."""
     import copy
     p, k = _norm(product_category), _norm(country)
     out = []

@@ -470,3 +470,35 @@ class Order22Nov(unittest.TestCase):
         cards = {c["id"]: c for c in tools.for_case("wine", "USA")}
         self.assertNotIn("booking", cards["shipping"]["coming"]["text"]["en"])
         self.assertNotIn("application", cards["funding"]["coming"]["text"]["en"])
+
+
+class NewMarket22Nov(unittest.TestCase):
+    """R1: researched importers move up for any project whose destination is a new market (no importer there yet)."""
+
+    def order(self, importer):
+        from test_start_form import user
+        from vialibera import app
+        who = user("nm-" + str(importer))
+        body = {"category": "cheese", "country": "USA"}
+        if importer:
+            body["importer"] = importer
+        code, out = app.handle_start(body, who)
+        self.assertEqual(code, 200)
+        ids = [c["id"] for c in app.handle_journey({"case_id": out["case_id"]}, who)[1]["tools"]["cards"]]
+        return ids, out["case_id"]
+
+    def test_new_market_puts_importers_right_after_compliance(self):
+        ids, cid = self.order("no")
+        self.assertEqual(ids[ids.index("alerts") + 1], "importers")
+        from vialibera import app, db
+        self.assertEqual(db.case_read(app.con(), cid)["market"]["importer_status"], "looking")
+
+    def test_an_importer_already_there_keeps_importers_low(self):
+        ids, cid = self.order("yes")
+        self.assertLess(ids.index("funding"), ids.index("importers"))
+        from vialibera import app, db
+        self.assertEqual(db.case_read(app.con(), cid)["market"]["importer_status"], "have one")
+
+    def test_unanswered_keeps_the_old_order(self):
+        ids, _ = self.order(None)
+        self.assertLess(ids.index("funding"), ids.index("importers"))

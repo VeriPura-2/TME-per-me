@@ -248,7 +248,7 @@ const T = {
     q_detail: "Descrizione (facoltativa)", q_detail_ph: "Es. Barbera d'Asti DOCG, 750 ml", q_detail_help: "Aiuta a scegliere i documenti giusti, per esempio il tipo di vino o di formaggio.",
     q_eu_q: "Quale Paese dell'Unione europea?", q_chat: "Non so ancora il paese: parliamone in chat",
     q_uc_h: "Questo percorso non è ancora coperto", q_uc_p: "Può creare il progetto lo stesso. Non conta nel limite del suo piano, ma non avrà ancora un elenco di documenti verificato. Aggiungiamo prodotti e paesi di continuo: registriamo la sua richiesta e La contattiamo quando sarà pronto.",
-    q_prod: "Prodotto", q_country: "Paese di destinazione", q_vat: "Partita IVA (facoltativa)", q_check: "Verifica", q_start: "Crea il mio progetto",
+    q_imp: "Ha già un importatore in {c}?", q_imp_yes: "Sì", q_imp_no: "No, è un mercato nuovo", q_imp_there: "questo paese", q_prod: "Prodotto", q_country: "Paese di destinazione", q_vat: "Partita IVA (facoltativa)", q_check: "Verifica", q_start: "Crea il mio progetto",
     q_other: "altro", q_pick: "Scelga prodotto e paese.", q_ready: "Pronto. La lista dei documenti e i dazi sono in Servizi. Mi scriva qui per continuare o per porre una domanda.",
     q_ready_sim: "Pronto. Per questo prodotto o paese la lista è ancora indicativa (vedere Servizi). Mi scriva qui per continuare o per porre una domanda.",
     q_vat_bad: "Partita IVA non valida: ",
@@ -288,7 +288,7 @@ const T = {
     q_detail: "Description (optional)", q_detail_ph: "E.g. Barbera d'Asti DOCG, 750 ml", q_detail_help: "Helps us pick the right documents, for example the type of wine or cheese.",
     q_eu_q: "Which European Union country?", q_chat: "I don't know the country yet: let's talk in chat",
     q_uc_h: "This route is not covered yet", q_uc_p: "You can still create the project. It does not count toward your plan's limit, but it will not have a checked document list yet. We add products and countries all the time: we record your request and contact you when it is ready.",
-    q_prod: "Product", q_country: "Destination country", q_vat: "VAT number (optional)", q_check: "Check", q_start: "Create my project",
+    q_imp: "Do you already have an importer in {c}?", q_imp_yes: "Yes", q_imp_no: "No, it is a new market", q_imp_there: "this country", q_prod: "Product", q_country: "Destination country", q_vat: "VAT number (optional)", q_check: "Check", q_start: "Create my project",
     q_other: "other", q_pick: "Choose a product and a country.", q_ready: "Ready. The document checklist and duties are in Services. Write here to continue or to ask a question.",
     q_ready_sim: "Ready. For this product or country the checklist is still indicative (see Services). Write here to continue or to ask a question.",
     q_vat_bad: "VAT number not valid: ",
@@ -2004,14 +2004,19 @@ function dutiesBox(parent, du) {
       if (cc) { if (PICK_COUNTRIES.includes(cc) && cc !== "EU") ctry.value = cc; else if (EU_STATES.includes(cc)) { ctry.value = "EU"; eu.value = cc; } else { ctry.value = "other"; oc.value = landed.destination || ""; } }
       refresh(); box.insertBefore(mk("div", t.q_carried, "muted"), box.children[1]);
     }
-    box.append(op, lbl(t.q_detail), desc, mk("div", t.q_detail_help, "muted"), lbl(t.q_country), ctry, euq, eu, oc, notice);
+    // R1 (22 Nov 2026): one question per project tells a new market from a market where they already have an importer
+    const imp = mk("select"); [["", ""], ["no", t.q_imp_no], ["yes", t.q_imp_yes]].forEach(([v, l]) => { const o = mk("option", l); o.value = v; imp.appendChild(o); });
+    const impq = mk("label", t.q_imp.replace("{c}", "?")); impq.style.display = "block"; impq.style.marginTop = "8px";
+    const impSync = () => { const c = countryValue(); impq.textContent = t.q_imp.replace("{c}", c && c !== "EU" ? c : t.q_imp_there); };
+    ctry.addEventListener("change", impSync); eu.addEventListener("change", impSync); oc.addEventListener("input", impSync); impSync();
+    box.append(op, lbl(t.q_detail), desc, mk("div", t.q_detail_help, "muted"), lbl(t.q_country), ctry, euq, eu, oc, notice, impq, imp);
     const go = mk("button", t.q_start), msg = mk("div", "", "muted"); go.className = "primary"; go.style.marginTop = "8px";
     go.onclick = async () => {
       msg.textContent = "";
       if (!prod || !countryValue()) { msg.textContent = t.q_pick; return; }
       go.disabled = true;
       const xp = landed && landed.role === "exporter" ? {first_time: "none", exporting: "occasional"}[landed.stage] : undefined;  // from the landing chat (22 Nov 2026)
-      const [r, j] = await call("/start", {category: prod, country: countryValue(), description: desc.value, lang, export_experience: xp,
+      const [r, j] = await call("/start", {category: prod, country: countryValue(), description: desc.value, lang, export_experience: xp, importer: imp.value || undefined,
                                            other_product: op.value, other_country: oc.value || (ctry.value === "EU" ? "EU" : "")});
       go.disabled = false;
       if (!r.ok) {

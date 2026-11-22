@@ -334,6 +334,8 @@ def handle_start(body, who):
         db.case_write(c, cid, "product", {"category": cat, **({"name_brand": desc} if desc else {})}, actor="client")
     if country:
         db.case_write(c, cid, "market", {"country": country}, actor="client")
+    if body.get("importer") in ("yes", "no"):  # R1: already an importer in this destination, or a new market
+        db.case_write(c, cid, "market", {"importer_status": "have one" if body["importer"] == "yes" else "looking"}, actor="client")
     if body.get("export_experience") in ("none", "occasional", "regular"):  # carried over from the landing chat role button
         db.case_write(c, cid, "company", {"export_experience": body["export_experience"]}, actor="client")
     company = permissions.company_of(c, who["user"])
@@ -732,7 +734,8 @@ def handle_journey(body, who):
     out["doc_requests"] = doc_requests.for_case(c, row["id"])
     out["tem_financing"] = tem_financing.for_client(c, row["id"])  # only lines the TEM chose to show
     out["tools"] = tools.for_viewer(c, row, case["product"].get("category"), case["market"].get("country"), viewer,
-                                    first_time=case["company"].get("export_experience") == "none")
+                                    first_time=case["company"].get("export_experience") == "none"
+                                    or case["market"].get("importer_status") in ("looking", "not sure"))  # R1: a new market
     if viewer == "client":  # the client can ask their TEM for help with the tools they see
         out["tools"]["tem"] = True
         out["tools"]["open_requests"] = [r["tool"] or "" for r in c.execute(
