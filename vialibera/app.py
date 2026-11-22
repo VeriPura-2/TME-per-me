@@ -334,6 +334,8 @@ def handle_start(body, who):
         db.case_write(c, cid, "product", {"category": cat, **({"name_brand": desc} if desc else {})}, actor="client")
     if country:
         db.case_write(c, cid, "market", {"country": country}, actor="client")
+    if body.get("export_experience") in ("none", "occasional", "regular"):  # carried over from the landing chat role button
+        db.case_write(c, cid, "company", {"export_experience": body["export_experience"]}, actor="client")
     company = permissions.company_of(c, who["user"])
     notice = None
     if vat and not vat_err:

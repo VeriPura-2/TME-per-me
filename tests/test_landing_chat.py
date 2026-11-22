@@ -486,3 +486,53 @@ class LandingChat(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Refinement22Nov(unittest.TestCase):
+    """22 Nov 2026 research: first-time flag kept, forwarder answer, no TEM offer from the guide, VeriPura Core wording."""
+
+    def setUp(self):
+        app.con().execute("DELETE FROM anon_chats")
+
+    def test_the_start_exporting_button_marks_a_first_time_exporter_and_sign_in_carries_it(self):
+        say(Script([tool("set_role", {"role": "exporter"}), text("What would you like to export?")]), "I want to start exporting Italian products")
+        self.assertEqual(landing_chat.claim(app.con(), "user-ft", V1)["stage"], "first_time")
+
+    def test_the_export_button_marks_an_exporter_already_shipping(self):
+        say(Script([tool("set_role", {"role": "exporter"}), text("What do you export?")]), "Esporto prodotti italiani")
+        self.assertEqual(landing_chat.claim(app.con(), "user-ex", V1)["stage"], "exporting")
+
+    def test_set_role_can_give_the_stage_and_the_button_wins(self):
+        say(Script([tool("set_role", {"role": "exporter", "stage": "first_time"}), text("ok")]), "we plan to export next year")
+        self.assertEqual(landing_chat.claim(app.con(), "user-s", V1)["stage"], "first_time")
+        say(Script([tool("set_role", {"role": "exporter", "stage": "exporting"}), text("ok")]), "I want to start exporting Italian products", v=V2)
+        self.assertEqual(landing_chat.claim(app.con(), "user-s2", V2)["stage"], "first_time")
+
+    def test_no_stage_for_a_tem_or_without_a_signal(self):
+        say(Script([tool("set_role", {"role": "tem", "stage": "exporting"}), text("ok")]), "I am a TEM")
+        self.assertIsNone(landing_chat.claim(app.con(), "user-t", V1)["stage"])
+
+    def test_the_prompt_answers_the_forwarder_objection_and_offers_no_tem_introduction(self):
+        s = landing_chat.SYSTEM
+        self.assertIn("Good, keep them. MioTEM shows which documents on your route are yours to prepare", s)
+        self.assertIn("Bene, li tenga.", s)
+        self.assertIn("Do not offer an introduction to a TEM", s)
+        self.assertNotIn("Would you like an\n   introduction to a TEM", s)
+        self.assertNotIn("a delayed shipment", s)
+        self.assertNotIn(EM_DASH, s)
+
+    def test_powered_by_veripura_core_everywhere(self):
+        html = open(os.path.join(os.path.dirname(landing_chat.__file__), "static", "index.html"), encoding="utf-8").read()
+        for src in (landing_chat.SYSTEM, html):
+            self.assertNotIn("orchestrated", src)
+        self.assertIn("powered by VeriPura Core", landing_chat.SYSTEM)
+        self.assertEqual(html.count("Compliance document validation, powered by VeriPura Core."), 2)
+
+    def test_start_form_saves_the_export_experience(self):
+        from test_start_form import user as who
+        code, out = app.handle_start({"category": "pasta", "country": "UK", "export_experience": "none"}, who("xp1"))
+        self.assertEqual(code, 200)
+        from vialibera import db
+        self.assertEqual(db.case_read(app.con(), out["case_id"])["company"].get("export_experience"), "none")
+        code, out = app.handle_start({"category": "wine", "country": "UK", "export_experience": "lots"}, who("xp2"))
+        self.assertNotIn("export_experience", db.case_read(app.con(), out["case_id"])["company"])
