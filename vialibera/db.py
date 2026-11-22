@@ -282,6 +282,16 @@ CREATE TABLE IF NOT EXISTS tem_costs (    -- C2: costs a TEM had on a client pro
   what TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS funding_profiles (   -- F1: answers to the funding eligibility questions, per company (or per person before a company exists)
+  owner_key TEXT PRIMARY KEY,
+  size TEXT,
+  region TEXT,
+  activity TEXT,
+  applicant TEXT,
+  cofund TEXT,
+  updated_by TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tem_assignments (
   firm_id TEXT NOT NULL,
   company_id TEXT NOT NULL,

@@ -463,6 +463,10 @@
      "source": "https://www.regione.toscana.it/bandi-aperti",
      "checked": "2026-11-22"
     }
+   },
+   "always_check": {
+    "en": "funds are reserved for fashion, tourism and retail, and we have not read whether food companies qualify",
+    "it": "i fondi sono riservati a moda, turismo e commercio e non abbiamo verificato se le imprese alimentari sono ammesse"
    }
   },
   {
@@ -491,6 +495,10 @@
      "source": "https://www.aa.camcom.it/sites/default/files/contenuto_redazione/editor/Internazionalizzazione_attrazione_investimenti_transizione_digitale_ed_ecologica/Brochure%20misure%20internazionalizzazione/Brochure%20misure%20internazionalizzazione%202026.pdf",
      "checked": "2026-11-22"
     }
+   },
+   "always_check": {
+    "en": "this brochure lists several measures with different rules",
+    "it": "l'opuscolo elenca più misure con regole diverse"
    }
   }
  ]
