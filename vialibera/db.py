@@ -292,6 +292,26 @@ CREATE TABLE IF NOT EXISTS funding_profiles (   -- F1: answers to the funding el
   updated_by TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS funding_alerts (     -- F2: a company asked for funding emails (scheme opens, deadline near)
+  owner_key TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  lang TEXT NOT NULL,
+  set_by TEXT NOT NULL,
+  set_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS funding_alerts_sent (
+  owner_key TEXT NOT NULL,
+  scheme_id TEXT NOT NULL,
+  kind TEXT NOT NULL,                  -- open, d14, d3
+  ref TEXT NOT NULL,                   -- the check date or deadline the email was about
+  sent_at TEXT NOT NULL,
+  PRIMARY KEY (owner_key, scheme_id, kind, ref)
+);
+CREATE TABLE IF NOT EXISTS funding_seen (       -- F2: last scheme status the daily job saw, to notice a change to open
+  scheme_id TEXT PRIMARY KEY,
+  status TEXT NOT NULL,
+  seen_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tem_assignments (
   firm_id TEXT NOT NULL,
   company_id TEXT NOT NULL,

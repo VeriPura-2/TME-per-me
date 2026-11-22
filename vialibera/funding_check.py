@@ -119,3 +119,118 @@ def results(profile):
 def may_fit(profile):
     """How many schemes that are open or have no fixed window may fit: the number on the line under Duties."""
     return sum(1 for x in results(profile) if x["status"] in ("open", "no_window") and x["result"] in ("likely", "check"))
+
+
+# F2: deadline list and email alerts ---------------------------------------------------------
+
+import re
+from datetime import date as _date
+
+EMAIL = re.compile(r"^[^@\s]{1,64}@[^@\s]{1,190}\.[^@\s]{2,}$")
+
+
+def _share_pct(scheme):
+    m = re.search(r"(\d+)\s*%", str(scheme.get("facts", {}).get("grant_share", {}).get("value") or ""))
+    return int(m.group(1)) if m else None
+
+
+def deadlines(profile, today=None):
+    """Schemes that may fit and can be applied for: open with a sourced deadline (by date), then no fixed window.
+    For companies under 10 people, the share the scheme pays comes first (less to cover themselves); a grant without a
+    sourced share carries the label 'co-funding share not confirmed' and comes after."""
+    today = today or _date.today()
+    by = {s["id"]: s for s in funding.schemes()}
+    out = []
+    for x in results(profile):
+        if x["result"] == "no" or x["status"] not in ("open", "no_window"):
+            continue
+        s = by[x["id"]]
+        dl = s.get("facts", {}).get("deadline", {}).get("value")
+        if x["status"] == "open" and (not dl or _date.fromisoformat(dl) < today):
+            continue
+        pct = _share_pct(s)
+        out.append({"id": x["id"], "label": x["label"], "status": x["status"], "deadline": dl if x["status"] == "open" else None,
+                    "checked": x["checked"], "url": x["url"], "result": x["result"],
+                    "share_unconfirmed": s.get("instrument") == "grant" and pct is None, "share": pct})
+    micro = (profile or {}).get("size") == "micro"
+    key = (lambda d: (d["share_unconfirmed"], -(d["share"] or 0), d["deadline"] or "9999")) if micro else \
+          (lambda d: (d["status"] != "open", d["deadline"] or "9999"))
+    return sorted(out, key=key)
+
+
+def get_alerts(con, key):
+    r = con.execute("SELECT email, lang FROM funding_alerts WHERE owner_key=?", (key,)).fetchone()
+    return {"on": bool(r)}
+
+
+def set_alerts(con, key, who, on, email, lang):
+    con.execute("DELETE FROM funding_alerts WHERE owner_key=?", (key,))
+    if on:
+        if not EMAIL.match(str(email or "")):
+            con.commit()
+            return 400, {"error": "email needed"}
+        con.execute("INSERT INTO funding_alerts(owner_key, email, lang, set_by, set_at) VALUES (?,?,?,?,?)",
+                    (key, str(email)[:254], "en" if lang == "en" else "it", who["user"], db.now()))
+    con.commit()
+    db.log_event(con, None, who["user"], "funding_alerts", {"on": bool(on)})
+    return 200, {"ok": True, "on": bool(on)}
+
+
+RESULT = {"likely": ("likely eligible", "probabilmente ammissibile"), "check": ("check with the funder", "da verificare con l'ente")}
+MAIL = {
+    "open": {"en": ("{scheme} is open", "Hello, {scheme} is now open, according to the official page we checked on {checked}: {link}\n"
+                    "Your eligibility check shows: {result}. The funder decides.\n\nYou can stop these emails in MioTEM, under Financing in your project: {app}"),
+             "it": ("{scheme} è aperto", "Buongiorno, {scheme} è ora aperto, secondo la pagina ufficiale verificata il {checked}: {link}\n"
+                    "La sua verifica dei requisiti indica: {result}. Decide l'ente che finanzia.\n\nPuò interrompere queste email in MioTEM, alla voce Finanziamenti del suo progetto: {app}")},
+    "deadline": {"en": ("{scheme} closes on {deadline}", "Hello, {scheme} closes on {deadline}, according to the official page we checked on {checked}: {link}\n"
+                        "Your eligibility check shows: {result}. The funder decides.\n\nYou can stop these emails in MioTEM, under Financing in your project: {app}"),
+                 "it": ("{scheme} chiude il {deadline}", "Buongiorno, {scheme} chiude il {deadline}, secondo la pagina ufficiale verificata il {checked}: {link}\n"
+                        "La sua verifica dei requisiti indica: {result}. Decide l'ente che finanzia.\n\nPuò interrompere queste email in MioTEM, alla voce Finanziamenti del suo progetto: {app}")},
+}
+
+
+def send_alerts(con, base_url, send=None, today=None):
+    """Daily job. Emails a subscribed company when a scheme that may fit turns open (staff changed the status after a
+    check), and 14 and 3 days before a sourced deadline. Each email at most once (funding_alerts_sent)."""
+    from . import notify
+    send = send or notify.send_to
+    today = today or _date.today()
+    schemes = funding.schemes()
+    seen = {r["scheme_id"]: r["status"] for r in con.execute("SELECT scheme_id, status FROM funding_seen").fetchall()}
+    opened = {s["id"] for s in schemes if s["status"]["value"] == "open" and s["id"] in seen and seen[s["id"]] != "open"}
+    sent = 0
+    for sub in con.execute("SELECT * FROM funding_alerts").fetchall():
+        prof = get_profile(con, sub["owner_key"])
+        if not prof:
+            continue
+        lang = sub["lang"]
+        fits = {x["id"]: x["result"] for x in results(prof) if x["result"] in ("likely", "check")}
+        for s in schemes:
+            if s["id"] not in fits or s["status"]["value"] != "open":
+                continue
+            dl = s.get("facts", {}).get("deadline", {}).get("value")
+            todo = []
+            if s["id"] in opened:
+                todo.append(("open", s["status"]["checked"]))
+            if dl:
+                days = (_date.fromisoformat(dl) - today).days
+                if 3 < days <= 14:
+                    todo.append(("d14", dl))
+                elif 0 <= days <= 3:
+                    todo.append(("d3", dl))
+            for kind, ref in todo:
+                if con.execute("SELECT 1 FROM funding_alerts_sent WHERE owner_key=? AND scheme_id=? AND kind=? AND ref=?",
+                               (sub["owner_key"], s["id"], kind, ref)).fetchone():
+                    continue
+                subj, body = MAIL["open" if kind == "open" else "deadline"][lang]
+                v = {"scheme": s["label"][lang], "checked": s["status"]["checked"], "link": s["url"], "deadline": dl or "",
+                     "result": RESULT[fits[s["id"]]][0 if lang == "en" else 1], "app": base_url.rstrip("/") + "/"}
+                if send(sub["email"], subj.format(**v), body.format(**v)):
+                    con.execute("INSERT INTO funding_alerts_sent(owner_key, scheme_id, kind, ref, sent_at) VALUES (?,?,?,?,?)",
+                                (sub["owner_key"], s["id"], kind, ref, db.now()))
+                    sent += 1
+    for s in schemes:
+        con.execute("DELETE FROM funding_seen WHERE scheme_id=?", (s["id"],))
+        con.execute("INSERT INTO funding_seen(scheme_id, status, seen_at) VALUES (?,?,?)", (s["id"], s["status"]["value"], db.now()))
+    con.commit()
+    return {"funding_emails": sent}

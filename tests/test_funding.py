@@ -117,3 +117,65 @@ class EligibilityCheck(unittest.TestCase):
         self.assertEqual((j["profile"]["size"], j["profile"]["region"]), (None, "Veneto"))
         self.assertEqual(len(j["results"]), len(funding.schemes()))
         self.assertEqual(app.handle_tools("/tools/funding_check", {"case_id": cid}, user("someone-else"))[0], 404)
+
+
+class DeadlinesAndAlerts(unittest.TestCase):
+    """F2: deadline list (micro firms see the share the scheme pays first) and at-most-once email alerts."""
+    P = {"size": "small", "region": "Tuscany", "activity": "processing", "applicant": "company", "cofund": "yes"}
+
+    def setUp(self):
+        self.c = app.con()
+        for t in ("funding_alerts", "funding_alerts_sent", "funding_seen", "funding_profiles"):
+            self.c.execute(f"DELETE FROM {t}")
+        self.c.commit()
+
+    def test_deadline_list_open_first_then_no_window(self):
+        from vialibera import funding_check
+        d = funding_check.deadlines(self.P, today=date(2026, 11, 22))
+        self.assertEqual([x["id"] for x in d], ["to_intl_2026", "simest_tm"])
+        self.assertEqual(d[0]["deadline"], "2026-12-18")
+        self.assertTrue(d[0]["share_unconfirmed"])
+        self.assertFalse(d[1]["share_unconfirmed"])
+        self.assertEqual([x["id"] for x in funding_check.deadlines(self.P, today=date(2026, 12, 19))], ["simest_tm"])  # past deadline
+
+    def test_micro_firms_see_the_sourced_share_first(self):
+        from vialibera import funding_check
+        d = funding_check.deadlines(dict(self.P, size="micro"), today=date(2026, 11, 22))
+        self.assertEqual([x["id"] for x in d], ["simest_tm", "to_intl_2026"])
+
+    def test_alerts_need_an_email_and_go_out_once(self):
+        from vialibera import funding_check
+        who = {"user": "fa1"}
+        self.assertEqual(funding_check.set_alerts(self.c, "co-1", who, True, "", "en")[0], 400)
+        self.assertEqual(funding_check.set_alerts(self.c, "co-1", who, True, "a@b.example", "en")[0], 200)
+        funding_check.save_profile(self.c, "co-1", who, self.P)
+        sent = []
+        send = lambda to, subj, body: sent.append((to, subj, body)) or True
+        self.assertEqual(funding_check.send_alerts(self.c, "https://app.example", send, today=date(2026, 11, 22))["funding_emails"], 0)
+        funding_check.send_alerts(self.c, "https://app.example", send, today=date(2026, 12, 5))   # 13 days before 18 Dec
+        funding_check.send_alerts(self.c, "https://app.example", send, today=date(2026, 12, 6))   # same window: not again
+        funding_check.send_alerts(self.c, "https://app.example", send, today=date(2026, 12, 16))  # 2 days before
+        self.assertEqual([s[1] for s in sent], ["Tuscany: internationalisation call 2026 closes on 2026-12-18"] * 2)
+        self.assertIn("check with the funder", sent[0][2])
+        self.assertIn("https://www.regione.toscana.it/bandi-aperti", sent[0][2])
+        self.assertNotIn(EM_DASH, sent[0][2])
+
+    def test_an_email_when_staff_change_a_fitting_scheme_to_open(self):
+        from vialibera import funding_check
+        who = {"user": "fa2"}
+        funding_check.set_alerts(self.c, "co-2", who, True, "x@y.example", "it")
+        funding_check.save_profile(self.c, "co-2", who, self.P)
+        sent = []
+        send = lambda to, subj, body: sent.append(subj) or True
+        self.c.execute("INSERT INTO funding_seen(scheme_id, status, seen_at) VALUES ('to_intl_2026','check','x')")
+        funding_check.send_alerts(self.c, "https://app.example", send, today=date(2026, 11, 22))
+        self.assertEqual(sent, ["Toscana: bando internazionalizzazione 2026 è aperto"])
+        funding_check.send_alerts(self.c, "https://app.example", send, today=date(2026, 11, 23))
+        self.assertEqual(len(sent), 1)
+
+    def test_switching_off_stops_emails(self):
+        from vialibera import funding_check
+        who = {"user": "fa3"}
+        funding_check.set_alerts(self.c, "co-3", who, True, "x@y.example", "en")
+        funding_check.set_alerts(self.c, "co-3", who, False, None, "en")
+        self.assertFalse(funding_check.get_alerts(self.c, "co-3")["on"])

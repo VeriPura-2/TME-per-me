@@ -756,16 +756,19 @@ def handle_tools(path, body, who):
         if code == 200 and cid and body.get("tool") == "tem_intro" and body.get("consent") is True:  # TEMs on MioTEM see the request
             intros.open_request(c, cid, who, body.get("email"))
         return code, out
-    if path in ("/tools/funding_check", "/tools/funding_profile"):  # F1: which funding schemes may fit this company
-        row, err = _case_for(body, who, "write" if path.endswith("profile") else "read")
+    if path in ("/tools/funding_check", "/tools/funding_profile", "/tools/funding_alerts"):  # F1, F2: funding schemes for this company
+        row, err = _case_for(body, who, "read" if path.endswith("check") else "write")
         if err:
             return err
         key = row["company_id"] or limits.owner_key(c, who["user"])
+        if path.endswith("alerts"):
+            return funding_check.set_alerts(c, key, who, bool(body.get("on")), body.get("email"), body.get("lang"))
         prof = funding_check.save_profile(c, key, who, body.get("answers") or {}) if path.endswith("profile") else funding_check.get_profile(c, key)
         case = db.case_read(c, row["id"])
         return 200, {"profile": prof, "destination": case["market"].get("country"), "regions": list(funding_check.REGIONS),
                      "results": funding_check.results(prof) if prof else None,
-                     "may_fit": funding_check.may_fit(prof) if prof else None}
+                     "may_fit": funding_check.may_fit(prof) if prof else None,
+                     "deadlines": funding_check.deadlines(prof) if prof else None, "alerts": funding_check.get_alerts(c, key)}
     if path == "/tools/intro_status":  # the exporter's TEM request on this project, and the firms that offered
         row, err = _case_for(body, who)
         return err or intros.status(c, row["id"])
