@@ -1,0 +1,497 @@
+{
+ "_about": "Funding schemes shown on the Funding card. Every fact carries its official source and the date staff checked it (F5, 22 Nov 2026). Leave a fact out rather than guess.",
+ "schemes": [
+  {
+   "id": "simest_tm",
+   "funder": "SIMEST",
+   "instrument": "loan",
+   "url": "https://www.simest.it/app/uploads/2026/11/Circolare-8-394-2023-TM-29.10.2026_sito.pdf",
+   "label": {
+    "en": "SIMEST: Temporary Manager loan (Fondo 394)",
+    "it": "SIMEST: finanziamento Temporary Manager (Fondo 394)"
+   },
+   "status": {
+    "value": "no_window",
+    "source": "https://www.simest.it/app/uploads/2026/11/Circolare-8-394-2023-TM-29.10.2026_sito.pdf",
+    "checked": "2026-11-22"
+   },
+   "note": {
+    "en": "No closing date: applications are assessed in order of arrival while funds last. From EUR 10,000 to the lower of EUR 500,000 or 20% of average revenue. Grant share up to 10%, or 20% in the cases listed in the circular. Not for primary agricultural production or meat processing (ATECO 10.1, except 10.13).",
+    "it": "Nessuna scadenza: le domande sono valutate in ordine di arrivo, nei limiti dei fondi. Da 10.000 euro al minore tra 500.000 euro e il 20% del fatturato medio. Quota a fondo perduto fino al 10%, o al 20% nei casi indicati dalla circolare. Esclusi produzione agricola primaria e lavorazione delle carni (ATECO 10.1, salvo 10.13)."
+   },
+   "facts": {
+    "applicant": {
+     "value": "company",
+     "source": "https://www.simest.it/app/uploads/2026/11/Circolare-8-394-2023-TM-29.10.2026_sito.pdf",
+     "checked": "2026-11-22"
+    },
+    "min_eur": {
+     "value": 10000,
+     "source": "https://www.simest.it/app/uploads/2026/11/Circolare-8-394-2023-TM-29.10.2026_sito.pdf",
+     "checked": "2026-11-22"
+    },
+    "max_eur": {
+     "value": "lower of 500000 or 20% of average revenue",
+     "source": "https://www.simest.it/app/uploads/2026/11/Circolare-8-394-2023-TM-29.10.2026_sito.pdf",
+     "checked": "2026-11-22"
+    },
+    "grant_share": {
+     "value": "up to 10% (cap 100000), up to 20% (cap 200000) in listed cases",
+     "source": "https://www.simest.it/app/uploads/2026/11/Circolare-8-394-2023-TM-29.10.2026_sito.pdf",
+     "checked": "2026-11-22"
+    },
+    "sizes": {
+     "value": [
+      "micro",
+      "small",
+      "medium",
+      "large"
+     ],
+     "source": "https://www.simest.it/app/uploads/2026/11/Circolare-8-394-2023-TM-29.10.2026_sito.pdf",
+     "checked": "2026-11-22"
+    },
+    "excluded_ateco": {
+     "value": [
+      "A",
+      "10.1 except 10.13"
+     ],
+     "source": "https://www.simest.it/app/uploads/2026/11/Circolare-8-394-2023-TM-29.10.2026_sito.pdf",
+     "checked": "2026-11-22"
+    },
+    "regions": {
+     "value": "all",
+     "source": "https://www.simest.it/app/uploads/2026/11/Circolare-8-394-2023-TM-29.10.2026_sito.pdf",
+     "checked": "2026-11-22"
+    },
+    "deadline": {
+     "value": null,
+     "source": "https://www.simest.it/app/uploads/2026/11/Circolare-8-394-2023-TM-29.10.2026_sito.pdf",
+     "checked": "2026-11-22"
+    },
+    "max_destinations": {
+     "value": 3,
+     "source": "https://www.simest.it/app/uploads/2026/11/Circolare-8-394-2023-TM-29.10.2026_sito.pdf",
+     "checked": "2026-11-22"
+    }
+   }
+  },
+  {
+   "id": "er_intl_2026",
+   "funder": "Regione Emilia-Romagna",
+   "instrument": "grant",
+   "url": "https://fesr.regione.emilia-romagna.it/opportunita/opportunita-di-finanziamento/2025/sostegno-a-progetti-di-internazionalizzazione-delle-p-m-i-e-aggregazioni-di-p-m-i-2026-2027/bando-e-modulistica/bando.pdf/@@download/file/Bando.pdf",
+   "label": {
+    "en": "Emilia-Romagna: internationalisation call 2026-2027 (TEM costs eligible)",
+    "it": "Emilia-Romagna: bando internazionalizzazione 2026-2027 (costi TEM ammessi)"
+   },
+   "status": {
+    "value": "closed",
+    "source": "https://fesr.regione.emilia-romagna.it/opportunita/opportunita-di-finanziamento/2025/sostegno-a-progetti-di-internazionalizzazione-delle-p-m-i-e-aggregazioni-di-p-m-i-2026-2027/bando-e-modulistica/bando.pdf/@@download/file/Bando.pdf",
+    "checked": "2026-11-22"
+   },
+   "note": {
+    "en": "Closed on 13 Mar 2026. Grant 50% (55% with a premium criterion), up to EUR 30,000 for a single company. Emilia-Romagna companies only.",
+    "it": "Chiuso il 13 mar 2026. Contributo del 50% (55% con criterio premiale), fino a 30.000 euro per singola impresa. Solo imprese dell'Emilia-Romagna."
+   },
+   "facts": {
+    "applicant": {
+     "value": "company or aggregation",
+     "source": "https://fesr.regione.emilia-romagna.it/opportunita/opportunita-di-finanziamento/2025/sostegno-a-progetti-di-internazionalizzazione-delle-p-m-i-e-aggregazioni-di-p-m-i-2026-2027/bando-e-modulistica/bando.pdf/@@download/file/Bando.pdf",
+     "checked": "2026-11-22"
+    },
+    "grant_share": {
+     "value": "50% (55% with premium)",
+     "source": "https://fesr.regione.emilia-romagna.it/opportunita/opportunita-di-finanziamento/2025/sostegno-a-progetti-di-internazionalizzazione-delle-p-m-i-e-aggregazioni-di-p-m-i-2026-2027/bando-e-modulistica/bando.pdf/@@download/file/Bando.pdf",
+     "checked": "2026-11-22"
+    },
+    "min_project_eur": {
+     "value": 25000,
+     "source": "https://fesr.regione.emilia-romagna.it/opportunita/opportunita-di-finanziamento/2025/sostegno-a-progetti-di-internazionalizzazione-delle-p-m-i-e-aggregazioni-di-p-m-i-2026-2027/bando-e-modulistica/bando.pdf/@@download/file/Bando.pdf",
+     "checked": "2026-11-22"
+    },
+    "max_eur": {
+     "value": 30000,
+     "source": "https://fesr.regione.emilia-romagna.it/opportunita/opportunita-di-finanziamento/2025/sostegno-a-progetti-di-internazionalizzazione-delle-p-m-i-e-aggregazioni-di-p-m-i-2026-2027/bando-e-modulistica/bando.pdf/@@download/file/Bando.pdf",
+     "checked": "2026-11-22"
+    },
+    "sizes": {
+     "value": [
+      "micro",
+      "small",
+      "medium"
+     ],
+     "source": "https://fesr.regione.emilia-romagna.it/opportunita/opportunita-di-finanziamento/2025/sostegno-a-progetti-di-internazionalizzazione-delle-p-m-i-e-aggregazioni-di-p-m-i-2026-2027/bando-e-modulistica/bando.pdf/@@download/file/Bando.pdf",
+     "checked": "2026-11-22"
+    },
+    "regions": {
+     "value": [
+      "Emilia-Romagna"
+     ],
+     "source": "https://fesr.regione.emilia-romagna.it/opportunita/opportunita-di-finanziamento/2025/sostegno-a-progetti-di-internazionalizzazione-delle-p-m-i-e-aggregazioni-di-p-m-i-2026-2027/bando-e-modulistica/bando.pdf/@@download/file/Bando.pdf",
+     "checked": "2026-11-22"
+    },
+    "deadline": {
+     "value": "2026-03-13",
+     "source": "https://fesr.regione.emilia-romagna.it/opportunita/opportunita-di-finanziamento/2025/sostegno-a-progetti-di-internazionalizzazione-delle-p-m-i-e-aggregazioni-di-p-m-i-2026-2027/bando-e-modulistica/bando.pdf/@@download/file/Bando.pdf",
+     "checked": "2026-11-22"
+    }
+   }
+  },
+  {
+   "id": "er_digital_export_2026",
+   "funder": "Unioncamere Emilia-Romagna",
+   "instrument": "grant",
+   "url": "https://www.ucer.camcom.it/internazionalizzazione-delle-imprese/news/notizie-2026/bando-digital-export-anno-2026-2027/documenti/bando-digital-export-2026-2027.pdf/@@download/file",
+   "label": {
+    "en": "Emilia-Romagna: Digital Export call (Unioncamere)",
+    "it": "Emilia-Romagna: bando Digital Export (Unioncamere)"
+   },
+   "status": {
+    "value": "closed",
+    "source": "https://www.ucer.camcom.it/internazionalizzazione-delle-imprese/news/notizie-2026/bando-digital-export-anno-2026-2027/documenti/bando-digital-export-2026-2027.pdf/@@download/file",
+    "checked": "2026-11-22"
+   },
+   "note": {
+    "en": "Applications ran 28 Sep to 5 Oct 2026. Grant 50%, EUR 10,000 to 20,000. Emilia-Romagna companies only.",
+    "it": "Domande dal 28 set al 5 ott 2026. Contributo del 50%, da 10.000 a 20.000 euro. Solo imprese dell'Emilia-Romagna."
+   },
+   "facts": {
+    "applicant": {
+     "value": "company",
+     "source": "https://www.ucer.camcom.it/internazionalizzazione-delle-imprese/news/notizie-2026/bando-digital-export-anno-2026-2027/documenti/bando-digital-export-2026-2027.pdf/@@download/file",
+     "checked": "2026-11-22"
+    },
+    "grant_share": {
+     "value": "50%",
+     "source": "https://www.ucer.camcom.it/internazionalizzazione-delle-imprese/news/notizie-2026/bando-digital-export-anno-2026-2027/documenti/bando-digital-export-2026-2027.pdf/@@download/file",
+     "checked": "2026-11-22"
+    },
+    "min_eur": {
+     "value": 10000,
+     "source": "https://www.ucer.camcom.it/internazionalizzazione-delle-imprese/news/notizie-2026/bando-digital-export-anno-2026-2027/documenti/bando-digital-export-2026-2027.pdf/@@download/file",
+     "checked": "2026-11-22"
+    },
+    "max_eur": {
+     "value": 20000,
+     "source": "https://www.ucer.camcom.it/internazionalizzazione-delle-imprese/news/notizie-2026/bando-digital-export-anno-2026-2027/documenti/bando-digital-export-2026-2027.pdf/@@download/file",
+     "checked": "2026-11-22"
+    },
+    "sizes": {
+     "value": [
+      "micro",
+      "small",
+      "medium"
+     ],
+     "source": "https://www.ucer.camcom.it/internazionalizzazione-delle-imprese/news/notizie-2026/bando-digital-export-anno-2026-2027/documenti/bando-digital-export-2026-2027.pdf/@@download/file",
+     "checked": "2026-11-22"
+    },
+    "regions": {
+     "value": [
+      "Emilia-Romagna"
+     ],
+     "source": "https://www.ucer.camcom.it/internazionalizzazione-delle-imprese/news/notizie-2026/bando-digital-export-anno-2026-2027/documenti/bando-digital-export-2026-2027.pdf/@@download/file",
+     "checked": "2026-11-22"
+    },
+    "deadline": {
+     "value": "2026-10-05",
+     "source": "https://www.ucer.camcom.it/internazionalizzazione-delle-imprese/news/notizie-2026/bando-digital-export-anno-2026-2027/documenti/bando-digital-export-2026-2027.pdf/@@download/file",
+     "checked": "2026-11-22"
+    }
+   }
+  },
+  {
+   "id": "vr_intl_2026",
+   "funder": "Camera di commercio di Verona",
+   "instrument": "grant",
+   "url": "https://www.vr.camcom.it/la-camera/modulistica-online/incentivi-internazionalizzazione/normativa/bando-internazionalizzazione-2026.pdf/@@display-file/file_principale",
+   "label": {
+    "en": "Verona chamber: internationalisation call 2026",
+    "it": "Camera di commercio di Verona: bando internazionalizzazione 2026"
+   },
+   "status": {
+    "value": "closed",
+    "source": "https://www.vr.camcom.it/la-camera/modulistica-online/incentivi-internazionalizzazione/normativa/bando-internazionalizzazione-2026.pdf/@@display-file/file_principale",
+    "checked": "2026-11-22"
+   },
+   "note": {
+    "en": "Applications ran 7 to 21 Sep 2026. 40% up to 6,000 euro with a TEM. Verona province only.",
+    "it": "Domande dal 7 al 21 set 2026. 40% fino a 6.000 euro con un TEM. Solo provincia di Verona."
+   },
+   "facts": {
+    "applicant": {
+     "value": "company or aggregation",
+     "source": "https://www.vr.camcom.it/la-camera/modulistica-online/incentivi-internazionalizzazione/normativa/bando-internazionalizzazione-2026.pdf/@@display-file/file_principale",
+     "checked": "2026-11-22"
+    },
+    "grant_share": {
+     "value": "40%",
+     "source": "https://www.vr.camcom.it/la-camera/modulistica-online/incentivi-internazionalizzazione/normativa/bando-internazionalizzazione-2026.pdf/@@display-file/file_principale",
+     "checked": "2026-11-22"
+    },
+    "min_project_eur": {
+     "value": 10000,
+     "source": "https://www.vr.camcom.it/la-camera/modulistica-online/incentivi-internazionalizzazione/normativa/bando-internazionalizzazione-2026.pdf/@@display-file/file_principale",
+     "checked": "2026-11-22"
+    },
+    "max_eur": {
+     "value": 6000,
+     "source": "https://www.vr.camcom.it/la-camera/modulistica-online/incentivi-internazionalizzazione/normativa/bando-internazionalizzazione-2026.pdf/@@display-file/file_principale",
+     "checked": "2026-11-22"
+    },
+    "sizes": {
+     "value": [
+      "micro",
+      "small",
+      "medium"
+     ],
+     "source": "https://www.vr.camcom.it/la-camera/modulistica-online/incentivi-internazionalizzazione/normativa/bando-internazionalizzazione-2026.pdf/@@display-file/file_principale",
+     "checked": "2026-11-22"
+    },
+    "regions": {
+     "value": [
+      "Verona province"
+     ],
+     "source": "https://www.vr.camcom.it/la-camera/modulistica-online/incentivi-internazionalizzazione/normativa/bando-internazionalizzazione-2026.pdf/@@display-file/file_principale",
+     "checked": "2026-11-22"
+    },
+    "deadline": {
+     "value": "2026-09-21",
+     "source": "https://www.vr.camcom.it/la-camera/modulistica-online/incentivi-internazionalizzazione/normativa/bando-internazionalizzazione-2026.pdf/@@display-file/file_principale",
+     "checked": "2026-11-22"
+    }
+   }
+  },
+  {
+   "id": "mo_voucher_2026",
+   "funder": "Camera di commercio di Modena",
+   "instrument": "grant",
+   "url": "https://www.mo.camcom.it/amministrazione-trasparente/sovvenzioni-contributi-sussidi-vantaggi-economici/bandi/bando-voucher-internazionalizzazione-anno-2026/view",
+   "label": {
+    "en": "Modena chamber: internationalisation voucher",
+    "it": "Camera di commercio di Modena: voucher internazionalizzazione"
+   },
+   "status": {
+    "value": "closed",
+    "source": "https://www.mo.camcom.it/amministrazione-trasparente/sovvenzioni-contributi-sussidi-vantaggi-economici/bandi/bando-voucher-internazionalizzazione-anno-2026/view",
+    "checked": "2026-11-22"
+   },
+   "note": {
+    "en": "Applications ran 28 Sep to 9 Oct 2026. Up to 50%, maximum EUR 5,000. Modena province only.",
+    "it": "Domande dal 28 set al 9 ott 2026. Fino al 50%, massimo 5.000 euro. Solo provincia di Modena."
+   },
+   "facts": {
+    "applicant": {
+     "value": "company",
+     "source": "https://www.mo.camcom.it/amministrazione-trasparente/sovvenzioni-contributi-sussidi-vantaggi-economici/bandi/bando-voucher-internazionalizzazione-anno-2026/view",
+     "checked": "2026-11-22"
+    },
+    "grant_share": {
+     "value": "up to 50%",
+     "source": "https://www.mo.camcom.it/amministrazione-trasparente/sovvenzioni-contributi-sussidi-vantaggi-economici/bandi/bando-voucher-internazionalizzazione-anno-2026/view",
+     "checked": "2026-11-22"
+    },
+    "min_project_eur": {
+     "value": 3000,
+     "source": "https://www.mo.camcom.it/amministrazione-trasparente/sovvenzioni-contributi-sussidi-vantaggi-economici/bandi/bando-voucher-internazionalizzazione-anno-2026/view",
+     "checked": "2026-11-22"
+    },
+    "max_eur": {
+     "value": 5000,
+     "source": "https://www.mo.camcom.it/amministrazione-trasparente/sovvenzioni-contributi-sussidi-vantaggi-economici/bandi/bando-voucher-internazionalizzazione-anno-2026/view",
+     "checked": "2026-11-22"
+    },
+    "sizes": {
+     "value": [
+      "micro",
+      "small",
+      "medium"
+     ],
+     "source": "https://www.mo.camcom.it/amministrazione-trasparente/sovvenzioni-contributi-sussidi-vantaggi-economici/bandi/bando-voucher-internazionalizzazione-anno-2026/view",
+     "checked": "2026-11-22"
+    },
+    "regions": {
+     "value": [
+      "Modena province"
+     ],
+     "source": "https://www.mo.camcom.it/amministrazione-trasparente/sovvenzioni-contributi-sussidi-vantaggi-economici/bandi/bando-voucher-internazionalizzazione-anno-2026/view",
+     "checked": "2026-11-22"
+    },
+    "deadline": {
+     "value": "2026-10-09",
+     "source": "https://www.mo.camcom.it/amministrazione-trasparente/sovvenzioni-contributi-sussidi-vantaggi-economici/bandi/bando-voucher-internazionalizzazione-anno-2026/view",
+     "checked": "2026-11-22"
+    }
+   }
+  },
+  {
+   "id": "lo_export_su_misura_2026",
+   "funder": "Assolombarda",
+   "instrument": "services",
+   "url": "https://www.assolombarda.it/servizi/internazionalizzazione/informazioni/bando-export-su-misura",
+   "label": {
+    "en": "Lombardy: Export su misura 2026",
+    "it": "Lombardia: Export su misura 2026"
+   },
+   "status": {
+    "value": "closed",
+    "source": "https://www.assolombarda.it/servizi/internazionalizzazione/informazioni/bando-export-su-misura",
+    "checked": "2026-11-22"
+   },
+   "note": {
+    "en": "Both 2026 windows closed. No new window announced.",
+    "it": "Entrambe le finestre 2026 chiuse. Nessuna nuova finestra annunciata."
+   },
+   "facts": {
+    "applicant": {
+     "value": "company",
+     "source": "https://www.assolombarda.it/servizi/internazionalizzazione/informazioni/bando-export-su-misura",
+     "checked": "2026-11-22"
+    },
+    "max_eur": {
+     "value": 11500,
+     "source": "https://www.assolombarda.it/servizi/internazionalizzazione/informazioni/bando-export-su-misura",
+     "checked": "2026-11-22"
+    },
+    "sizes": {
+     "value": [
+      "micro",
+      "small",
+      "medium"
+     ],
+     "source": "https://www.assolombarda.it/servizi/internazionalizzazione/informazioni/bando-export-su-misura",
+     "checked": "2026-11-22"
+    },
+    "regions": {
+     "value": [
+      "Lombardy"
+     ],
+     "source": "https://www.assolombarda.it/servizi/internazionalizzazione/informazioni/bando-export-su-misura",
+     "checked": "2026-11-22"
+    },
+    "deadline": {
+     "value": "2026-05-20",
+     "source": "https://www.assolombarda.it/servizi/internazionalizzazione/informazioni/bando-export-su-misura",
+     "checked": "2026-11-22"
+    }
+   }
+  },
+  {
+   "id": "rc_intl_2026",
+   "funder": "Camera di commercio di Reggio Calabria",
+   "instrument": "grant",
+   "url": "https://www.rc.camcom.gov.it/bandi-e-avvisi/bando-internazionalizzazione-2026",
+   "label": {
+    "en": "Reggio Calabria chamber: internationalisation call 2026",
+    "it": "Camera di commercio di Reggio Calabria: bando internazionalizzazione 2026"
+   },
+   "status": {
+    "value": "closed",
+    "source": "https://www.rc.camcom.gov.it/bandi-e-avvisi/bando-internazionalizzazione-2026",
+    "checked": "2026-11-22"
+   },
+   "note": {
+    "en": "Applications ran 12 to 30 Oct 2026. 70%, up to EUR 5,600. Reggio Calabria chamber area only.",
+    "it": "Domande dal 12 al 30 ott 2026. 70%, fino a 5.600 euro. Solo area della Camera di Reggio Calabria."
+   },
+   "facts": {
+    "applicant": {
+     "value": "company",
+     "source": "https://www.rc.camcom.gov.it/bandi-e-avvisi/bando-internazionalizzazione-2026",
+     "checked": "2026-11-22"
+    },
+    "grant_share": {
+     "value": "70%",
+     "source": "https://www.rc.camcom.gov.it/bandi-e-avvisi/bando-internazionalizzazione-2026",
+     "checked": "2026-11-22"
+    },
+    "max_eur": {
+     "value": 5600,
+     "source": "https://www.rc.camcom.gov.it/bandi-e-avvisi/bando-internazionalizzazione-2026",
+     "checked": "2026-11-22"
+    },
+    "sizes": {
+     "value": [
+      "micro",
+      "small",
+      "medium"
+     ],
+     "source": "https://www.rc.camcom.gov.it/bandi-e-avvisi/bando-internazionalizzazione-2026",
+     "checked": "2026-11-22"
+    },
+    "regions": {
+     "value": [
+      "Reggio Calabria chamber area"
+     ],
+     "source": "https://www.rc.camcom.gov.it/bandi-e-avvisi/bando-internazionalizzazione-2026",
+     "checked": "2026-11-22"
+    },
+    "deadline": {
+     "value": "2026-10-30",
+     "source": "https://www.rc.camcom.gov.it/bandi-e-avvisi/bando-internazionalizzazione-2026",
+     "checked": "2026-11-22"
+    }
+   }
+  },
+  {
+   "id": "to_intl_2026",
+   "funder": "Regione Toscana",
+   "instrument": "grant",
+   "url": "https://www.regione.toscana.it/bandi-aperti",
+   "label": {
+    "en": "Tuscany: internationalisation call 2026",
+    "it": "Toscana: bando internazionalizzazione 2026"
+   },
+   "status": {
+    "value": "open",
+    "source": "https://www.regione.toscana.it/bandi-aperti",
+    "checked": "2026-11-22"
+   },
+   "note": {
+    "en": "Closes 18 Dec 2026 at 16:00. Funds are reserved for fashion, tourism and retail: check with the Region whether a food company qualifies. On the Region's open calls page.",
+    "it": "Chiude il 18 dic 2026 alle 16:00. Fondi riservati a moda, turismo e commercio: verifichi con la Regione se un'impresa alimentare è ammessa. Nella pagina dei bandi aperti della Regione."
+   },
+   "facts": {
+    "regions": {
+     "value": [
+      "Tuscany"
+     ],
+     "source": "https://www.regione.toscana.it/bandi-aperti",
+     "checked": "2026-11-22"
+    },
+    "deadline": {
+     "value": "2026-12-18",
+     "source": "https://www.regione.toscana.it/bandi-aperti",
+     "checked": "2026-11-22"
+    }
+   }
+  },
+  {
+   "id": "aa_brochure_2026",
+   "funder": "Camera di commercio di Alessandria-Asti",
+   "instrument": "mixed",
+   "url": "https://www.aa.camcom.it/sites/default/files/contenuto_redazione/editor/Internazionalizzazione_attrazione_investimenti_transizione_digitale_ed_ecologica/Brochure%20misure%20internazionalizzazione/Brochure%20misure%20internazionalizzazione%202026.pdf",
+   "label": {
+    "en": "Alessandria-Asti chamber: export support measures (incl. OCM Vino)",
+    "it": "Camera di commercio di Alessandria-Asti: misure per l'export (incl. OCM Vino)"
+   },
+   "status": {
+    "value": "closed",
+    "source": "https://www.aa.camcom.it/sites/default/files/contenuto_redazione/editor/Internazionalizzazione_attrazione_investimenti_transizione_digitale_ed_ecologica/Brochure%20misure%20internazionalizzazione/Brochure%20misure%20internazionalizzazione%202026.pdf",
+    "checked": "2026-11-22"
+   },
+   "note": {
+    "en": "The 2026 Piedmont measures in this brochure have closed (fairs call suspended 14 Jun 2026, OCM Vino 30 Jun 2026). For SIMEST lines, check with SIMEST.",
+    "it": "Le misure 2026 della Regione Piemonte in questo opuscolo sono chiuse (bando fiere sospeso il 14 giu 2026, OCM Vino il 30 giu 2026). Per le linee SIMEST, verifichi con SIMEST."
+   },
+   "facts": {
+    "regions": {
+     "value": [
+      "Piedmont"
+     ],
+     "source": "https://www.aa.camcom.it/sites/default/files/contenuto_redazione/editor/Internazionalizzazione_attrazione_investimenti_transizione_digitale_ed_ecologica/Brochure%20misure%20internazionalizzazione/Brochure%20misure%20internazionalizzazione%202026.pdf",
+     "checked": "2026-11-22"
+    }
+   }
+  }
+ ]
+}

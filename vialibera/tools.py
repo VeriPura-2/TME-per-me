@@ -18,7 +18,7 @@ Who sees what (Thomas, 6 Nov 2026):
 import re
 import uuid
 
-from . import db
+from . import db, funding
 
 CHILLED = ("cheese",)  # products that may need chilled transport
 
@@ -129,33 +129,9 @@ CARDS = [
                          "Programmi ufficiali che finanziano progetti export e temporary export manager: finanziamenti SIMEST con quota a fondo perduto "
                          "e bandi di regioni e camere di commercio. I bandi aprono e chiudono durante l'anno, quindi ognuno è indicato come aperto, chiuso o da verificare. "
                          "I bandi chiusi restano in elenco per vedere cosa esce e quando."),
-               "checked": "2026-11-08",
+               "checked": funding.last_checked(),
                "notify": "funding_calls",
-               "links": [
-                   {"label": L("SIMEST: Temporary Manager loan (Fondo 394)", "SIMEST: finanziamento Temporary Manager (Fondo 394)"), "status": "check",
-                    "note": L("Check the circular for the current terms", "Verifica la circolare per le condizioni attuali"),
-                    "url": "https://www.simest.it/app/uploads/2025/11/Circolare-8-394-2023-TM-3.11.2025.pdf"},
-                   {"label": L("Emilia-Romagna: internationalisation call 2026-2027 (TEM costs eligible)", "Emilia-Romagna: bando internazionalizzazione 2026-2027 (costi TEM ammessi)"), "status": "closed",
-                    "note": L("Closed 13 Mar 2026, or earlier at 300 applications. The Region may reopen it.", "Chiuso il 13 mar 2026, o prima a 300 domande. La Regione può riaprirlo."),
-                    "url": "https://fesr.regione.emilia-romagna.it/opportunita/opportunita-di-finanziamento/2025/sostegno-a-progetti-di-internazionalizzazione-delle-p-m-i-e-aggregazioni-di-p-m-i-2026-2027/bando-e-modulistica/bando.pdf/@@download/file/Bando.pdf"},
-                   {"label": L("Emilia-Romagna: Digital Export call (Unioncamere)", "Emilia-Romagna: bando Digital Export (Unioncamere)"), "status": "check",
-                    "url": "https://www.ucer.camcom.it/internazionalizzazione-delle-imprese/news/notizie-2026/bando-digital-export-anno-2026-2027/documenti/bando-digital-export-2026-2027.pdf/@@download/file"},
-                   {"label": L("Verona chamber: internationalisation call 2026", "Camera di commercio di Verona: bando internazionalizzazione 2026"), "status": "closed",
-                    "note": L("Applications ran 7 to 21 Sep 2026. 40% up to 6,000 euro with a TEM. Verona province only.", "Domande dal 7 al 21 set 2026. 40% fino a 6.000 euro con un TEM. Solo provincia di Verona."),
-                    "url": "https://www.vr.camcom.it/la-camera/modulistica-online/incentivi-internazionalizzazione/normativa/bando-internazionalizzazione-2026.pdf/@@display-file/file_principale"},
-                   {"label": L("Modena chamber: internationalisation voucher", "Camera di commercio di Modena: voucher internazionalizzazione"), "status": "closed",
-                    "note": L("Reported closed on 9 Oct 2026", "Risulta chiuso il 9 ott 2026"),
-                    "url": "https://www.mo.camcom.it/amministrazione-trasparente/sovvenzioni-contributi-sussidi-vantaggi-economici/bandi/bando-voucher-internazionalizzazione-anno-2026/view"},
-                   {"label": L("Lombardy: Export su misura 2026", "Lombardia: Export su misura 2026"), "status": "closed",
-                    "note": L("Both 2026 windows closed. No new window announced.", "Entrambe le finestre 2026 chiuse. Nessuna nuova finestra annunciata."),
-                    "url": "https://www.assolombarda.it/servizi/internazionalizzazione/informazioni/bando-export-su-misura"},
-                   {"label": L("Reggio Calabria chamber: internationalisation call 2026", "Camera di commercio di Reggio Calabria: bando internazionalizzazione 2026"), "status": "closed",
-                    "note": L("Closed 30 Oct 2026", "Chiuso il 30 ott 2026"),
-                    "url": "https://www.rc.camcom.gov.it/bandi-e-avvisi/bando-internazionalizzazione-2026"},
-                   {"label": L("Tuscany: regional open calls (look for internationalisation)", "Toscana: bandi regionali aperti (cerca internazionalizzazione)"), "status": "check",
-                    "url": "https://www.regione.toscana.it/bandi-aperti"},
-                   {"label": L("Alessandria-Asti chamber: export support measures (incl. OCM Vino)", "Camera di commercio di Alessandria-Asti: misure per l'export (incl. OCM Vino)"), "status": "check",
-                    "url": "https://www.aa.camcom.it/sites/default/files/contenuto_redazione/editor/Internazionalizzazione_attrazione_investimenti_transizione_digitale_ed_ecologica/Brochure%20misure%20internazionalizzazione/Brochure%20misure%20internazionalizzazione%202026.pdf"}]},
+               "links": funding.card_links()},  # data/funding.json: source and check date per scheme (F5, 22 Nov 2026)
      "coming": {"status": "soon",
                 "text": L("Next: an eligibility check for your company and reminders before deadlines.",
                           "In arrivo: una verifica dei requisiti per la sua azienda e promemoria prima delle scadenze.")}},
