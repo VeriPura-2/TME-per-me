@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import doc_requests, funding_check, importer_contacts, tem_financing, tem_margin, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
+from . import certificates, doc_requests, funding_check, importer_contacts, tem_financing, tem_margin, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
 from .menu import MENU
 from . import plan_prices
 from . import intros
@@ -772,6 +772,24 @@ def handle_tools(path, body, who):
         if code == 200 and cid and body.get("tool") == "tem_intro" and body.get("consent") is True:  # TEMs on MioTEM see the request
             intros.open_request(c, cid, who, body.get("email"))
         return code, out
+    if path == "/tools/cert_seen":  # B2, staff only
+        return certificates.mark_seen(c, who, body.get("id"))
+    if path in ("/tools/certs", "/tools/cert_save", "/tools/cert_delete"):  # B2: certificates and approvals tracker
+        row, err = _case_for(body, who, "read" if path.endswith("certs") else "write")
+        if err:
+            return err
+        key = row["company_id"] or limits.owner_key(c, who["user"])
+        if path.endswith("save"):
+            code, out = certificates.save(c, who, key, body)
+            if code != 200:
+                return code, out
+        elif path.endswith("delete"):
+            code, out = certificates.delete(c, who, key, body.get("id"))
+            if code != 200:
+                return code, out
+        ts = certificates.types()
+        return 200, {"certificates": certificates.listing(c, key),
+                     "types": [{"id": k, "name": v["name"], "source": v["source"], "source_label": v["source_label"]} for k, v in ts.items()]}
     if path in ("/tools/funding_check", "/tools/funding_profile", "/tools/funding_alerts"):  # F1, F2: funding schemes for this company
         row, err = _case_for(body, who, "read" if path.endswith("check") else "write")
         if err:

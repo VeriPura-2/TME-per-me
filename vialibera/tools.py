@@ -114,6 +114,12 @@ CARDS = [
      "coming": {"status": "preview",
                 "text": L("Request to the control body: with your consent, your TEM or MioTEM staff prepare a request for an extract or a verification (Valoritalia, Kiwa Cermet), send it, and file the reply in Documents.",
                           "Richiesta all'organismo di controllo: con il suo consenso, il suo TEM o lo staff MioTEM preparano una richiesta di estratto o di verifica (Valoritalia, Kiwa Cermet), la inviano e archiviano la risposta in Documenti.")}},
+    {"id": "certificates", "by": {"kind": "miotem"},
+     "name": L("Certificates and approvals", "Certificati e approvazioni"),
+     "today": {"text": L("Keep each certificate and approval in one list: what it covers, who issued it and when it expires. "
+                         "We remind you 30 days before it expires. Until our staff or VeriPura Core have seen the document, the status stays claimed.",
+                         "Tenga ogni certificato e approvazione in un unico elenco: cosa copre, chi lo ha rilasciato e quando scade. "
+                         "Le ricordiamo la scadenza 30 giorni prima. Finché il nostro staff o VeriPura Core non hanno visto il documento, lo stato resta «dichiarato».")}},
     {"id": "label_design", "by": {"kind": "partner", "name": "Food Label Maker, GoVisually"},
      "name": L("Label design", "Progettazione etichette"),
      "today": {"text": L("Create nutrition panels and labels with these partner tools. GoVisually is free, and Food Label Maker has a free trial label. Then upload the label here.",
@@ -368,7 +374,7 @@ def _norm(s):
 # Display order (22 Nov 2026 research): compliance and its costs first, growth tools after, the lowest rated last
 # (outreach). Importers move up, right after the compliance tools, for a first-time exporter or a new market (no importer there yet).
 ORDER = ["ai_manager", "checklist", "duties", "library", "eori",
-         "doc_checks", "label_check", "ttb_agent", "cert_evidence", "alerts",
+         "doc_checks", "label_check", "ttb_agent", "cert_evidence", "certificates", "alerts",
          "label_design", "shipping", "vero_italiano", "buyer_verification", "funding", "importers",
          "consultants", "outreach"]
 FIRST_TIME_UP = ("importers",)
@@ -407,7 +413,9 @@ def for_case(product_category, country, first_time=False):
     return sorted(out, key=lambda c: rank.get(c["id"], len(rank)))
 
 
-PUBLIC_TEXT = {  # shorter wording for the public page (no link details, no partner names beyond the approved label validator)
+PUBLIC_TEXT = {
+    "certificates": L("Keep each certificate and approval in one list: what it covers, who issued it and when it expires, with a reminder 30 days before.",
+                      "Tenga ogni certificato e approvazione in un unico elenco: cosa copre, chi lo ha rilasciato e quando scade, con un promemoria 30 giorni prima."),  # shorter wording for the public page (no link details, no partner names beyond the approved label validator)
     "shipping": L("Parcels for samples and small orders, booked with partner services. Next: pallets and containers.",
                   "Pacchi per campioni e piccoli ordini, prenotabili con servizi partner. Poi: pallet e container."),
     "label_check": L("Check your label artwork in the VeriPura label validator. Next: the result inside your project, in Italian.",
