@@ -450,9 +450,10 @@ def overview(con, who):
                     for q in con.execute("SELECT r.*, k.product, k.market FROM tem_requests r JOIN cases k ON k.id=r.case_id "
                                          "WHERE r.firm_id=? AND r.company_id=? AND r.status='open' ORDER BY r.created_at",
                                          (f["firm_id"], c["company_id"])).fetchall()]
-        from . import doc_requests
+        from . import doc_requests, tem_financing
         clients.append({"id": c["company_id"], "name": c["legal_name"], "vat": c["vat"], "since": c["engaged_at"],
                         "docs_waiting": doc_requests.waiting(con, f["firm_id"], c["company_id"]),
+                        "next_financing": tem_financing.next_deadline(con, f["firm_id"], c["company_id"]),
                         "projects": projects, "assigned": assigned if lead else None, "requests": requests})
     return 200, {"firm": {"id": f["firm_id"], "name": f["name"], "seats": fr["seats"],
                           "projects": {"used": project_count(con, f["firm_id"]), "cap": project_cap(con, f["firm_id"])}},
@@ -577,7 +578,7 @@ def _case_tem(con, who, case_id):
 
 def project(con, who, case_id):
     """Everything a TEM needs on one project. Logged as a TEM access."""
-    from . import core_checks, doc_requests, duties, fields, requirements_source, tem_margin, tools
+    from . import core_checks, doc_requests, duties, fields, requirements_source, tem_financing, tem_margin, tools
     row = _case_tem(con, who, case_id)
     if row is None:
         return 404, {"error": "no such project"}
@@ -615,6 +616,7 @@ def project(con, who, case_id):
                  "duties": duties.for_case(con, case),
                  "doc_requests": doc_requests.for_case(con, case_id),
                  "margin": tem_margin.for_case(con, who, case_id),
+                 "financing": tem_financing.for_tem(con, who, case_id),
                  "tools": tools.for_viewer(con, row, case["product"].get("category"), case["market"].get("country"), "tem")}
 
 
