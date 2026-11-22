@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import doc_requests, funding_check, tem_financing, tem_margin, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
+from . import doc_requests, funding_check, importer_contacts, tem_financing, tem_margin, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
 from .menu import MENU
 from . import plan_prices
 from . import intros
@@ -501,6 +501,10 @@ def handle_tem(path, body, who):
         return tem_margin.add_cost(c, who, case_id, body.get("amount"), body.get("what"), body.get("day"))
     if path == "/tem/entry_delete":
         return tem_margin.delete(c, who, case_id, str(body.get("kind") or ""), body.get("id"))
+    if path == "/tem/contact_save":  # R2b: work record of importers contacted, shown to the client
+        return importer_contacts.save(c, who, case_id, body)
+    if path == "/tem/contact_delete":
+        return importer_contacts.delete(c, who, case_id, body.get("id"))
     if path == "/tem/financing_save":  # F4: financing work per client project
         return tem_financing.save(c, who, case_id, body)
     if path == "/tem/financing_delete":
@@ -733,6 +737,7 @@ def handle_journey(body, who):
     viewer = "client" if tools.has_tem(c, row["company_id"]) and not tems.firm_of(c, who["user"]) else "exporter"
     out["doc_requests"] = doc_requests.for_case(c, row["id"])
     out["tem_financing"] = tem_financing.for_client(c, row["id"])  # only lines the TEM chose to show
+    out["importer_contacts"] = importer_contacts.for_case(c, row["id"])  # R2b: always visible to the client
     new_market = (case["company"].get("export_experience") == "none"
                   or case["market"].get("importer_status") in ("looking", "not sure"))  # R1: a new market
     out["tools"] = tools.for_viewer(c, row, case["product"].get("category"), case["market"].get("country"), viewer, first_time=new_market)

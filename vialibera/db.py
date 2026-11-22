@@ -325,6 +325,20 @@ CREATE TABLE IF NOT EXISTS tem_financing (      -- F4: a TEM's financing work fo
   updated_at TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS importer_contacts (  -- R2b: every importer a TEM contacts for a client project, shown to the client
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  firm_id TEXT NOT NULL,
+  importer TEXT NOT NULL,
+  website TEXT,
+  day TEXT NOT NULL,
+  channel TEXT NOT NULL,               -- email, call, fair, visit, other
+  outcome TEXT NOT NULL,               -- contacted, replied, samples, meeting, not_interested, order
+  note TEXT,
+  created_by TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tem_assignments (
   firm_id TEXT NOT NULL,
   company_id TEXT NOT NULL,
