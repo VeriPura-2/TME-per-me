@@ -469,7 +469,7 @@ class Order22Nov(unittest.TestCase):
     def test_no_booking_or_application_drafting_promised(self):
         cards = {c["id"]: c for c in tools.for_case("wine", "USA")}
         self.assertNotIn("booking", cards["shipping"]["coming"]["text"]["en"])
-        self.assertNotIn("application", cards["funding"]["coming"]["text"]["en"])
+        self.assertNotIn("coming", cards["funding"])  # the check and reminders are live (F1, F2)
 
 
 class NewMarket22Nov(unittest.TestCase):
