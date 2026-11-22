@@ -578,7 +578,7 @@ def _case_tem(con, who, case_id):
 
 def project(con, who, case_id):
     """Everything a TEM needs on one project. Logged as a TEM access."""
-    from . import core_checks, doc_requests, duties, fields, requirements_source, tem_financing, tem_margin, tools
+    from . import core_checks, doc_requests, duties, fields, importer_contacts, requirements_source, tem_financing, tem_margin, tools
     row = _case_tem(con, who, case_id)
     if row is None:
         return 404, {"error": "no such project"}
@@ -617,6 +617,7 @@ def project(con, who, case_id):
                  "doc_requests": doc_requests.for_case(con, case_id),
                  "margin": tem_margin.for_case(con, who, case_id),
                  "financing": tem_financing.for_tem(con, who, case_id),
+                 "importer_contacts": importer_contacts.for_case(con, case_id),
                  "tools": tools.for_viewer(con, row, case["product"].get("category"), case["market"].get("country"), "tem")}
 
 
