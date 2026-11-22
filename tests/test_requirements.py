@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from vialibera import docs, requirements as rq
@@ -146,3 +147,35 @@ class RequirementsTest(unittest.TestCase):
     def test_country_names_are_normalised(self):
         self.assertTrue(rq.covers("Wine", " usa "))
         self.assertTrue(rq.covers("cheese", "Regno Unito"))
+
+
+class OneDoor(unittest.TestCase):
+    """22 Nov 2026: the required-documents data is reached only through requirements_source, so it can move to VeriPura Core."""
+
+    def test_no_module_reads_requirements_py_directly(self):
+        import glob, re
+        here = os.path.join(os.path.dirname(__file__), "..", "vialibera")
+        for path in glob.glob(os.path.join(here, "*.py")):
+            name = os.path.basename(path)
+            if name in ("requirements.py", "requirements_source.py"):
+                continue
+            src = open(path, encoding="utf-8").read()
+            self.assertIsNone(re.search(r"(?<![\w.])requirements\.(?!py\b)\w", src), name)
+            self.assertIsNone(re.search(r"from \. import [^\n]*\brequirements\b(?!_)", src), name)
+
+    def test_local_source_gives_the_same_answers(self):
+        from vialibera import requirements, requirements_source
+        src = requirements_source.get()
+        self.assertEqual(src.name, "local")
+        for cat, country in (("pasta", "UK"), ("wine", "USA"), ("cheese", "Germany"), ("bakery", "France")):
+            self.assertEqual(src.covers(cat, country), requirements.covers(cat, country))
+            self.assertEqual(src.required(cat, country, set()), requirements.required(cat, country, set()))
+        self.assertIs(src.rows, requirements.ROWS)
+
+    def test_an_unknown_source_falls_back_to_local(self):
+        from vialibera import requirements_source
+        os.environ["REQUIREMENTS_SOURCE"] = "core"
+        try:
+            self.assertEqual(requirements_source.get().name, "local")
+        finally:
+            os.environ.pop("REQUIREMENTS_SOURCE", None)

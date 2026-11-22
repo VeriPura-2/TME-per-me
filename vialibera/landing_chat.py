@@ -12,7 +12,7 @@ import re
 import traceback
 from datetime import datetime, timedelta, timezone
 
-from . import ai_usage, db, duties, lane_requests, requirements, tools
+from . import ai_usage, db, duties, lane_requests, requirements_source, tools
 
 MODEL = "claude-sonnet-5-5"
 MESSAGE_CAP = 12
@@ -328,7 +328,7 @@ def run_tool(state, name, args):
         if a.get("fashion") or a.get("other"):
             return {"ready": False, "instruction": "Fashion has no checked lists yet: do NOT offer a preview. Carry on with your next discovery question or the sign-in offer."}
         if state.get("role") != "tem" and a.get("category") and a.get("country") and state.get("con") is not None \
-                and not requirements.covers(a["category"], a["country"]):
+                and not requirements_source.get().covers(a["category"], a["country"]):
             state["offer_notify"] = True  # the page shows the notify-me form; no preview is offered for a route without a list
             return {"covered": False, "instruction": "MioTEM has no checked list for this route yet. Do NOT offer a preview. The page itself shows the "
                     "'no checked list' message and the notify form right after your reply, so do not say it again, do not mention the form, and "
@@ -511,7 +511,7 @@ def message(con, body, ip, client):
         history.append({"role": "assistant", "content": [{"type": "text", "text": reply}]})
     a = state["answers"]
     if state["role"] == "exporter" and a.get("category") and a.get("country") and "route_noted" not in a \
-            and not requirements.covers(a["category"], a["country"]):
+            and not requirements_source.get().covers(a["category"], a["country"]):
         # the route has no checked list: say so now, not after five more questions
         a["route_noted"] = ["yes"]
         state["offer_notify"] = True
@@ -573,10 +573,10 @@ def note_for(con, user_sub):
 
 def _route(con, category, country):
     """The real checklist and duties for one route, from the same data the project page uses. No AI."""
-    out = {"category": category, "country": country, "covered": requirements.covers(category, country)}
+    out = {"category": category, "country": country, "covered": requirements_source.get().covers(category, country)}
     if not out["covered"]:
         return out
-    req = requirements.required(category, country, set())
+    req = requirements_source.get().required(category, country, set())
     data = req["data"]
     out["checked"] = req["checked"]
     out["layers"] = [{"id": k, "name": v, "items": [

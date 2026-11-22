@@ -422,7 +422,7 @@ def overview(con, who):
     fr = con.execute("SELECT * FROM tem_firms WHERE id=?", (f["firm_id"],)).fetchone()
     members = [dict(r) for r in con.execute("SELECT user_sub AS user, role, label FROM tem_members WHERE firm_id=? ORDER BY created_at",
                                             (f["firm_id"],)).fetchall()] if lead else []
-    from . import requirements, tools
+    from . import requirements_source, tools
     names = {c["id"]: c["name"] for c in tools.for_case(None, None)}
     clients = []
     for c in con.execute("SELECT t.company_id, t.engaged_at, co.legal_name, co.vat FROM tem_clients t JOIN companies co ON co.id=t.company_id "
@@ -435,7 +435,7 @@ def overview(con, who):
                              (c["company_id"],)).fetchall():
             prod, mkt = json.loads(k["product"] or "{}"), json.loads(k["market"] or "{}")
             vert = verticals.vertical_of(k)
-            req = requirements.required(prod.get("category"), mkt.get("country"), have, vert)
+            req = requirements_source.get().required(prod.get("category"), mkt.get("country"), have, vert)
             mine = [i for i in req["data"]["items"] if not i["importer_side"]] if req else None
             missing = sum(1 for i in mine if not i["on_file"]) if req else None
             docs_n = {"have": len(mine) - missing, "total": len(mine)} if req else None
@@ -575,14 +575,14 @@ def _case_tem(con, who, case_id):
 
 def project(con, who, case_id):
     """Everything a TEM needs on one project. Logged as a TEM access."""
-    from . import core_checks, duties, fields, requirements, tools
+    from . import core_checks, duties, fields, requirements_source, tools
     row = _case_tem(con, who, case_id)
     if row is None:
         return 404, {"error": "no such project"}
     log_access(con, who, row, "open_project")
     case = db.case_read(con, case_id)
     have = {d["doc_type"] for d in con.execute("SELECT doc_type FROM documents WHERE company_id=?", (row["company_id"],)).fetchall()}
-    req = requirements.required(case["product"].get("category"), case["market"].get("country"), have, verticals.vertical_of(case))
+    req = requirements_source.get().required(case["product"].get("category"), case["market"].get("country"), have, verticals.vertical_of(case))
     if req:
         from . import jobs, vat_check
         apply_confirmations(con, case_id, req)

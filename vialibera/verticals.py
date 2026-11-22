@@ -4,14 +4,14 @@ The vertical is stored per project (cases.vertical). An empty or unknown value m
 created before this column existed behaves exactly as before. Apparel is registered but switched off: no start
 form, chat or API path creates an Apparel project until it is enabled in a later step.
 """
-from . import lane_requests, requirements
+from . import lane_requests, requirements_source
 
 DEFAULT = "food"
 
 VERTICALS = {
     # The food entry points at the lists the app already uses, it does not copy them.
     "food": {"enabled": True, "label": {"it": "Alimentare", "en": "Food"},
-             "products": requirements.PRODUCTS, "destinations": requirements.DESTINATIONS,
+             "products": requirements_source.get().products, "destinations": requirements_source.get().destinations,
              "covered_products": lane_requests.COVERED_PRODUCTS, "covered_countries": lane_requests.COVERED_COUNTRIES},
     "fashion": {"enabled": False, "label": {"it": "Abbigliamento", "en": "Apparel"}},
 }
