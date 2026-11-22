@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import certificates, landed_cost, doc_requests, funding_check, importer_contacts, tem_financing, tem_margin, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
+from . import certificates, landed_cost, tem_report, doc_requests, funding_check, importer_contacts, tem_financing, tem_margin, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
 from .menu import MENU
 from . import plan_prices
 from . import intros
@@ -501,6 +501,8 @@ def handle_tem(path, body, who):
         return tem_margin.add_cost(c, who, case_id, body.get("amount"), body.get("what"), body.get("day"))
     if path == "/tem/entry_delete":
         return tem_margin.delete(c, who, case_id, str(body.get("kind") or ""), body.get("id"))
+    if path == "/tem/report":  # C3: printable client report under the firm's name
+        return tem_report.build(c, who, case_id, body.get("lang"))
     if path == "/tem/contact_save":  # R2b: work record of importers contacted, shown to the client
         return importer_contacts.save(c, who, case_id, body)
     if path == "/tem/contact_delete":
