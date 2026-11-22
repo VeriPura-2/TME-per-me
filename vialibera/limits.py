@@ -1,13 +1,13 @@
 """Project limits and the free check, from plans.py.
 
-Covered project: a product and destination MioTEM has verified requirements for (requirements.covers).
+Covered project: a product and destination MioTEM has verified requirements for (requirements_source covers).
 Uncovered project: anything else. It is created, has no checklist, and never counts toward the covered limit.
 
 Explore: the covered slot is used up for good once taken (deleting does not restore it). Paid plans count live projects.
 Uncovered projects always count live, because they are deleted after 90 days.
 Accounts that already had a project before LIMITS_START are grandfathered (test accounts at launch).
 """
-from . import plans, permissions, requirements, accounts, db, verticals
+from . import plans, permissions, requirements_source, accounts, db, verticals
 
 LIMITS_START = "2026-11-09"
 
@@ -61,7 +61,7 @@ def check_new(con, who, category=None, country=None, vertical=None):
     if not who or _grandfathered(con, who["user"]):
         return None
     if category and country:
-        kinds = ["covered" if requirements.covers(category, country, vertical) else "uncovered"]
+        kinds = ["covered" if requirements_source.get().covers(category, country, vertical) else "uncovered"]
     else:
         kinds = ["covered", "uncovered"]
     for kind in kinds:
@@ -81,7 +81,7 @@ def register(con, who, case_id):
     cat, country = case["product"].get("category"), case["market"].get("country")
     if not (cat and country):
         return
-    kind = "covered" if requirements.covers(cat, country, verticals.vertical_of(case)) else "uncovered"
+    kind = "covered" if requirements_source.get().covers(cat, country, verticals.vertical_of(case)) else "uncovered"
     key = owner_key(con, who["user"])
     con.execute("INSERT INTO counted_cases(case_id, owner_key, kind) VALUES (?,?,?)", (case_id, key, kind))
     if kind == "covered":

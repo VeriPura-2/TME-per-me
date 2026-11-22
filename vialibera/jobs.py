@@ -23,7 +23,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
 
-from . import db, requirements, tariff_watch, vat_check
+from . import db, requirements_source, tariff_watch, vat_check
 from .adapters.base import AdapterError
 
 UA = "MioTEM data check (contact: aeoconsultsas@pec.it)"
@@ -174,8 +174,8 @@ def check_tariffs(con, uk=None, us=None):
 
 def source_urls():
     """URLs the job checks: each source, or its watch URL when the source refuses cloud servers."""
-    urls = {requirements.watch_url(r["source"]) for r in requirements.ROWS if r["source"] and not requirements.importer_only(r)}
-    urls |= {requirements.watch_url(n["source"]) for n in requirements.NOT_NEEDED if n.get("source")}
+    urls = {requirements_source.get().watch_url(r["source"]) for r in requirements_source.get().rows if r["source"] and not requirements_source.get().importer_only(r)}
+    urls |= {requirements_source.get().watch_url(n["source"]) for n in requirements_source.get().not_needed if n.get("source")}
     return sorted(urls)
 
 
@@ -247,8 +247,8 @@ def check_sources(con, fetch=_fetch_text):
                 con.execute("UPDATE source_snapshots SET pending_sha=?, pending_at=?, checked_at=? WHERE url=?", (sha, db.now(), db.now(), url))
         else:
             changed += 1
-            rows = [r["id"] for r in requirements.ROWS if r["source"] and requirements.watch_url(r["source"]) == url
-                    and not requirements.importer_only(r)]
+            rows = [r["id"] for r in requirements_source.get().rows if r["source"] and requirements_source.get().watch_url(r["source"]) == url
+                    and not requirements_source.get().importer_only(r)]
             _change(con, "source_changed", url, f"Checklist source changed: {len(rows)} item(s) to re-verify",
                     {"items": rows, **text_diff(prev["page_text"], text, url=url)})
             # only the newest text is kept: yesterday's is replaced, the changed lines stay with the alert
@@ -271,7 +271,7 @@ def apply_source_flags(con, case_id, req, staff=True):
         "SELECT ref, MAX(dismissed_at) AS at FROM data_changes WHERE kind='source_changed' AND status='dismissed' "
         "AND dismissed_at IS NOT NULL GROUP BY ref").fetchall()}
     for i in req["data"]["items"]:
-        url = requirements.watch_url(i.get("source"))
+        url = requirements_source.get().watch_url(i.get("source"))
         at = changed.get(url)
         if not at:
             continue

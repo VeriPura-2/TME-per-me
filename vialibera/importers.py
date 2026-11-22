@@ -7,7 +7,7 @@ Contacting an importer is not done here: that goes through VeriPura Connect, whi
 import json
 import os
 
-from . import plans, requirements
+from . import plans, requirements_source
 
 _PATH = os.path.join(os.path.dirname(__file__), "data", "importers.json")
 _CACHE = {}
@@ -23,7 +23,7 @@ def _load():
 
 def _wanted(category):
     """Which importer segments fit the project's product. None means show all."""
-    p = requirements.PRODUCTS.get((category or "").strip().lower())
+    p = requirements_source.get().products.get((category or "").strip().lower())
     if p == "wine":
         return {"wine", "both"}
     if p:
@@ -37,7 +37,7 @@ def countries():
 
 def for_project(category, country, plan_id, superadmin=False, paid_via_tem=False):
     """The list for one destination and product. Websites only for paid plans, a TEM's clients, and superadmin."""
-    dest = requirements.DESTINATIONS.get((country or "").strip().lower())
+    dest = requirements_source.get().destinations.get((country or "").strip().lower())
     data = _load()
     want = _wanted(category)
     show_site = bool(superadmin or paid_via_tem or plans.get(plan_id)["rank"] >= 1)

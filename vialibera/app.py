@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
+from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
 from .menu import MENU
 from . import plan_prices
 from . import intros
@@ -351,7 +351,7 @@ def handle_start(body, who):
     db.log_event(c, cid, "client", "start_form", {"category": cat, "country": country, "vat_given": bool(raw_vat),
                                                    "vat_error": vat_err})
     limits.register(c, who, cid)
-    out = {"case_id": cid, "path_type": path, "covered": requirements.covers(cat, country)}
+    out = {"case_id": cid, "path_type": path, "covered": requirements_source.get().covers(cat, country)}
     if other_product or other_country or not out["covered"]:  # something MioTEM does not cover yet: staff see it under Lane requests
         lane_requests.record(c, cid, who["user"], {"product": other_product or cat, "country": other_country or country},
                              source="start_form")
@@ -662,9 +662,9 @@ def handle_mark(body, who):
     case = db.case_read(c, row["id"])
     cat, country = case["product"].get("category"), case["market"].get("country")
     vert = verticals.vertical_of(case)
-    if not requirements.covers(cat, country, vert):
+    if not requirements_source.get().covers(cat, country, vert):
         return 400, {"error": "not_covered"}
-    ids = {i["id"] for i in requirements.required(cat, country, set(), vert)["data"]["items"]}
+    ids = {i["id"] for i in requirements_source.get().required(cat, country, set(), vert)["data"]["items"]}
     return marks.mark(c, row["id"], who, body.get("item"), body.get("on", True) is not False, ids)
 
 
@@ -692,8 +692,8 @@ def handle_journey(body, who):
                                   "export_registration": case["company"].get("export_registration"),
                                   **({"vertical": verticals.vertical_of(case)} if verticals.vertical_of(case) != verticals.DEFAULT else {})}}
     vert = verticals.vertical_of(case)
-    if requirements.covers(case["product"].get("category"), case["market"].get("country"), vert):
-        out["required_docs"] = requirements.required(case["product"].get("category"), case["market"].get("country"), have, vert)
+    if requirements_source.get().covers(case["product"].get("category"), case["market"].get("country"), vert):
+        out["required_docs"] = requirements_source.get().required(case["product"].get("category"), case["market"].get("country"), have, vert)
     elif vert == verticals.DEFAULT and features.is_sim("required_docs_other"):  # the simulated list is food only
         from .sim import required_docs
         out["required_docs"] = required_docs.required(case["product"].get("category"), have)
@@ -702,7 +702,7 @@ def handle_journey(body, who):
         jobs.apply_source_flags(c, row["id"], out["required_docs"], staff=permissions.is_staff(who))
         vat_check.apply_to_checklist(c, row["company_id"], out["required_docs"])
         marks.apply(c, row["id"], out["required_docs"])
-    if not requirements.covers(case["product"].get("category"), case["market"].get("country"), vert):
+    if not requirements_source.get().covers(case["product"].get("category"), case["market"].get("country"), vert):
         lr = lane_requests.latest(c, row["id"])
         out["lane_request"] = {k: (lr or {}).get(k) or "" for k in ("timing", "volume", "buyer")} if lr else None
     out["core"] = core_checks.summary(c, row["id"])
