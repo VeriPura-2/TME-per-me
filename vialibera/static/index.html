@@ -898,7 +898,7 @@ function dutiesBox(parent, du) {
       if (l.status) { p.appendChild(document.createTextNode(" ")); p.appendChild(mk("span", t["st_" + l.status], "sim")); }
       if (l.new) { p.appendChild(document.createTextNode(" ")); p.appendChild(mk("span", t.st_new, "sim")); }
       if (l.note) p.appendChild(mk("div", l.note[lang], "muted"));
-      if (l.checked) p.appendChild(mk("div", (Date.now() - Date.parse(l.checked)) / 86400000 > 30 ? t.chk_stale : t.chk_page.replace("{d}", l.checked), "muted"));  // 30 = funding.STALE_DAYS
+      if (l.checked) p.appendChild(mk("div", (Date.now() - Date.parse(l.checked)) / 86400000 > 30 ? t.chk_stale : t.chk_page.replace("{d}", fday(l.checked)), "muted"));  // 30 = funding.STALE_DAYS
       parent.appendChild(p); };
     list.forEach(c => {
       const card = mk("div", null, "card tool"); card.dataset.tool = c.id;
@@ -1098,7 +1098,7 @@ function dutiesBox(parent, du) {
       card.appendChild(mk("h4", t.fd_title));
       const dls = data.deadlines || [];
       if (!dls.length) card.appendChild(mk("div", t.fd_none, "muted"));
-      dls.forEach(x => { const row = mk("div"); const a = mk("a", (x.deadline ? t.fd_closes.replace("{d}", x.deadline) : t.fd_nowin).replace("{s}", x.label[lang]).replace("{c}", x.checked)); a.href = x.url; a.target = "_blank"; a.rel = "noopener"; row.appendChild(a);
+      dls.forEach(x => { const row = mk("div"); const a = mk("a", (x.deadline ? t.fd_closes.replace("{d}", fday(x.deadline)) : t.fd_nowin).replace("{s}", x.label[lang]).replace("{c}", fday(x.checked))); a.href = x.url; a.target = "_blank"; a.rel = "noopener"; row.appendChild(a);
         if (x.share_unconfirmed) row.appendChild(mk("span", " · " + t.fd_unconf, "sim")); card.appendChild(row); });
       const sw = document.createElement("input"); sw.type = "checkbox"; sw.checked = !!(data.alerts && data.alerts.on);
       const swl = mk("label"); swl.append(sw, " " + t.fd_switch); swl.style.display = "block"; swl.style.margin = "8px 0 12px";
@@ -1111,9 +1111,14 @@ function dutiesBox(parent, du) {
         row.append(" ", mk("span", tl["st_" + x.status] || x.status, "sim"));
         const head = x.result === "likely" ? t.fc_likely : (x.result === "no" ? t.fc_no : t.fc_check) + ": " + x.reasons.map(w => w[lang]).join("; ") + ".";
         row.appendChild(mk("div", head, x.result === "likely" ? "tick" : x.result === "no" ? "muted" : "verify"));
-        row.appendChild(mk("div", t.fc_src.replace("{d}", x.checked), "muted")); card.appendChild(row); });
+        row.appendChild(mk("div", t.fc_src.replace("{d}", fday(x.checked)), "muted")); card.appendChild(row); });
     }
     card.appendChild(mk("div", t.fc_foot, "muted")); box.appendChild(card);
+  }
+  function fday(iso) {  // funding dates: 18 Dec 2026 in English, 18/12/2026 in Italian (Thomas, 22 Nov 2026)
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ""); if (!m) return iso || "";
+    if (lang === "it") return m[3] + "/" + m[2] + "/" + m[1];
+    return +m[3] + " " + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m[2] - 1] + " " + m[1];
   }
   function docRequestBanner(cid, reqs, t) {  // C1: the client's TEM asked for documents; upload straight into each request
     const box = $("j-docreq"); box.innerHTML = ""; const open = reqs.filter(q => q.status === "requested" || q.status === "needs_change");

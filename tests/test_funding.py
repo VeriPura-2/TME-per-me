@@ -155,7 +155,8 @@ class DeadlinesAndAlerts(unittest.TestCase):
         funding_check.send_alerts(self.c, "https://app.example", send, today=date(2026, 12, 5))   # 13 days before 18 Dec
         funding_check.send_alerts(self.c, "https://app.example", send, today=date(2026, 12, 6))   # same window: not again
         funding_check.send_alerts(self.c, "https://app.example", send, today=date(2026, 12, 16))  # 2 days before
-        self.assertEqual([s[1] for s in sent], ["Tuscany: internationalisation call 2026 closes on 2026-12-18"] * 2)
+        self.assertEqual([s[1] for s in sent], ["Tuscany: internationalisation call 2026 closes on 18 Dec 2026"] * 2)
+        self.assertIn("checked on 22 Nov 2026", sent[0][2])
         self.assertIn("check with the funder", sent[0][2])
         self.assertIn("https://www.regione.toscana.it/bandi-aperti", sent[0][2])
         self.assertNotIn(EM_DASH, sent[0][2])
@@ -179,3 +180,11 @@ class DeadlinesAndAlerts(unittest.TestCase):
         funding_check.set_alerts(self.c, "co-3", who, True, "x@y.example", "en")
         funding_check.set_alerts(self.c, "co-3", who, False, None, "en")
         self.assertFalse(funding_check.get_alerts(self.c, "co-3")["on"])
+
+
+class DateFormat(unittest.TestCase):
+    def test_english_and_italian_dates(self):
+        from vialibera import funding_check
+        self.assertEqual(funding_check.fday("2026-12-18", "en"), "18 Dec 2026")
+        self.assertEqual(funding_check.fday("2026-12-08", "en"), "8 Dec 2026")
+        self.assertEqual(funding_check.fday("2026-12-08", "it"), "08/12/2026")

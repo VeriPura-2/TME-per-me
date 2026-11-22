@@ -189,6 +189,18 @@ MAIL = {
 }
 
 
+MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def fday(iso, lang):
+    """18 Dec 2026 in English, 18/12/2026 in Italian."""
+    try:
+        d = _date.fromisoformat(iso)
+    except (TypeError, ValueError):
+        return iso or ""
+    return f"{d.day:02d}/{d.month:02d}/{d.year}" if lang == "it" else f"{d.day} {MONTHS[d.month - 1]} {d.year}"
+
+
 def send_alerts(con, base_url, send=None, today=None):
     """Daily job. Emails a subscribed company when a scheme that may fit turns open (staff changed the status after a
     check), and 14 and 3 days before a sourced deadline. Each email at most once (funding_alerts_sent)."""
@@ -223,7 +235,7 @@ def send_alerts(con, base_url, send=None, today=None):
                                (sub["owner_key"], s["id"], kind, ref)).fetchone():
                     continue
                 subj, body = MAIL["open" if kind == "open" else "deadline"][lang]
-                v = {"scheme": s["label"][lang], "checked": s["status"]["checked"], "link": s["url"], "deadline": dl or "",
+                v = {"scheme": s["label"][lang], "checked": fday(s["status"]["checked"], lang), "link": s["url"], "deadline": fday(dl, lang),
                      "result": RESULT[fits[s["id"]]][0 if lang == "en" else 1], "app": base_url.rstrip("/") + "/"}
                 if send(sub["email"], subj.format(**v), body.format(**v)):
                     con.execute("INSERT INTO funding_alerts_sent(owner_key, scheme_id, kind, ref, sent_at) VALUES (?,?,?,?,?)",
