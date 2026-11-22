@@ -312,6 +312,19 @@ CREATE TABLE IF NOT EXISTS funding_seen (       -- F2: last scheme status the da
   status TEXT NOT NULL,
   seen_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS tem_financing (      -- F4: a TEM's financing work for one client project
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  firm_id TEXT NOT NULL,
+  scheme_id TEXT NOT NULL,             -- id in data/funding.json
+  status TEXT NOT NULL,                -- not_started, preparing, submitted, approved, refused, client_stopped
+  deadline TEXT,                       -- typed by the TEM when the scheme data has none
+  missing TEXT,                        -- documents still missing, written by the TEM from the funder's form
+  client_visible INTEGER NOT NULL DEFAULT 0,
+  updated_by TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tem_assignments (
   firm_id TEXT NOT NULL,
   company_id TEXT NOT NULL,

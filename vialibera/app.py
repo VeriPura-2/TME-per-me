@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import doc_requests, funding_check, tem_margin, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
+from . import doc_requests, funding_check, tem_financing, tem_margin, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
 from .menu import MENU
 from . import plan_prices
 from . import intros
@@ -499,6 +499,10 @@ def handle_tem(path, body, who):
         return tem_margin.add_cost(c, who, case_id, body.get("amount"), body.get("what"), body.get("day"))
     if path == "/tem/entry_delete":
         return tem_margin.delete(c, who, case_id, str(body.get("kind") or ""), body.get("id"))
+    if path == "/tem/financing_save":  # F4: financing work per client project
+        return tem_financing.save(c, who, case_id, body)
+    if path == "/tem/financing_delete":
+        return tem_financing.delete(c, who, case_id, body.get("id"))
     if path == "/tem/doc_request":  # C1: the TEM asks the client for checklist documents
         return doc_requests.create(c, who, case_id, body.get("items"), body.get("remind_days", doc_requests.DEFAULT_DAYS))
     if path == "/tem/doc_request_status":
@@ -726,6 +730,7 @@ def handle_journey(body, who):
     out["duties"] = duties.for_case(c, case)
     viewer = "client" if tools.has_tem(c, row["company_id"]) and not tems.firm_of(c, who["user"]) else "exporter"
     out["doc_requests"] = doc_requests.for_case(c, row["id"])
+    out["tem_financing"] = tem_financing.for_client(c, row["id"])  # only lines the TEM chose to show
     out["tools"] = tools.for_viewer(c, row, case["product"].get("category"), case["market"].get("country"), viewer,
                                     first_time=case["company"].get("export_experience") == "none")
     if viewer == "client":  # the client can ask their TEM for help with the tools they see
