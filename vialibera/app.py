@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import certificates, doc_requests, funding_check, importer_contacts, tem_financing, tem_margin, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
+from . import certificates, landed_cost, doc_requests, funding_check, importer_contacts, tem_financing, tem_margin, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
 from .menu import MENU
 from . import plan_prices
 from . import intros
@@ -772,6 +772,14 @@ def handle_tools(path, body, who):
         if code == 200 and cid and body.get("tool") == "tem_intro" and body.get("consent") is True:  # TEMs on MioTEM see the request
             intros.open_request(c, cid, who, body.get("email"))
         return code, out
+    if path in ("/tools/landed_choices", "/tools/landed_cost"):  # B3: landed cost estimate, nothing stored
+        row, err = _case_for(body, who, "read")
+        if err:
+            return err
+        du = duties.for_case(c, db.case_read(c, row["id"]))
+        if path.endswith("choices"):
+            return 200, {"choices": landed_cost.choices(du), "eu": bool(du and du.get("eu"))}
+        return landed_cost.estimate(du, body)
     if path == "/tools/cert_seen":  # B2, staff only
         return certificates.mark_seen(c, who, body.get("id"))
     if path in ("/tools/certs", "/tools/cert_save", "/tools/cert_delete"):  # B2: certificates and approvals tracker
