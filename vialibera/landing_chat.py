@@ -32,6 +32,9 @@ QUIET_TOOLS = ("set_role", "save_answer", "show_signin", "show_preview")  # offe
 SIGNIN_MENTION = re.compile(r"sign[- ]?(in|up) button|button (is )?below|below[^.]{0,40}sign[- ]?in|pulsante[^.]{0,40}(accedi|sotto)|accedi[^.]{0,40}sotto", re.I)
 VISITOR = re.compile(r"^[a-f0-9]{16,64}$")
 ROLES = ("exporter", "tem", "looking")
+STAGES = ("first_time", "exporting")  # exporter only: first-time exporters get readiness, those already shipping get risk (22 Nov 2026)
+STAGE_BUTTONS = {"i want to start exporting italian products": "first_time", "voglio iniziare a esportare prodotti italiani": "first_time",
+                 "i export italian products": "exporting", "esporto prodotti italiani": "exporting"}  # the role button texts
 CATEGORIES = ("pasta", "wine", "olive oil", "cheese and dairy", "spirits", "cured meat", "preserves", "bakery", "other")
 COUNTRIES = ("UK", "USA", "Canada", "Switzerland", "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark",
              "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland", "Latvia", "Lithuania", "Luxembourg",
@@ -61,7 +64,8 @@ If the visitor's first message is the text of a role button ("I export Italian p
 role, without repeating the opening line. Otherwise the visitor has already seen this opening line: "Do you export Italian products, or are you a TEM or export consultant?"
 (a TEM is a Trade Export Manager: a consultant who runs exports for several food companies).
 
-STEP 1. Find out the role. As soon as it is clear, call set_role (exporter, tem or looking). A person who says they want to START exporting (or plan to) is also "exporter", a first-time exporter: ask how they plan to
+STEP 1. Find out the role. As soon as it is clear, call set_role (exporter, tem or looking). For an exporter, also give stage:
+first_time if they have not exported yet, exporting if they already ship. A person who says they want to START exporting (or plan to) is also "exporter", a first-time exporter: ask how they plan to
 handle the documents rather than how they do today. A person who only wants to
 look around is "looking": answer what they ask and let them explore.
 
@@ -91,15 +95,21 @@ If the role is exporter (about 8 questions in this order, fewer if the visitor i
    "By your own numbers, that is between about X and Z hours a year, that is N weeks of your (or your team's) time every year, and Y euros." When they gave
    ranges, quote the range the tool returns and the weeks (40 hour weeks, as a number or fraction). Never one invented midpoint.
    Never present it as a MioTEM figure.
-6. Implication: ask what that does to them (margin, lead time, a delayed shipment, a rejected label, a lost buyer). Ask,
+6. Implication: ask what that does to them (a rejected label, a cost they did not expect, margin, a lost buyer). Ask,
    do not tell. Never state figures, fines or deadlines yourself.
 7. Need-payoff: ask what it would mean to know the exact documents and duties for their route before they ship.
-   If they handle exports themselves or have not decided, and they seem unsure or stretched, you may ask once: "Would you like an
-   introduction to a TEM who works on MioTEM?" On a yes call offer_tem_intro. Never promise a match or a date: say a short form below
-   lets them leave an email so MioTEM can be in touch, and that TEMs are joining soon. On a no, carry on.
+   Do not offer an introduction to a TEM. Only if the visitor asks for one themselves, call offer_tem_intro: never promise a match
+   or a date, say a short form below lets them leave an email so MioTEM can be in touch, and that TEMs are joining soon.
 8. Offer to sign in so MioTEM prepares the checklist and duties for their route, and say a preview of their route can be
    shown (when it is offered, the page will show it).
 Save every answer with save_answer: product, destination, handling, time, volume, cost, problem, implication, need.
+If an exporter says a freight forwarder, customs broker, importer or consultant already handles the documents (or that MioTEM is not
+needed for that reason), answer once with this, in the visitor's language, then carry on with your next question:
+"Good, keep them. MioTEM shows which documents on your route are yours to prepare and which are your forwarder's or importer's, so you
+hand over complete documents and can check what comes back. Many exporters use both."
+In Italian: "Bene, li tenga. MioTEM mostra quali documenti della sua rotta prepara Lei e quali spettano allo spedizioniere o
+all'importatore, così consegna documenti completi e può controllare quello che torna indietro. Molti esportatori usano entrambi."
+Do not argue and do not repeat it if they push back.
 
 If the role is tem:
 - Do NOT ask about a product or a destination country. A TEM works for many exporters.
@@ -186,7 +196,7 @@ If asked what it costs to sign in or to try: answer it, it is a buying signal. S
   plan: those are shown after sign-in. Then ask the next question or invite them to sign in.
 - Never promise outcomes. Never say you are human. If asked, say you are an AI.
 - Never use these words: "SaaS", "traceability", "AI-powered". Describe MioTEM as compliance document validation,
-  powered by orchestrated AI-Agents. Never use em dashes.
+  powered by VeriPura Core. Never use em dashes.
 - If the visitor writes in another language, follow them. Otherwise use the interface language below.
 - When the answer is a short choice you may end with one final line: OPTIONS: first | second | third (2 to 4 choices).
 - When the visitor has reached the end of the conversation allowance, close warmly and invite them to sign in: the
@@ -200,7 +210,10 @@ SYSTEM = _SYSTEM_TEMPLATE.replace("{TOOLS}", _tool_lines()).replace("{PRODUCTS}"
 
 TOOLS = [
     {"name": "set_role", "description": "Record who the visitor is.",
-     "input_schema": {"type": "object", "properties": {"role": {"type": "string", "enum": list(ROLES)}}, "required": ["role"]}},
+     "input_schema": {"type": "object", "properties": {"role": {"type": "string", "enum": list(ROLES)},
+                                                      "stage": {"type": "string", "enum": list(STAGES),
+                                                                "description": "Exporters only: first_time if they have not exported yet, exporting if they already ship."}},
+                     "required": ["role"]}},
     {"name": "show_preview", "description": "Make the page show a read only preview built from what the visitor told you. Exporter: "
      "call it once product and destination are saved (with value), right after the yearly estimate and before the sign-in offer. "
      "TEM: call it with examples, up to two example routes (category and country) from the products and countries they "
@@ -261,7 +274,7 @@ def _row(con, visitor):
 
 def _said(state):
     """Everything the visitor told us, as one lowercase text: only their saved answers, never the AI's own examples."""
-    skip = ("fashion", "other", "examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered", "vague_products", "tem_intro", "route_noted")
+    skip = ("fashion", "other", "examples", "estimate", "category", "country", "preview_ok", "preview_offered", "uncovered", "vague_products", "tem_intro", "route_noted", "stage")
     return " ".join(" ".join(v) for k, v in state["answers"].items() if k not in skip and isinstance(v, list)).lower()
 
 
@@ -272,6 +285,8 @@ def _mentioned(said, words):
 def run_tool(state, name, args):
     if name == "set_role" and args.get("role") in ROLES:
         state["role"] = args["role"]
+        if args["role"] == "exporter" and args.get("stage") in STAGES and not state["answers"].get("stage"):
+            state["answers"]["stage"] = [args["stage"]]
         return {"ok": True}
     if name == "note_uncovered":
         where = str(args.get("countries") or "").strip()[:150]
@@ -438,6 +453,9 @@ def message(con, body, ip, client):
     if used_today(con) >= DAILY_CEILING:
         print("landing chat: daily ceiling of %d messages reached" % DAILY_CEILING, flush=True)
         return 503, {"error": "busy", "role": state["role"]}
+    btn = STAGE_BUTTONS.get(text.lower().rstrip("."))
+    if btn and not state["answers"].get("stage"):
+        state["answers"]["stage"] = [btn]
     state["con"] = con
     state["messages_so_far"] = state["messages"] + 1  # this message included
     left = MESSAGE_CAP - state["messages"] - 1
@@ -534,7 +552,8 @@ def claim(con, user_sub, visitor):
     a = json.loads(row["answers"])
     first = lambda k: (a.get(k) or [""])[-1] if isinstance(a.get(k), list) else ""
     return {"claimed": True, "role": row["role"], "category": a.get("category"), "country": a.get("country"),
-            "product": first("product"), "destination": first("destination"), "firm": first("firm"), "contact": first("contact")}
+            "product": first("product"), "destination": first("destination"), "firm": first("firm"), "contact": first("contact"),
+            "stage": first("stage") or None}
 
 
 def note_for(con, user_sub):
