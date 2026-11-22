@@ -1084,6 +1084,8 @@ def handle_plan_checkout(body, who, host=None):
     try:
         if stripe_pay.has_active_subscription(con(), who["user"]):
             return 200, stripe_pay.portal(con(), who, _base(host), body.get("email"))
+        if not plans.PAID_PLANS_OPEN:  # prices not decided: no new subscriptions (22 Nov 2026)
+            return 409, {"error": "prices_not_set"}
         return 200, stripe_pay.checkout_plan(con(), who, body["plan"], _base(host),
                                              lang="en" if body.get("lang") == "en" else "it", email=body.get("email"))
     except stripe_pay.StripeError as e:
@@ -1211,7 +1213,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/plans.json":
             body = plans.public()
             body["stripe"] = stripe_pay.status()
-            body["prices"] = {"simulated": False, "data": {k: v for k, v in plan_prices.MENU.items() if k in body["plans"]}}
+            body["paid_open"] = plans.PAID_PLANS_OPEN
+            if plans.PAID_PLANS_OPEN:  # no amounts reach the browser while prices are not decided
+                body["prices"] = {"simulated": False, "data": {k: v for k, v in plan_prices.MENU.items() if k in body["plans"]}}
             return self._send(200, body)
         if path == "/features.json":
             return self._send(200, features.public())

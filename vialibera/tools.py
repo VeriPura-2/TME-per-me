@@ -235,8 +235,8 @@ CARDS = [
 ]
 TOOL_IDS = {c["id"] for c in CORE + CARDS} | {"refcheck"}
 STEP = {"label_check": 2, "label_design": 2, "ttb_agent": 3, "shipping": 4}  # the checklist step where the tool helps (1 Company, 2 Product, 3 Destination, 4 Shipment)
-INTEREST_ONLY = {"funding_calls", "tem_intro", "bank_financing", "mode2", "tem_single_projects", "tem_funding", "tem_bank_clients", "tem_sace", "tem_setup_call"}  # interest buttons that are not a card of their own; mode2: a TEM offering single-project work (TEM workspace), the exporter card was merged into the TEM card on 20 Nov 2026
-CONSENT_NEEDED = {"tem_intro", "bank_financing", "tem_single_projects", "tem_funding", "tem_bank_clients", "tem_sace", "tem_setup_call"}  # tour closing questions: staff contact the person, so consent is required (20 Nov 2026)
+INTEREST_ONLY = {"funding_calls", "tem_intro", "bank_financing", "mode2", "tem_single_projects", "tem_funding", "tem_bank_clients", "tem_sace", "tem_setup_call", "plan_parti", "plan_cresci"}  # interest buttons that are not a card of their own; mode2: a TEM offering single-project work (TEM workspace), the exporter card was merged into the TEM card on 20 Nov 2026
+CONSENT_NEEDED = {"tem_intro", "bank_financing", "tem_single_projects", "tem_funding", "tem_bank_clients", "tem_sace", "tem_setup_call", "plan_parti", "plan_cresci"}  # tour closing questions: staff contact the person, so consent is required (20 Nov 2026)
 CLIENT_OFF = {"shipping", "label_check", "importers", "outreach"}  # hidden from a TEM's client unless the TEM switches them on
 
 
