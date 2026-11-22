@@ -65,8 +65,8 @@ CARDS = [
      "today": {"text": L("Parcels for samples and small orders, booked with these services.",
                          "Pacchi per campioni e piccoli ordini, da prenotare con questi servizi.")},
      "coming": {"status": "soon",
-                "text": L("Pallets and containers: quotes, booking and container tracking for larger shipments, and shipment tracking through the freight forwarder you or your TEM engage.",
-                          "Pallet e container: preventivi, prenotazione e tracciamento container per spedizioni più grandi, e tracciamento delle spedizioni tramite lo spedizioniere che incarica Lei o il suo TEM.")}},
+                "text": L("Pallets and containers: shipment tracking through the freight forwarder you or your TEM engage.",
+                          "Pallet e container: tracciamento delle spedizioni tramite lo spedizioniere che incarica Lei o il suo TEM.")}},
     {"id": "doc_checks", "by": {"kind": "partner", "name": "VeriPura"},
      "name": L("VeriPura Document Checker", "VeriPura Document Checker"),
      "coming": {"status": "preview",
@@ -157,8 +157,8 @@ CARDS = [
                    {"label": L("Alessandria-Asti chamber: export support measures (incl. OCM Vino)", "Camera di commercio di Alessandria-Asti: misure per l'export (incl. OCM Vino)"), "status": "check",
                     "url": "https://www.aa.camcom.it/sites/default/files/contenuto_redazione/editor/Internazionalizzazione_attrazione_investimenti_transizione_digitale_ed_ecologica/Brochure%20misure%20internazionalizzazione/Brochure%20misure%20internazionalizzazione%202026.pdf"}]},
      "coming": {"status": "soon",
-                "text": L("Funding finder: MioTEM matches your company and project to the open calls and prepares the application from the data you already gave.",
-                          "Ricerca finanziamenti: MioTEM abbina azienda e progetto ai bandi aperti e prepara la domanda con i dati che ha già fornito.")}},
+                "text": L("Next: an eligibility check for your company and reminders before deadlines.",
+                          "In arrivo: una verifica dei requisiti per la sua azienda e promemoria prima delle scadenze.")}},
     {"id": "buyer_verification", "by": {"kind": "miotem"},
      "name": L("Buyer verification page", "Pagina di verifica per l'acquirente"),
      "coming": {"status": "preview",
@@ -389,8 +389,27 @@ def _norm(s):
     return (s or "").strip().lower()
 
 
-def for_case(product_category, country):
-    """The tool cards for one project, in display order (deep copies, safe to annotate)."""
+# Display order (22 Nov 2026 research): compliance and its costs first, growth tools after, the lowest rated last
+# (introduction to a TEM, outreach). Importers rank low for exporters already shipping; first-time exporters see them right after the compliance tools.
+ORDER = ["ai_manager", "checklist", "duties", "library", "eori",
+         "doc_checks", "label_check", "ttb_agent", "cert_evidence", "alerts",
+         "label_design", "shipping", "vero_italiano", "buyer_verification", "funding", "importers",
+         "consultants", "outreach"]
+FIRST_TIME_UP = ("importers",)
+
+
+def _rank(first_time):
+    order = list(ORDER)
+    if first_time:
+        for t in reversed(FIRST_TIME_UP):
+            order.remove(t)
+            order.insert(order.index("alerts") + 1, t)
+    return {t: i for i, t in enumerate(order)}
+
+
+def for_case(product_category, country, first_time=False):
+    """The tool cards for one project, in display order (deep copies, safe to annotate).
+    first_time: the company has not exported yet (export_experience none)."""
     import copy
     p, k = _norm(product_category), _norm(country)
     out = []
@@ -407,7 +426,8 @@ def for_case(product_category, country):
             if p in CHILLED:
                 card["today"]["note"] = CHILLED_NOTE
         out.append(card)
-    return sorted(out, key=lambda c: c["by"]["kind"] != "miotem")  # MioTEM first, then partners; stable within each
+    rank = _rank(first_time)
+    return sorted(out, key=lambda c: rank.get(c["id"], len(rank)))
 
 
 PUBLIC_TEXT = {  # shorter wording for the public page (no link details, no partner names beyond the approved label validator)
@@ -472,9 +492,9 @@ def _visibility(con, case_id):
     return v
 
 
-def for_viewer(con, case_row, category, country, viewer):
+def for_viewer(con, case_row, category, country, viewer, first_time=False):
     """viewer: exporter, tem or client. Returns {"cards": [...], "refcheck": bool}, with client_visible flags for the TEM."""
-    cards = for_case(category, country)
+    cards = for_case(category, country, first_time)
     if viewer == "exporter":
         return {"cards": cards, "refcheck": True}
     vis = _visibility(con, case_row["id"])
