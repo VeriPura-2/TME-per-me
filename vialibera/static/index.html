@@ -871,7 +871,7 @@ function dutiesBox(parent, du) {
     };
   }
   async function landedBox(parent, cid, t) {  // B3: landed cost estimate from the exporter's numbers plus the official duty
-    const box = mk("div", null, "card"); parent.appendChild(box); box.appendChild(mk("h3", t.lc_h));
+    const box = mk("div", null, "card"); box.id = "j-landed"; parent.appendChild(box); box.appendChild(mk("h3", t.lc_h));
     const [r, j] = await call("/tools/landed_choices", {case_id: cid}); if (!r.ok) { box.remove(); return; }
     const n2 = v => (Math.round(v * 100) / 100).toLocaleString(lang, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     const f = (label) => { const i = mk("input"); i.type = "number"; i.min = 0; i.step = "0.01"; i.style.width = "9em"; const l = mk("label", label + " ", "muted"); l.style.cssText = "display:inline-block;margin:4px 12px 4px 0"; l.appendChild(i); box.appendChild(l); return i; };
@@ -1052,6 +1052,7 @@ function dutiesBox(parent, du) {
     else if (st.area === "proj") { moved = false; if (!temFirst) return; if ($("temws").hidden || temOpen !== temFirst) { showPanel("temws", false, true); await temProject(temFirst); }
       sel = st.el ? "#" + st.el : '#temws [data-tool="' + st.tool + '"]'; }
     else if (st.tool) { sel = '#journey [data-tool="' + st.tool + '"]'; if ($("journey").hidden || !document.querySelector(sel)) goTo("tools"); else moved = false; }
+    else if (st.jel) { goTo(st.go || "duties"); sel = "#" + st.jel; }  // a part of the project page (landed cost, financing), 22 Nov 2026
     else if (st.go === "team") { if (!$("tbtn").hidden && $("team").hidden) $("tbtn").click(); sel = "#team"; }
     else if (st.go === "chat") { goTo("chat"); sel = "#log"; }
     else if (st.go === "docs") { goTo("docs"); sel = "#docs"; }
@@ -1739,7 +1740,7 @@ function dutiesBox(parent, du) {
       m.costs.forEach(e => { const r = mk("div", sd(e.day) + " · " + n2(e.amount) + " EUR · " + e.what + " ", "muted"); const b = del("cost", e); if (b) r.appendChild(b); mb.appendChild(r); });
       box.appendChild(mb);
     }
-    { const rb2 = mk("button", tt.rp_btn); rb2.style.margin = "8px 0";  // C3: printable report under the firm's name
+    { const rb2 = mk("button", tt.rp_btn); rb2.id = "tw-report"; rb2.style.margin = "8px 0";  // C3: printable report under the firm's name
       rb2.onclick = async () => { const w = window.open("", "_blank"); const [r, jj] = await call("/tem/report", {case_id: caseId0, lang});
         if (!r.ok) { if (w) w.close(); return; } const url = URL.createObjectURL(new Blob([jj.html], {type: "text/html"})); if (w) w.location = url; else location.href = url; };
       box.appendChild(rb2); }

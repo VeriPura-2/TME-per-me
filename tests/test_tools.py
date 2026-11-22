@@ -340,7 +340,7 @@ class VeroItalianoWalkthrough(unittest.TestCase):
 class GuidedTour(unittest.TestCase):
     """20 Nov 2026: exporter tour with 'Interested?' at tool stops and two consent questions at the end (no AI call)."""
     def test_stops_are_bilingual_and_point_at_real_tools(self):
-        self.assertEqual(len(tools.TOUR), 14)
+        self.assertEqual(len(tools.TOUR), 17)  # 22 Nov 2026: landed cost, certificates, financing added
         texts = []
         for st in tools.TOUR:
             texts += [st["t"], st["text"]]
@@ -362,7 +362,7 @@ class GuidedTour(unittest.TestCase):
     def test_tour_endpoint(self):
         code, out = app.handle_tools("/tools/tour", {}, user("tour-a"))
         self.assertEqual(code, 200)
-        self.assertEqual(len(out["stops"]), 14)
+        self.assertEqual(len(out["stops"]), 17)
         self.assertEqual(app.handle_tools("/tools/tour", {}, None)[0], 400)
 
     def test_closing_questions_need_consent(self):
@@ -393,7 +393,7 @@ class GuidedTour(unittest.TestCase):
 class TemTour(unittest.TestCase):
     """20 Nov 2026: TEM tour, workspace then the first client project, closing with five consent questions."""
     def test_stops_bilingual_and_valid(self):
-        self.assertEqual(len(tools.TEM_TOUR), 19)
+        self.assertEqual(len(tools.TEM_TOUR), 24)  # 22 Nov 2026: document requests, hours and margin, financing, importers contacted, client report
         texts = []
         for st in tools.TEM_TOUR:
             texts += [st["t"], st["text"]]
@@ -420,8 +420,8 @@ class TemTour(unittest.TestCase):
         self.assertNotIn("partner", sace["q"]["en"].lower())  # no partnership agreed with SACE yet
 
     def test_endpoint_by_kind(self):
-        self.assertEqual(len(app.handle_tools("/tools/tour", {"kind": "tem"}, user("tt-a"))[1]["stops"]), 19)
-        self.assertEqual(len(app.handle_tools("/tools/tour", {}, user("tt-a"))[1]["stops"]), 14)
+        self.assertEqual(len(app.handle_tools("/tools/tour", {"kind": "tem"}, user("tt-a"))[1]["stops"]), 24)
+        self.assertEqual(len(app.handle_tools("/tools/tour", {}, user("tt-a"))[1]["stops"]), 17)
 
     def test_tem_questions_need_consent(self):
         c = app.con()
@@ -531,3 +531,16 @@ class TemOffer22Nov(unittest.TestCase):
             seg = html[html.index('to_h: "Or have'):html.index('to_done: "Thank you')]
             self.assertNotIn(bad, seg.lower())
         self.assertIn("nothing is paid through MioTEM", html)
+
+
+
+class TourAdditions22Nov(unittest.TestCase):
+    def test_new_stops_point_at_page_parts_that_exist(self):
+        import os
+        html = open(os.path.join(os.path.dirname(tools.__file__), "static", "index.html"), encoding="utf-8").read()
+        for st in tools.TOUR:
+            if st.get("jel"):
+                self.assertIn(st["jel"], html)
+        for el in ("tw-docreq", "tw-margin", "tw-fin", "tw-icon", "tw-report"):
+            self.assertIn('"' + el + '"', html)
+            self.assertIn(el, [s.get("el") for s in tools.TEM_TOUR])
