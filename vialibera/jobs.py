@@ -23,7 +23,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
 
-from . import db, requirements_source, tariff_watch, vat_check
+from . import db, funding, requirements_source, tariff_watch, vat_check
 from .adapters.base import AdapterError
 
 UA = "MioTEM data check (contact: aeoconsultsas@pec.it)"
@@ -176,6 +176,7 @@ def source_urls():
     """URLs the job checks: each source, or its watch URL when the source refuses cloud servers."""
     urls = {requirements_source.get().watch_url(r["source"]) for r in requirements_source.get().rows if r["source"] and not requirements_source.get().importer_only(r)}
     urls |= {requirements_source.get().watch_url(n["source"]) for n in requirements_source.get().not_needed if n.get("source")}
+    urls |= funding.source_urls()  # funding scheme pages: a change asks staff to re-check the scheme (F5, 22 Nov 2026)
     return sorted(urls)
 
 
@@ -249,13 +250,29 @@ def check_sources(con, fetch=_fetch_text):
             changed += 1
             rows = [r["id"] for r in requirements_source.get().rows if r["source"] and requirements_source.get().watch_url(r["source"]) == url
                     and not requirements_source.get().importer_only(r)]
-            _change(con, "source_changed", url, f"Checklist source changed: {len(rows)} item(s) to re-verify",
-                    {"items": rows, **text_diff(prev["page_text"], text, url=url)})
+            schemes = funding.scheme_for_url(url)
+            title = (f"Funding page changed: re-check {', '.join(schemes)}" if schemes and not rows
+                     else f"Checklist source changed: {len(rows)} item(s) to re-verify")
+            _change(con, "source_changed", url, title,
+                    {"items": rows, "schemes": schemes, **text_diff(prev["page_text"], text, url=url)})
             # only the newest text is kept: yesterday's is replaced, the changed lines stay with the alert
             con.execute("UPDATE source_snapshots SET sha256=?, page_text=?, checked_at=?, changed_at=?, pending_sha=NULL, pending_at=NULL "
                         "WHERE url=?", (sha, text, db.now(), db.now(), url))
         con.commit()
     return {"sources": len(source_urls()), "changed": changed, "unreachable": unreachable}
+
+
+def flag_stale_funding(con):
+    """One staff alert per funding scheme not checked for funding.STALE_DAYS, raised once per check date (F5, 22 Nov 2026)."""
+    n = 0
+    for s in funding.stale_list():
+        ref = "funding:" + s["id"] + ":" + s["checked"]
+        if con.execute("SELECT 1 FROM data_changes WHERE kind='funding_stale' AND ref=?", (ref,)).fetchone():
+            continue
+        _change(con, "funding_stale", ref, f"Funding scheme {s['id']} not checked since {s['checked']}: re-check the official page",
+                {"scheme": s["id"], "checked": s["checked"]})
+        n += 1
+    return n
 
 
 def apply_source_flags(con, case_id, req, staff=True):
@@ -324,6 +341,7 @@ def run_part(con, part, uk=None, us=None, fetch=_fetch_text, vies_http=None, tar
     if part == "sources":
         out["tariffs"] = check_tariffs(con, uk, us)  # known answers: quick, kept with the source check
         out["sources"] = check_sources(con, fetch)
+        out["funding_stale"] = flag_stale_funding(con)
     elif part == "vies":
         out["vies"] = recheck_vies(con, vies_http)
     elif tariff_watch.due(con):

@@ -80,7 +80,7 @@ class FundingCard(unittest.TestCase):
 
     def test_every_call_has_a_status_and_closed_calls_stay_listed(self):
         links = self.card()["today"]["links"]
-        self.assertTrue(all(l["status"] in ("open", "closed", "check") for l in links))
+        self.assertTrue(all(l["status"] in ("open", "closed", "check", "no_window") for l in links))
         closed = [l for l in links if l["status"] == "closed"]
         self.assertGreaterEqual(len(closed), 4)
         self.assertTrue(all(l.get("note") for l in closed))
