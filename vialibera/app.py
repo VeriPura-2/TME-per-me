@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import doc_requests, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
+from . import doc_requests, tem_margin, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
 from .menu import MENU
 from . import plan_prices
 from . import intros
@@ -491,6 +491,14 @@ def handle_tem(path, body, who):
         return tems.project(c, who, case_id)
     if path == "/tem/request_done":
         return tems.request_done(c, who, str(body.get("id") or ""))
+    if path == "/tem/fee":  # C2: hours, cost and margin, firm only
+        return tem_margin.set_fee(c, who, case_id, str(body.get("kind") or ""), body.get("amount"), body.get("target_rate"))
+    if path == "/tem/time":
+        return tem_margin.add_time(c, who, case_id, body.get("hours"), str(body.get("category") or ""), body.get("day"), body.get("note"))
+    if path == "/tem/cost":
+        return tem_margin.add_cost(c, who, case_id, body.get("amount"), body.get("what"), body.get("day"))
+    if path == "/tem/entry_delete":
+        return tem_margin.delete(c, who, case_id, str(body.get("kind") or ""), body.get("id"))
     if path == "/tem/doc_request":  # C1: the TEM asks the client for checklist documents
         return doc_requests.create(c, who, case_id, body.get("items"), body.get("remind_days", doc_requests.DEFAULT_DAYS))
     if path == "/tem/doc_request_status":
