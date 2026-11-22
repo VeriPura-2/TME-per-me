@@ -137,10 +137,7 @@ CARDS = [
                          "I bandi chiusi restano in elenco per vedere cosa esce e quando."),
                "checked": funding.last_checked(),
                "notify": "funding_calls",
-               "links": funding.card_links()},  # data/funding.json: source and check date per scheme (F5, 22 Nov 2026)
-     "coming": {"status": "soon",
-                "text": L("Next: an eligibility check for your company and reminders before deadlines.",
-                          "In arrivo: una verifica dei requisiti per la sua azienda e promemoria prima delle scadenze.")}},
+               "links": funding.card_links()}},  # data/funding.json per scheme (F5); no "coming" line: the eligibility check and deadline reminders are live under Duties (F1, F2)
     {"id": "buyer_verification", "by": {"kind": "miotem"},
      "name": L("Buyer verification page", "Pagina di verifica per l'acquirente"),
      "coming": {"status": "preview",

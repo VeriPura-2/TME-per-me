@@ -90,7 +90,8 @@ class EligibilityCheck(unittest.TestCase):
     def test_unsure_answers_and_cofunding_give_check_never_no(self):
         res = self.by({"size": "not_sure", "region": "Emilia-Romagna", "activity": "not_sure", "applicant": "not_sure", "cofund": "no"})
         self.assertEqual(res["er_intl_2026"]["result"], "check")
-        self.assertTrue(any("50% (55% with premium)" in w["en"] for w in res["er_intl_2026"]["reasons"]))
+        self.assertTrue(any("pays 50% of the cost" in w["en"] for w in res["er_intl_2026"]["reasons"]))
+        self.assertTrue(any("copre il 50% del costo" in w["it"] and "premium" not in w["it"] for w in res["er_intl_2026"]["reasons"]))
 
     def test_tuscany_and_the_brochure_are_always_check(self):
         res = self.by({"size": "small", "region": "Tuscany", "activity": "processing", "applicant": "company", "cofund": "yes"})

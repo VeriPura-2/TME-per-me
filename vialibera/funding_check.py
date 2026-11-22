@@ -5,6 +5,8 @@ Each scheme gets: likely (likely eligible), check (check with the funder) or no 
 A rule only fires on a fact in data/funding.json that has an official source and a check date. A fact we do not hold,
 or an answer of "not sure", always gives "check", never a guess. The funder decides: the page says so.
 """
+import re
+
 from . import db, funding
 
 SIZES = ("micro", "small", "medium", "large", "not_sure")          # under 10, 10 to 49, 50 to 249, 250 or more (EU SME bands)
@@ -78,8 +80,9 @@ def evaluate(scheme, a):
         check.append(_r("applicant_check"))
     # co-funding: a grant that pays a share leaves the rest to the company
     share = facts.get("grant_share")
-    if scheme.get("instrument") == "grant" and share and a.get("cofund") in ("small", "no", "not_sure"):
-        check.append(_r("cofund_check", share=share))
+    pct = re.search(r"(\d+)\s*%", str(share or ""))
+    if scheme.get("instrument") == "grant" and pct and a.get("cofund") in ("small", "no", "not_sure"):
+        check.append(_r("cofund_check", share=pct.group(1) + "%"))  # the headline share only, so the IT reason stays in Italian
     if no:
         return "no", no
     if check:
