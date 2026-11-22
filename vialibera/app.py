@@ -733,9 +733,12 @@ def handle_journey(body, who):
     viewer = "client" if tools.has_tem(c, row["company_id"]) and not tems.firm_of(c, who["user"]) else "exporter"
     out["doc_requests"] = doc_requests.for_case(c, row["id"])
     out["tem_financing"] = tem_financing.for_client(c, row["id"])  # only lines the TEM chose to show
-    out["tools"] = tools.for_viewer(c, row, case["product"].get("category"), case["market"].get("country"), viewer,
-                                    first_time=case["company"].get("export_experience") == "none"
-                                    or case["market"].get("importer_status") in ("looking", "not sure"))  # R1: a new market
+    new_market = (case["company"].get("export_experience") == "none"
+                  or case["market"].get("importer_status") in ("looking", "not sure"))  # R1: a new market
+    out["tools"] = tools.for_viewer(c, row, case["product"].get("category"), case["market"].get("country"), viewer, first_time=new_market)
+    if viewer == "exporter" and new_market:  # R2: the TEM offer at the importer step, for an exporter without a TEM
+        prof = funding_check.get_profile(c, row["company_id"] or limits.owner_key(c, who["user"]))
+        out["tools"]["tem_offer"] = {"lead": bool(prof and prof.get("size") in ("small", "medium")), "country": case["market"].get("country")}
     if viewer == "client":  # the client can ask their TEM for help with the tools they see
         out["tools"]["tem"] = True
         out["tools"]["open_requests"] = [r["tool"] or "" for r in c.execute(

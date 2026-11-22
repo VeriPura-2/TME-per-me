@@ -502,3 +502,32 @@ class NewMarket22Nov(unittest.TestCase):
     def test_unanswered_keeps_the_old_order(self):
         ids, _ = self.order(None)
         self.assertLess(ids.index("funding"), ids.index("importers"))
+
+
+class TemOffer22Nov(unittest.TestCase):
+    """R2: the TEM offer shows at the importer step for a new market, ahead of the list for small and medium companies."""
+
+    def journey(self, importer, size=None):
+        from test_start_form import user
+        from vialibera import app, funding_check
+        who = user("to-" + str(importer) + str(size))
+        code, out = app.handle_start({"category": "cheese", "country": "USA", "importer": importer}, who)
+        if size:
+            app.handle_tools("/tools/funding_profile", {"case_id": out["case_id"], "answers": {"size": size}}, who)
+        return app.handle_journey({"case_id": out["case_id"]}, who)[1]["tools"]
+
+    def test_new_market_gets_the_offer_and_size_decides_the_lead(self):
+        self.assertEqual(self.journey("no")["tem_offer"], {"lead": False, "country": "USA"})
+        self.assertTrue(self.journey("no", "medium")["tem_offer"]["lead"])
+        self.assertFalse(self.journey("no", "micro")["tem_offer"]["lead"])
+
+    def test_no_offer_where_they_already_have_an_importer(self):
+        self.assertNotIn("tem_offer", self.journey("yes"))
+
+    def test_offer_text_keeps_to_what_is_true_today(self):
+        import os
+        html = open(os.path.join(os.path.dirname(tools.__file__), "static", "index.html"), encoding="utf-8").read()
+        for bad in ("exclusive", "esclusiv", "guarantee", "garanti", "success fee"):
+            seg = html[html.index('to_h: "Or have'):html.index('to_done: "Thank you')]
+            self.assertNotIn(bad, seg.lower())
+        self.assertIn("nothing is paid through MioTEM", html)
