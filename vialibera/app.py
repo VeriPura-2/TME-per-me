@@ -709,7 +709,8 @@ def handle_journey(body, who):
     out["notes"] = tems.notes(c, row["id"], internal=False)
     out["duties"] = duties.for_case(c, case)
     viewer = "client" if tools.has_tem(c, row["company_id"]) and not tems.firm_of(c, who["user"]) else "exporter"
-    out["tools"] = tools.for_viewer(c, row, case["product"].get("category"), case["market"].get("country"), viewer)
+    out["tools"] = tools.for_viewer(c, row, case["product"].get("category"), case["market"].get("country"), viewer,
+                                    first_time=case["company"].get("export_experience") == "none")
     if viewer == "client":  # the client can ask their TEM for help with the tools they see
         out["tools"]["tem"] = True
         out["tools"]["open_requests"] = [r["tool"] or "" for r in c.execute(

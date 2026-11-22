@@ -226,8 +226,8 @@ class Visibility(unittest.TestCase):
 class CoreAndGuide(unittest.TestCase):
     def test_miotem_tools_first_and_labelled(self):
         cards = tools.for_case("pasta", "UK")
-        kinds = [c["by"]["kind"] for c in cards]
-        self.assertEqual(kinds, sorted(kinds, key=lambda k: k != "miotem"))
+        core = {c["id"] for c in tools.CORE} - {"consultants"}  # 22 Nov 2026: the page tools first, then compliance (VeriPura checks), TEM card near the end
+        self.assertEqual({c["id"] for c in cards[:len(core)]}, core)
         by = {c["id"]: c["by"] for c in cards}
         self.assertEqual(by["checklist"]["kind"], "miotem")
         self.assertEqual(by["doc_checks"], {"kind": "partner", "name": "VeriPura"})
@@ -441,3 +441,32 @@ class TemTour(unittest.TestCase):
             self.assertIn('"' + el + '"', html)
         self.assertIn('startTour(temFirst, "tem")', html)
         self.assertIn('if (q0.get("tour") === "new") { localStorage.removeItem("vl_tour_done"); localStorage.removeItem("vl_tem_tour_done");', html)
+
+
+class Order22Nov(unittest.TestCase):
+    """22 Nov 2026 research: compliance tools first, lowest rated last, importers up for first-time exporters."""
+
+    def ids(self, first_time=False):
+        return [c["id"] for c in tools.for_case("wine", "USA", first_time)]
+
+    def test_compliance_first_and_lowest_rated_last(self):
+        ids = self.ids()
+        self.assertEqual(ids[:5], ["ai_manager", "checklist", "duties", "library", "eori"])
+        self.assertLess(ids.index("doc_checks"), ids.index("shipping"))
+        self.assertLess(ids.index("label_check"), ids.index("importers"))
+        self.assertEqual(ids[-2:], ["consultants", "outreach"])
+        self.assertLess(ids.index("funding"), ids.index("importers"))  # importers rank low for exporters already shipping
+
+    def test_first_time_exporters_see_importers_right_after_compliance(self):
+        ids = self.ids(True)
+        self.assertEqual(ids[ids.index("alerts") + 1], "importers")
+        self.assertEqual(sorted(ids), sorted(self.ids()))
+
+    def test_every_card_has_a_place(self):
+        every = {c["id"] for c in tools.CORE + tools.CARDS}
+        self.assertEqual(every, set(tools.ORDER))
+
+    def test_no_booking_or_application_drafting_promised(self):
+        cards = {c["id"]: c for c in tools.for_case("wine", "USA")}
+        self.assertNotIn("booking", cards["shipping"]["coming"]["text"]["en"])
+        self.assertNotIn("application", cards["funding"]["coming"]["text"]["en"])
