@@ -333,7 +333,7 @@ def ai_unavailable(con, err):
     return True
 
 
-def run_part(con, part, uk=None, us=None, fetch=_fetch_text, vies_http=None, tariff_readers=None):
+def run_part(con, part, uk=None, us=None, fetch=_fetch_text, vies_http=None, tariff_readers=None, base_url=""):
     """One part of the daily job, in its own request with its own time limit."""
     if part not in PARTS:
         raise ValueError(f"unknown job part: {part}")
@@ -344,6 +344,9 @@ def run_part(con, part, uk=None, us=None, fetch=_fetch_text, vies_http=None, tar
         out["funding_stale"] = flag_stale_funding(con)
     elif part == "vies":
         out["vies"] = recheck_vies(con, vies_http)
+        from . import doc_requests
+        if base_url:  # the reminder links to the app: without its address no reminder is sent
+            out["doc_reminders"] = doc_requests.send_reminders(con, base_url)
     elif tariff_watch.due(con):
         out["tariff_watch"] = tariff_watch.run(con, tariff_readers)
     else:

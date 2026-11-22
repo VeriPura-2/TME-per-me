@@ -20,7 +20,7 @@ import anthropic
 
 from urllib.parse import parse_qs, urlparse
 
-from . import importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
+from . import doc_requests, importers, marks, admin, ai_usage, limits, lane_requests, tools, permissions, team, accounts, agent, auth, core_checks, db, docs, duties, features, jobs, vat_check, invites, personas, plans, requirements_source, storage, stripe_pay, tariff_watch, tem_interest, route_interest, landing_chat, tems, verticals, voice
 from .menu import MENU
 from . import plan_prices
 from . import intros
@@ -409,6 +409,8 @@ def handle_upload(headers, data, who):
                             case_id=case_id)
     if code == 200 and case_id and not out.get("duplicate"):
         core_checks.on_upload(con(), case_id, out["id"])  # only when the automatic switch is on
+    if code == 200 and case_id and headers.get("X-Request"):  # the client uploads into a TEM document request (C1)
+        out["request_filled"] = doc_requests.attach(con(), who, case_id, headers.get("X-Request"), out["id"])
     return code, out
 
 
@@ -489,6 +491,12 @@ def handle_tem(path, body, who):
         return tems.project(c, who, case_id)
     if path == "/tem/request_done":
         return tems.request_done(c, who, str(body.get("id") or ""))
+    if path == "/tem/doc_request":  # C1: the TEM asks the client for checklist documents
+        return doc_requests.create(c, who, case_id, body.get("items"), body.get("remind_days", doc_requests.DEFAULT_DAYS))
+    if path == "/tem/doc_request_status":
+        return doc_requests.set_status(c, who, str(body.get("id") or ""), str(body.get("status") or ""), body.get("note"))
+    if path == "/tem/doc_request_reminders":
+        return doc_requests.set_reminders(c, who, case_id, body.get("days"))
     if path == "/tem/tool_visibility":
         return tools.set_visibility(c, who, case_id, str(body.get("tool") or ""), body.get("visible", True) is not False)
     return 404, {}
@@ -508,7 +516,7 @@ def handle_job(headers, query=""):
     if part:
         if part not in jobs.PARTS:
             return 400, {"error": "unknown part", "parts": list(jobs.PARTS)}
-        return 200, jobs.run_part(con(), part)
+        return 200, jobs.run_part(con(), part, base_url=_base(headers.get("Host")))
     return 200, jobs.run_daily(con())
 
 
@@ -709,6 +717,7 @@ def handle_journey(body, who):
     out["notes"] = tems.notes(c, row["id"], internal=False)
     out["duties"] = duties.for_case(c, case)
     viewer = "client" if tools.has_tem(c, row["company_id"]) and not tems.firm_of(c, who["user"]) else "exporter"
+    out["doc_requests"] = doc_requests.for_case(c, row["id"])
     out["tools"] = tools.for_viewer(c, row, case["product"].get("category"), case["market"].get("country"), viewer,
                                     first_time=case["company"].get("export_experience") == "none")
     if viewer == "client":  # the client can ask their TEM for help with the tools they see

@@ -234,6 +234,23 @@ CREATE TABLE IF NOT EXISTS tem_requests (
   done_by TEXT,
   done_at TEXT
 );
+CREATE TABLE IF NOT EXISTS doc_requests (   -- a TEM asks a client for checklist documents (C1, 22 Nov 2026)
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  company_id TEXT NOT NULL,
+  firm_id TEXT NOT NULL,
+  item_id TEXT NOT NULL,               -- checklist row id
+  label_en TEXT,
+  label_it TEXT,
+  status TEXT NOT NULL,                -- requested, uploaded, accepted, needs_change
+  change_note TEXT,                    -- what needs changing, shown to the client
+  document_id TEXT,
+  remind_days INTEGER NOT NULL DEFAULT 3,  -- 0 = no reminders
+  last_reminded_at TEXT,
+  requested_by TEXT NOT NULL,
+  requested_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tem_assignments (
   firm_id TEXT NOT NULL,
   company_id TEXT NOT NULL,
