@@ -347,6 +347,8 @@ def run_part(con, part, uk=None, us=None, fetch=_fetch_text, vies_http=None, tar
         from . import doc_requests
         if base_url:  # the reminder links to the app: without its address no reminder is sent
             out["doc_reminders"] = doc_requests.send_reminders(con, base_url)
+            from . import funding_check
+            out["funding_alerts"] = funding_check.send_alerts(con, base_url)
     elif tariff_watch.due(con):
         out["tariff_watch"] = tariff_watch.run(con, tariff_readers)
     else:
