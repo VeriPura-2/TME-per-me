@@ -45,3 +45,24 @@ class PlanTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NoPricesShown(unittest.TestCase):
+    """Paid plan prices are not decided (22 Nov 2026): no amounts reach the browser and paid plans cannot be bought."""
+
+    def test_paid_plans_closed(self):
+        self.assertFalse(plans.PAID_PLANS_OPEN)
+
+    def test_plans_json_sends_no_amounts(self):
+        import inspect
+        from vialibera import app
+        src = inspect.getsource(app)
+        i = src.index('path == "/plans.json"')
+        block = src[i:src.index("return self._send", i)]
+        self.assertIn("if plans.PAID_PLANS_OPEN:", block)
+
+    def test_plan_questions_need_consent(self):
+        from vialibera import tools
+        for t in ("plan_parti", "plan_cresci"):
+            self.assertIn(t, tools.INTEREST_ONLY)
+            self.assertIn(t, tools.CONSENT_NEEDED)

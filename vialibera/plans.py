@@ -23,6 +23,10 @@ LEVELS = {
 
 DEFAULT = "esplora"
 
+# Paid plan prices are not decided (Thomas, 22 Nov 2026): the app shows no amounts and paid plans cannot be bought.
+# Exporters ask about a plan instead; staff follow up. Set to True only once prices are set.
+PAID_PLANS_OPEN = False
+
 
 def get(plan_id):
     return PLANS.get(plan_id) or PLANS[DEFAULT]

@@ -4,6 +4,7 @@ import json
 import os
 import time
 import unittest
+from unittest import mock
 
 os.environ["DB_PATH"] = ":memory:"
 from vialibera import accounts, app, db, invites, stripe_pay
@@ -167,6 +168,11 @@ class ItemPaymentTest(StripeTestBase):
 
 
 class PlanTest(StripeTestBase):
+    def test_no_new_checkout_while_prices_are_not_set(self):
+        self.assertEqual(app.handle_plan_checkout({"plan": "parti"}, who("q0"), "example.test"), (409, {"error": "prices_not_set"}))
+        self.assertFalse([c for c in self.fake.calls if c[1] == "/checkout/sessions"])
+
+    @mock.patch("vialibera.plans.PAID_PLANS_OPEN", True)
     def test_paid_plans_only_change_through_stripe(self):
         self.assertEqual(app.handle_plan({"plan": "parti"}, who("q1"))[0], 409)
         code, out = app.handle_plan_checkout({"plan": "parti"}, who("q1"), "example.test")
