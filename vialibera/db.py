@@ -251,6 +251,37 @@ CREATE TABLE IF NOT EXISTS doc_requests (   -- a TEM asks a client for checklist
   requested_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS tem_fees (     -- C2: the fee a TEM agreed for one client project, firm only, never shown to the client
+  case_id TEXT NOT NULL,
+  firm_id TEXT NOT NULL,
+  kind TEXT NOT NULL,                  -- fixed or retainer
+  amount_cents INTEGER NOT NULL,
+  target_rate_cents INTEGER,
+  set_by TEXT NOT NULL,
+  set_at TEXT NOT NULL,
+  PRIMARY KEY (case_id, firm_id)
+);
+CREATE TABLE IF NOT EXISTS tem_time (     -- C2: hours a TEM spent on a client project
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  firm_id TEXT NOT NULL,
+  user_sub TEXT NOT NULL,
+  day TEXT NOT NULL,
+  hours_x100 INTEGER NOT NULL,
+  category TEXT NOT NULL,
+  note TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tem_costs (    -- C2: costs a TEM had on a client project
+  id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  firm_id TEXT NOT NULL,
+  user_sub TEXT NOT NULL,
+  day TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  what TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tem_assignments (
   firm_id TEXT NOT NULL,
   company_id TEXT NOT NULL,
