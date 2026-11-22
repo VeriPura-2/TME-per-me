@@ -512,11 +512,12 @@ class Refinement22Nov(unittest.TestCase):
         say(Script([tool("set_role", {"role": "tem", "stage": "exporting"}), text("ok")]), "I am a TEM")
         self.assertIsNone(landing_chat.claim(app.con(), "user-t", V1)["stage"])
 
-    def test_the_prompt_answers_the_forwarder_objection_and_offers_no_tem_introduction(self):
+    def test_the_prompt_answers_the_forwarder_objection_and_places_the_tem_offer(self):
         s = landing_chat.SYSTEM
         self.assertIn("Good, keep them. MioTEM shows which documents on your route are yours to prepare", s)
         self.assertIn("Bene, li tenga.", s)
-        self.assertIn("Do not offer an introduction to a TEM", s)
+        self.assertIn("a TEM on MioTEM who finds and contacts importers", s)  # R2: back as the done-for-you option for a new market
+        self.assertIn("Never promise a match, a date, results, or that importer contacts are theirs alone", s)
         self.assertNotIn("Would you like an\n   introduction to a TEM", s)
         self.assertNotIn("a delayed shipment", s)
         self.assertNotIn(EM_DASH, s)

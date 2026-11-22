@@ -248,7 +248,7 @@ const T = {
     q_detail: "Descrizione (facoltativa)", q_detail_ph: "Es. Barbera d'Asti DOCG, 750 ml", q_detail_help: "Aiuta a scegliere i documenti giusti, per esempio il tipo di vino o di formaggio.",
     q_eu_q: "Quale Paese dell'Unione europea?", q_chat: "Non so ancora il paese: parliamone in chat",
     q_uc_h: "Questo percorso non è ancora coperto", q_uc_p: "Può creare il progetto lo stesso. Non conta nel limite del suo piano, ma non avrà ancora un elenco di documenti verificato. Aggiungiamo prodotti e paesi di continuo: registriamo la sua richiesta e La contattiamo quando sarà pronto.",
-    q_imp: "Ha già un importatore in {c}?", q_imp_yes: "Sì", q_imp_no: "No, è un mercato nuovo", q_imp_there: "questo paese", q_prod: "Prodotto", q_country: "Paese di destinazione", q_vat: "Partita IVA (facoltativa)", q_check: "Verifica", q_start: "Crea il mio progetto",
+    to_h: "Oppure lo faccia fare a un TEM", to_p: "Un TEM (temporary export manager) su MioTEM può cercare e contattare per Lei gli importatori in {c}. Su richiesta cerchiamo un TEM che conosca il suo settore. Il compenso lo concorda direttamente con il TEM prima che inizi il lavoro: nulla viene pagato tramite MioTEM. I TEM stanno entrando ora in MioTEM: ci lasci il suo interesse e la ricontatteremo.", to_btn: "Mi interessa", to_done: "Grazie. La ricontatteremo per email.", q_imp: "Ha già un importatore in {c}?", q_imp_yes: "Sì", q_imp_no: "No, è un mercato nuovo", q_imp_there: "questo paese", q_prod: "Prodotto", q_country: "Paese di destinazione", q_vat: "Partita IVA (facoltativa)", q_check: "Verifica", q_start: "Crea il mio progetto",
     q_other: "altro", q_pick: "Scelga prodotto e paese.", q_ready: "Pronto. La lista dei documenti e i dazi sono in Servizi. Mi scriva qui per continuare o per porre una domanda.",
     q_ready_sim: "Pronto. Per questo prodotto o paese la lista è ancora indicativa (vedere Servizi). Mi scriva qui per continuare o per porre una domanda.",
     q_vat_bad: "Partita IVA non valida: ",
@@ -288,7 +288,7 @@ const T = {
     q_detail: "Description (optional)", q_detail_ph: "E.g. Barbera d'Asti DOCG, 750 ml", q_detail_help: "Helps us pick the right documents, for example the type of wine or cheese.",
     q_eu_q: "Which European Union country?", q_chat: "I don't know the country yet: let's talk in chat",
     q_uc_h: "This route is not covered yet", q_uc_p: "You can still create the project. It does not count toward your plan's limit, but it will not have a checked document list yet. We add products and countries all the time: we record your request and contact you when it is ready.",
-    q_imp: "Do you already have an importer in {c}?", q_imp_yes: "Yes", q_imp_no: "No, it is a new market", q_imp_there: "this country", q_prod: "Product", q_country: "Destination country", q_vat: "VAT number (optional)", q_check: "Check", q_start: "Create my project",
+    to_h: "Or have a TEM do it for you", to_p: "A TEM (temporary export manager) on MioTEM can find and contact importers in {c} for you. On request, we look for a TEM who knows your sector. You agree the fee directly with the TEM before any work starts: nothing is paid through MioTEM. TEMs are joining MioTEM now: leave your interest and we will be in touch.", to_btn: "I am interested", to_done: "Thank you. We will be in touch by email.", q_imp: "Do you already have an importer in {c}?", q_imp_yes: "Yes", q_imp_no: "No, it is a new market", q_imp_there: "this country", q_prod: "Product", q_country: "Destination country", q_vat: "VAT number (optional)", q_check: "Check", q_start: "Create my project",
     q_other: "other", q_pick: "Choose a product and a country.", q_ready: "Ready. The document checklist and duties are in Services. Write here to continue or to ask a question.",
     q_ready_sim: "Ready. For this product or country the checklist is still indicative (see Services). Write here to continue or to ask a question.",
     q_vat_bad: "VAT number not valid: ",
@@ -869,6 +869,15 @@ function dutiesBox(parent, du) {
       f.append(n, " ", send, " ", msg); parent.appendChild(f); n.focus();
     };
   }
+  function temOffer(cid, o, t) {  // R2 (22 Nov 2026): only commitments true today; interest only, no TEM works on MioTEM yet
+    const b = mk("div"); b.style.cssText = "margin:8px 0;padding:8px;border:1px solid var(--accent);border-radius:8px";
+    b.appendChild(mk("strong", t.to_h));
+    b.appendChild(mk("div", t.to_p.replace("{c}", o.country || t.q_imp_there)));
+    const btn = mk("button", t.to_btn);
+    btn.onclick = async () => { btn.disabled = true; const [r] = await call("/tools/interest", {case_id: cid, tool: "tem_intro", consent: true, email: ctx.email});
+      if (r.ok) btn.replaceWith(mk("div", t.to_done, "tick")); else btn.disabled = false; };
+    b.appendChild(btn); return b;
+  }
   function importersList(card, cid) {  // researched importers for this project's destination (company level; website for paid plans)
     const t = TL[lang], b = mk("button", t.imp_show), out = mk("div"); card.appendChild(b); card.appendChild(out);
     let open = false;
@@ -913,7 +922,12 @@ function dutiesBox(parent, du) {
           nb.onclick = async () => { if (nb.disabled) return; nb.disabled = true; const [r] = await call("/tools/interest", {case_id: cid, tool: c.today.notify});
             if (r.ok) nb.replaceWith(mk("div", t.told, "tick")); else nb.disabled = false; };
           card.appendChild(nb); } }
-      if (c.id === "importers" && cid) importersList(card, cid);
+      if (c.id === "importers" && cid) {
+        const offer = data.tem_offer && !tem ? temOffer(cid, data.tem_offer, t) : null;  // R2: do it yourself or have a TEM do it
+        if (offer && data.tem_offer.lead) card.appendChild(offer);
+        importersList(card, cid);
+        if (offer && !data.tem_offer.lead) card.appendChild(offer);
+      }
       if (c.go && !tem) { const g = mk("button", t.go); g.onclick = () => goTo(c.go); card.appendChild(g); }
       if (data.tem && !tem) askTem(card, cid, c.id, data.open_requests);
       const n = c.coming;
