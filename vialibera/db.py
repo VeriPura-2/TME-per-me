@@ -339,6 +339,21 @@ CREATE TABLE IF NOT EXISTS importer_contacts (  -- R2b: every importer a TEM con
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS certificates (       -- B2: a company's certificates and approvals, with expiry reminders
+  id TEXT PRIMARY KEY,
+  owner_key TEXT NOT NULL,             -- company id, or u:<user> before a company exists
+  type TEXT NOT NULL,                  -- see certificates.TYPES
+  name TEXT,                           -- the type's name, for type other
+  product TEXT,
+  issued_by TEXT,
+  valid_until TEXT,
+  document_id TEXT,
+  status TEXT NOT NULL,                -- claimed, seen_staff, checked_core
+  reminded_for TEXT,                   -- the expiry date a reminder was sent for
+  created_by TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tem_assignments (
   firm_id TEXT NOT NULL,
   company_id TEXT NOT NULL,
