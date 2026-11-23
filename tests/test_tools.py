@@ -314,13 +314,13 @@ class PublicCatalog(unittest.TestCase):
 
 class VeroItalianoWalkthrough(unittest.TestCase):
     """20 Nov 2026: Vero Italiano shown as an In development card with a scripted example (no AI call, nothing stored)."""
-    def test_card_is_a_preview_with_six_bilingual_screens(self):
+    def test_card_is_a_preview_with_seven_bilingual_screens(self):
         cards = {c["id"]: c for c in tools.for_case("cheese", "USA")}
         vi = cards["vero_italiano"]
         self.assertNotIn("today", vi)
         self.assertEqual(vi["coming"]["status"], "preview")
         walk = vi["coming"]["walk"]
-        self.assertEqual(len(walk), 6)
+        self.assertEqual(len(walk), 7)  # 23 Nov 2026: screen 5 "Share with importers" added
         texts = [vi["name"], vi["coming"]["text"]] + [s["t"] for s in walk] + [x for s in walk for x in s["lines"]]
         for x in texts:
             for lg in ("en", "it"):
@@ -336,6 +336,15 @@ class VeroItalianoWalkthrough(unittest.TestCase):
         self.assertIn('wk_open: "See an example"', html)
         self.assertIn('wk_open: "Vedi un esempio"', html)
 
+    def test_importer_sharing_screen_and_logo(self):
+        vi = {c["id"]: c for c in tools.for_case("cheese", "USA")}["vero_italiano"]
+        walk = vi["coming"]["walk"]
+        self.assertEqual(walk[4]["t"]["en"], "Share with importers")
+        self.assertIn("never see your documents", " ".join(x["en"] for x in walk[4]["lines"]))
+        self.assertTrue(any(x["en"].startswith("Importer sharing: on") for x in walk[6]["lines"]))
+        self.assertEqual(vi["by"]["logo"], "/vero-italiano.png")
+        self.assertIn('"/vero-italiano.png"', open(os.path.join(os.path.dirname(app.__file__), "app.py"), encoding="utf-8").read())
+        self.assertTrue(os.path.exists(os.path.join(os.path.dirname(app.__file__), "static", "vero-italiano.png")))
 
 class GuidedTour(unittest.TestCase):
     """20 Nov 2026: exporter tour with 'Interested?' at tool stops and two consent questions at the end (no AI call)."""
